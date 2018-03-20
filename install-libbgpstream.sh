@@ -1,4 +1,4 @@
-sudo apt-get install libbz2-dev zlibc libcurl4-gnutls-dev sqlite3
+sudo apt-get install libbz2-dev zlibc libcurl4-gnutls-dev sqlite3 zlib1g-dev libbz2-dev libcurl4-openssl-dev
 
 mkdir ~/src
 cd ~/src/
