@@ -6,7 +6,7 @@ import networkx as nx
 # Create a new bgpstream instance and a reusable bgprecord instance
 stream = BGPStream()
 rec = BGPRecord()
-
+c = 0
 # Create an instance of a simple undirected graph
 as_graph = nx.Graph()
 
@@ -38,10 +38,12 @@ while(stream.get_next_record(rec)):
             for i in range(0,len(hops)-1):
                 as_graph.add_edge(hops[i],hops[i+1])
             # Update the AS path length between 'peer' and 'origin'
-            bgp_lens[peer][origin] = \
-                min(filter(bool,[bgp_lens[peer][origin],len(hops)]))
+            bgp_lens[peer][origin] = min(filter(bool,[bgp_lens[peer][origin],len(hops)]))
         elem = rec.get_next_elem()
+    c += 1
+    print c
 
+c = 1111110000000
 # For each 'peer' and 'origin' pair
 for peer in bgp_lens:
     for origin in bgp_lens[peer]:
@@ -49,3 +51,5 @@ for peer in bgp_lens:
         nxlen = len(nx.shortest_path(as_graph, peer, origin))
         # and compare it to the BGP hop length
         print peer, origin, bgp_lens[peer][origin], nxlen
+        c += 1
+        print c
