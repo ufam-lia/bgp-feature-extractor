@@ -63,7 +63,7 @@ main()
   while(get_next_ret > 0);
 
   /* Print the number of elems */
-  printf("Read %d elems\n", elem_counter);
+  //  printf("Read %d elems\n", elem_counter);
 
   /* De-allocate memory for the bgpstream record */
   bgpstream_record_destroy(bs_record);
