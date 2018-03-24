@@ -5,7 +5,7 @@ import numpy as np
 
 times = []
 
-for i in xrange(11):
+for i in xrange(51):
   start = time.time()
   cmd = 'python bgpstream-count-elems.py'
   os.system(cmd)
@@ -21,7 +21,7 @@ print ''
 
 times = []
 
-for i in xrange(11):
+for i in xrange(51):
   start = time.time()
   cmd = './bgp'
   os.system(cmd)
