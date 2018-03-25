@@ -29,4 +29,4 @@ while(stream.get_next_record(rec)):
             c += 1
             elem = rec.get_next_elem()
 
-print 'Read ' + str(c) + ' elems'
+# print 'Read ' + str(c) + ' elems'
