@@ -42,7 +42,7 @@ def main():
     # for i in [6,7,8,9,10,11]
     #Traverse files
     # files = glob.glob("/home/pc/ripe-ris/code-red/update*.gz")
-    files = glob.glob("/home/pc/ripe-ris/code-red/updates.20010701.*.gz")
+    files = glob.glob("/home/pc/ripe-ris/code-red/updates.*.gz")
     files = sorted(files)
 
     upds_per_file = []
