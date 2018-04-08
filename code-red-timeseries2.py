@@ -31,9 +31,9 @@ def main():
     parser = argparse.ArgumentParser(description='Process BGP timeseries')
     parser.add_argument('--days', type=int)
     parser.add_argument('--start', type=str)
-    
+
     args = parser.parse_args()
-    
+
     #Traverse months
     # for i in [6,7,8,9,10,11]
     #Traverse files
@@ -123,9 +123,10 @@ def main():
     plt.plot(range(len(timeseries_ann_559)), timeseries_ann_559, lw=0.95, color = 'blue')
     plt.plot(range(len(timeseries_ann_1755)), timeseries_ann_1755, lw=0.95, color = 'pink')
     plt.plot(range(len(timeseries_ann_6893)), timeseries_ann_6893, lw=0.95, color = 'k')
-    fig.savefig(str(random.randint(1, 1000)), bboxes_inches = 'tight', dpi = 400)
-    plt.show()
+    output = str(random.randint(1, 1000))
+    print output + '.png'
+    fig.savefig(output, bboxes_inches = 'tight', dpi = 400)
+        # plt.show()
 
 if __name__ == '__main__':
     main()
- 
