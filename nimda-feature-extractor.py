@@ -41,11 +41,7 @@ def main():
     #Traverse files
 
     files = []
-    files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010717.*.gz")
-    files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010718.*.gz")
-    files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010719.*.gz")
-    files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010720.*.gz")
-    files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010721.*.gz")
+    files = files + glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.*.gz")
     files = sorted(files)
 
     days = args.days
@@ -129,7 +125,7 @@ def main():
     plt.subplot(1,2,2)
     plt.plot(range(len(count_ts.keys())), count_ts.values(), lw=0.95, color = 'blue')
 
-    plt.xticks(range(0, len(count_ts.keys()), 86400), [datetime.fromtimestamp(x) for x in count_ts.keys()])
+    # plt.xticks(range(0, len(count_ts.keys()), 86400), [datetime.fromtimestamp(x) for x in count_ts.keys() if (x % )])
     # plt.plot(range(len(timeseries_ann_559)), timeseries_ann_559, lw=0.95, color = 'blue')
     # plt.plot(range(len(timeseries_ann_1755)), timeseries_ann_1755, lw=0.95, color = 'pink')
     # plt.plot(range(len(timeseries_ann_6893)), timeseries_ann_6893, lw=0.95, color = 'k')

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from _pybgpstream import BGPStream, BGPRecord, BGPElem
 import time
+from datetime import datetime
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
@@ -20,8 +21,8 @@ stream.add_filter('collector','rrc00')
 stream.add_filter('record-type','updates')
 
 #17-07-2001 to 21-07-2001
-# stream.add_interval_filter(995328000,995760000)
-stream.add_interval_filter(995328000,995339000)
+stream.add_interval_filter(995328000,995760000)
+# stream.add_interval_filter(995328000,995359000)
 
 # Start the stream
 stream.start()
@@ -36,6 +37,18 @@ last_ts = 0
 while(stream.get_next_record(rec)):
 
     if rec.status == "valid":
+        if last_ts != rec.dump_time:
+            print rec.collector
+            print rec.dump_time
+            if rec.collector == 'rrc00':
+                timeseries_rrc00 = np.append(timeseries_rrc00, count_updates_rrc00)
+                count_updates_rrc00 = 0
+
+            if rec.collector == 'rrc03':
+                timeseries_rrc03 = np.append(timeseries_rrc03, count_updates_rrc03)
+                count_updates_rrc03 = 0
+            last_ts = rec.dump_time
+
         elem = rec.get_next_elem()
         while(elem):
             if rec.collector == 'rrc00':
@@ -51,14 +64,6 @@ while(stream.get_next_record(rec)):
                     #         count_updates_as513 += 1
             elem = rec.get_next_elem()
 
-        if last_ts != rec.dump_time:
-            timeseries_rrc00 = np.append(timeseries_rrc00, count_updates_rrc00)
-            timeseries_rrc03 = np.append(timeseries_rrc03, count_updates_rrc03)
-            count_updates_rrc00 = 0
-            count_updates_rrc03 = 0
-            last_ts = rec.dump_time
-            print timeseries_rrc00
-            print timeseries_rrc03
 fig = plt.figure(1)
 plt.subplot(1,2,1)
 plt.plot(range(len(timeseries_rrc00)), timeseries_rrc00, lw=1, color = 'teal')
@@ -77,8 +82,8 @@ stream.add_filter('collector','rrc00')
 stream.add_filter('record-type','updates')
 
 #16-09-2001 to 24-09-2001
-# stream.add_interval_filter(1000598400,1001376000)
-stream.add_interval_filter(1000598400,1000609400)
+stream.add_interval_filter(1000598400,1001376000)
+# stream.add_interval_filter(1000598400,1000609400)
 
 # Start the stream
 stream.start()
@@ -92,6 +97,13 @@ last_ts = 0
 # Get next record
 while(stream.get_next_record(rec)):
     if rec.status == "valid":
+        if last_ts != rec.dump_time:
+            timeseries_rrc00 = np.append(timeseries_rrc00, count_updates_rrc00)
+            timeseries_rrc03 = np.append(timeseries_rrc03, count_updates_rrc03)
+            count_updates_rrc00 = 0
+            count_updates_rrc03 = 0
+            last_ts = rec.dump_time
+
         elem = rec.get_next_elem()
         while(elem):
             if rec.collector == 'rrc00':
@@ -106,14 +118,6 @@ while(stream.get_next_record(rec)):
                     # if elem.peer_asn == 513:
                     #         count_updates_as513 += 1
             elem = rec.get_next_elem()
-
-        if last_ts != rec.dump_time:
-            timeseries_rrc00 = np.append(timeseries_rrc00, count_updates_rrc00)
-            timeseries_rrc03 = np.append(timeseries_rrc03, count_updates_rrc03)
-            count_updates_rrc00 = 0
-            count_updates_rrc03 = 0
-            last_ts = rec.dump_time
-
 
 plt.subplot(1,2,2)
 plt.plot(range(len(timeseries_rrc00)), timeseries_rrc00, lw=1, color = 'teal')
