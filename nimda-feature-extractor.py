@@ -42,7 +42,7 @@ def main():
     #Traverse files
 
     files = []
-    files = files + glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010913.0*.gz")
+    files = files + glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010913.*.gz")
     files = sorted(files)
 
     days = args.days
