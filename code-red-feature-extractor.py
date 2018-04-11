@@ -41,7 +41,17 @@ def main():
     #Traverse files
 
     files = []
-    files = files + glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.*.gz")
+    files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010713.*.gz")
+    files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010714.*.gz")
+    files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010715.*.gz")
+    files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010716.*.gz")
+    files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010717.*.gz")
+    files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010718.*.gz")
+    files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010719.*.gz")
+    files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010720.*.gz")
+    files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010721.*.gz")
+    files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010722.*.gz")
+    files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010723.*.gz")
     files = sorted(files)
 
     days = args.days
@@ -117,12 +127,12 @@ def main():
     # plt.plot(range(len(timeseries)), timeseries, lw=0.95, color = 'green')
     # plt.plot(range(len(timeseries_ann)), timeseries_ann, lw=0.95, color = 'orange', linestyle = '--')
     # plt.plot(range(len(timeseries_ann_513)), timeseries_ann_513, lw=0.95, color = 'red')
+    #
+    # print count_ts.keys()
+    #
 
     count_ts = OrderedDict(sorted(count_ts.items()))
-    print count_ts.keys()
-
-
-    plt.subplot(1, 1, 1)
+    plt.subplot(1,1,1)
     plt.plot(range(len(count_ts.keys())), count_ts.values(), lw=0.95, color = 'blue')
 
     # plt.xticks(range(0, len(count_ts.keys()), 86400), [datetime.fromtimestamp(x) for x in count_ts.keys() if (x % )])
@@ -132,7 +142,7 @@ def main():
     output = str(random.randint(1, 1000))
     print output + '.png'
     fig.savefig(output, bboxes_inches = '30', dpi = 400)
-    plt.show()
+    # plt.show()
 
 if __name__ == '__main__':
     main()
