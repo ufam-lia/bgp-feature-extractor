@@ -153,7 +153,8 @@ def main():
 
 
     plt.subplot(1, 1, 1)
-    plt.plot(range(len(count_ts.keys())), count_ts.values(), lw=0.95, color = 'blue')
+    plt.plot(range(len(timeseries)), timeseries, lw=0.3, color = 'blue')
+    # plt.plot(range(len(count_ts.keys())), count_ts.values(), lw=0.3, color = 'blue')
 
     # plt.xticks(range(0, len(count_ts.keys()), 86400), [datetime.fromtimestamp(x) for x in count_ts.keys() if (x % )])
     # plt.plot(range(len(timeseries_ann_559)), timeseries_ann_559, lw=0.95, color = 'blue')
