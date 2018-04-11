@@ -21,8 +21,8 @@ stream.add_filter('collector','rrc00')
 stream.add_filter('record-type','updates')
 
 #17-07-2001 to 21-07-2001
-stream.add_interval_filter(995328000,995760000)
-# stream.add_interval_filter(995328000,995359000)
+# stream.add_interval_filter(995328000,995760000)
+stream.add_interval_filter(995328000,995330880)
 
 # Start the stream
 stream.start()
@@ -68,7 +68,7 @@ fig = plt.figure(1)
 plt.subplot(1,2,1)
 plt.plot(range(len(timeseries_rrc00)), timeseries_rrc00, lw=1, color = 'teal')
 plt.plot(range(len(timeseries_rrc03)), timeseries_rrc03, lw=1, linestyle = '--', color = 'orange')
-
+plt.show()
 ## NOTE NIMDA WORM
 # Create a new bgpstream instance and a reusable bgprecord instance
 stream = BGPStream()
@@ -82,8 +82,8 @@ stream.add_filter('collector','rrc00')
 stream.add_filter('record-type','updates')
 
 #16-09-2001 to 24-09-2001
-stream.add_interval_filter(1000598400,1001376000)
-# stream.add_interval_filter(1000598400,1000609400)
+#stream.add_interval_filter(1000598400,1001376000)
+stream.add_interval_filter(1000598400,1000609400)
 
 # Start the stream
 stream.start()
@@ -123,5 +123,5 @@ plt.subplot(1,2,2)
 plt.plot(range(len(timeseries_rrc00)), timeseries_rrc00, lw=1, color = 'teal')
 plt.plot(range(len(timeseries_rrc03)), timeseries_rrc03, lw=1, linestyle = '--', color = 'orange')
 
-fig.savefig(str(random.randint(1, 1000)),bboxes_inches = 'tight',dpi=700)
+# fig.savefig(str(random.randint(1, 1000)),bboxes_inches = 'tight',dpi=700)
 plt.show()

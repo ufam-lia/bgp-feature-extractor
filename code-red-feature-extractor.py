@@ -41,17 +41,17 @@ def main():
     #Traverse files
 
     files = []
-    files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010713.*.gz")
-    files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010714.*.gz")
-    files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010715.*.gz")
-    files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010716.*.gz")
-    files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010717.*.gz")
-    files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010718.*.gz")
-    files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010719.*.gz")
-    files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010720.*.gz")
-    files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010721.*.gz")
-    files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010722.*.gz")
-    files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010723.*.gz")
+    files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010713.0*.gz")
+    # files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010714.*.gz")
+    # files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010715.*.gz")
+    # files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010716.*.gz")
+    # files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010717.*.gz")
+    # files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010718.*.gz")
+    # files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010719.*.gz")
+    # files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010720.*.gz")
+    # files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010721.*.gz")
+    # files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010722.*.gz")
+    # files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010723.*.gz")
     files = sorted(files)
 
     days = args.days
