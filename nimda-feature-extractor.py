@@ -14,6 +14,7 @@ import glob
 import random
 import cPickle as pickle
 import argparse
+from scipy import signal
 
 def dd():
     return defaultdict(int)
@@ -41,7 +42,7 @@ def main():
     #Traverse files
 
     files = []
-    files = files + glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.*.gz")
+    files = files + glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010913.0*.gz")
     files = sorted(files)
 
     days = args.days
@@ -53,6 +54,7 @@ def main():
     announc559_per_file = []
     announc1755_per_file = []
     announc6893_per_file = []
+
     for f in files:
         count_updates = 0
         count_announcements = 0
@@ -74,7 +76,6 @@ def main():
             #     days_checked += 1
             #     if days_checked <= days:
             #         break
-
 
             if (m.type == MRT_T['BGP4MP'] or m.type == MRT_T['BGP4MP_ET']) \
                and m.subtype in BGPMessageST \
@@ -98,6 +99,7 @@ def main():
 
         print f + ': ' + str(count_updates)
 
+
         upds_per_file.append(count_updates)
         announc_per_file.append(count_announcements)
         announc513_per_file.append(count_updates_as513)
@@ -105,13 +107,41 @@ def main():
         # announc1755_per_file.append(count_updates_as1755)
         # announc6893_per_file.append(count_updates_as6893)
 
-    timeseries = np.array(upds_per_file)
+    count_ts = OrderedDict(sorted(count_ts.items()))
+
+    timeseries = np.array(count_ts.values())
     timeseries_ann = np.array(announc_per_file)
     timeseries_ann_513 = np.array(announc513_per_file)
     # timeseries_ann_559 = np.array(announc559_per_file)
     # timeseries_ann_1755 = np.array(announc1755_per_file)
     # timeseries_ann_6893 = np.array(announc6893_per_file)
-    #
+
+    #Scales
+    # widths = np.array([20, 40, 80, 160, 320, 640, 1280, 2560, 5120, 10240, 20480, 40960, 81920])
+    widths = np.array([20, 40, 80, 160, 320, 640, 1280, 2560, 5120])
+
+    #Wavelet transform
+    cwtmatr = signal.cwt(timeseries, signal.ricker, widths)
+
+    #Initialize vars
+    plot_index = 0
+    std_threshold = 2.5
+    n_of_rows = 13
+
+    fig = plt.figure(1)
+    print cwtmatr.shape
+    for i in range(cwtmatr.shape[0]):
+
+        plt.subplot(cwtmatr.shape[0], 2, plot_index+1)
+        plt.plot(range(cwtmatr.shape[1]), cwtmatr[i],lw=0.3)
+
+        plt.subplot(cwtmatr.shape[0], 2, plot_index+2)
+        plt.imshow(cwtmatr*5, extent=[-1, 1, 50, 1], cmap='PRGn', aspect='auto',vmax=abs(cwtmatr).max(), vmin=-abs(cwtmatr).max())
+
+        plot_index += 2
+
+    plt.show()
+
     fig = plt.figure(1)
     # plt.subplot(1,2,1)
     # plt.plot(range(len(timeseries)), timeseries, lw=0.95, color = 'green')
@@ -129,6 +159,7 @@ def main():
     # plt.plot(range(len(timeseries_ann_559)), timeseries_ann_559, lw=0.95, color = 'blue')
     # plt.plot(range(len(timeseries_ann_1755)), timeseries_ann_1755, lw=0.95, color = 'pink')
     # plt.plot(range(len(timeseries_ann_6893)), timeseries_ann_6893, lw=0.95, color = 'k')
+
     output = str(random.randint(1, 1000))
     print output + '.png'
     fig.savefig(output, bboxes_inches = '30', dpi = 400)
