@@ -97,47 +97,15 @@ def main():
                 if (m.bgp.msg.wd_len == 0) and (m.bgp.msg.attr_len > 0):
                     count_announcements += 1
 
-                    if m.bgp.peer_as == '513':
-                        count_updates_as513 += 1
-                    # if m.bgp.peer_as == '559':
-                    #     count_updates_as559 += 1
-                    # if m.bgp.peer_as == '1755':
-                    #     count_updates_as1755 += 1
-                    # if m.bgp.peer_as == '6893':
-                    #     count_updates_as6893 += 1
-
         print f + ': ' + str(count_updates)
 
-        upds_per_file.append(count_updates)
-        announc_per_file.append(count_announcements)
-        announc513_per_file.append(count_updates_as513)
-        # announc559_per_file.append(count_updates_as559)
-        # announc1755_per_file.append(count_updates_as1755)
-        # announc6893_per_file.append(count_updates_as6893)
-
-    timeseries = np.array(upds_per_file)
-    timeseries_ann = np.array(announc_per_file)
-    timeseries_ann_513 = np.array(announc513_per_file)
-    # timeseries_ann_559 = np.array(announc559_per_file)
-    # timeseries_ann_1755 = np.array(announc1755_per_file)
-    # timeseries_ann_6893 = np.array(announc6893_per_file)
-    #
     fig = plt.figure(1)
-    # plt.subplot(1,2,1)
-    # plt.plot(range(len(timeseries)), timeseries, lw=0.95, color = 'green')
-    # plt.plot(range(len(timeseries_ann)), timeseries_ann, lw=0.95, color = 'orange', linestyle = '--')
-    # plt.plot(range(len(timeseries_ann_513)), timeseries_ann_513, lw=0.95, color = 'red')
-    #
-    # print count_ts.keys()
-    #
 
     count_ts = OrderedDict(sorted(count_ts.items()))
     plt.subplot(1,1,1)
     plt.plot(range(len(count_ts.keys())), count_ts.values(), lw=0.95, color = 'blue')
 
     # plt.xticks(range(0, len(count_ts.keys()), 86400), [datetime.fromtimestamp(x) for x in count_ts.keys() if (x % )])
-    # plt.plot(range(len(timeseries_ann_559)), timeseries_ann_559, lw=0.95, color = 'blue')
-    # plt.plot(range(len(timeseries_ann_1755)), timeseries_ann_1755, lw=0.95, color = 'pink')
     # plt.plot(range(len(timeseries_ann_6893)), timeseries_ann_6893, lw=0.95, color = 'k')
     output = str(random.randint(1, 1000))
     print output + '.png'
