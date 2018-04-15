@@ -41,27 +41,31 @@ def main():
     #Traverse files
 
     files = []
-    files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010713.*.gz")
-    files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010714.*.gz")
-    files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010715.*.gz")
-    files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010716.*.gz")
-    files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010717.*.gz")
-    files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010718.*.gz")
-    files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010719.*.gz")
-    files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010720.*.gz")
-    files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010721.*.gz")
+    files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010713.00*.gz")
+    # files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010714.*.gz")
+    # files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010715.*.gz")
+    # files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010716.*.gz")
+    # files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010717.*.gz")
+    # files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010718.*.gz")
+    # files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010719.*.gz")
+    # files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010720.*.gz")
+    # files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010721.*.gz")
     # files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010722.*.gz")
     # files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010723.*.gz")
     files = sorted(files)
 
     days = args.days
     days_checked    = 0
-    bin_size = 60
+    bin_size = 60*15
     window_size = 60
     count_ts = defaultdict(int)
+
+    #Volume features init
     updates = defaultdict(int)
     withdrawals = defaultdict(int)
     announcements = defaultdict(int)
+    max_prefix = defaultdict(int)
+    mean_prefix = defaultdict(int)
     count_origin = defaultdict(dd)
     count_ts_upds_ases = defaultdict(dd)
     upds_prefixes = defaultdict(dd)
@@ -108,30 +112,38 @@ def main():
                     for a in m.bgp.msg.attr:
                         if BGP_ATTR_T[a.type] == 'ORIGIN':
                             count_origin[bin][a.origin] += 1
-
         print f + ': ' + str(count_updates)
+
+    for bin, prefix_count in upds_prefixes.iteritems():
+        max_prefix[bin] = np.array(upds_prefixes[bin].values()).max()
+        mean_prefix[bin] = np.array(upds_prefixes[bin].values()).mean()
+
 
     #Ordering timeseries
     updates = defaultdict(int, dict(sorted(updates.items(), key = operator.itemgetter(0))))
     announcements = defaultdict(int, dict(sorted(announcements.items(), key = operator.itemgetter(0))))
     withdrawals = defaultdict(int, dict(sorted(withdrawals.items(), key = operator.itemgetter(0))))
+    max_prefix = defaultdict(int, dict(sorted(max_prefix.items(), key = operator.itemgetter(0))))
+    mean_prefix = defaultdict(int, dict(sorted(mean_prefix.items(), key = operator.itemgetter(0))))
 
 
     #Filling blanks in the timeseries
     for i in range(updates.keys()[-1]):
         updates[i]
-
-    for i in range(announcements.keys()[-1]):
         announcements[i]
-
-    for i in range(withdrawals.keys()[-1]):
         withdrawals[i]
+        max_prefix[i]
+        mean_prefix[i]
 
     fig = plt.figure(1)
-    plt.subplot(1,1,1)
+    plt.subplot(1,2,1)
     plt.plot(range(len(updates.keys())), updates.values(), lw=1.25, color = 'black')
     plt.plot(range(len(announcements.keys())), announcements.values(), lw=0.5, color = 'blue')
     plt.plot(range(len(withdrawals.keys())), withdrawals.values(), lw=0.5, color = 'red')
+
+    plt.subplot(1,2,2)
+    plt.plot(range(len(max_prefix.keys())), max_prefix.values(), lw=0.5, color = 'blue')
+    plt.plot(range(len(mean_prefix.keys())), mean_prefix.values(), lw=0.5, color = 'red')
 
     # plt.xticks(range(0, len(count_ts.keys()), 86400), [datetime.fromtimestamp(x) for x in count_ts.keys() if (x % )])
     # plt.plot(range(len(timeseries_ann_6893)), timeseries_ann_6893, lw=0.95, color = 'k')
@@ -153,7 +165,7 @@ def main():
     for k, v in upds_prefixes.iteritems():
         print 'upds_prefixes -> ' + str(dt.datetime.fromtimestamp(first_ts + bin_size*k)) + ' -> ' + str(len(v))
 
-    # plt.show()
+    plt.show()
 
 if __name__ == '__main__':
     main()
