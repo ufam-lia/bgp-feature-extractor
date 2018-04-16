@@ -41,8 +41,8 @@ def main():
     #Traverse files
 
     files = []
-    files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010713.00*.gz")
-    # files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010714.*.gz")
+    files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010713.*.gz")
+    files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010714.*.gz")
     # files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010715.*.gz")
     # files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010716.*.gz")
     # files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010717.*.gz")
@@ -97,6 +97,7 @@ def main():
                 count_updates += 1
                 #Total number of annoucements/withdrawals/updates
                 bin = (m.ts - first_ts)/bin_size
+                window = (m.ts - first_ts)/window_size
                 updates[bin] += 1
                 # updates_ases[bin][m.bgp.peer_as] += 1
 
@@ -104,9 +105,15 @@ def main():
                     announcements[bin] += 1
                     for nlri in m.bgp.msg.nlri:
                         upds_prefixes[bin][nlri.prefix + '/' + str(nlri.plen)] += 1
+                        if upds_prefixes[bin][nlri.prefix + '/' + str(nlri.plen)] > 1:
+                                                   upds_prefixes[bin][nlri.prefix + '/' + str(nlri.plen)] = 1
 
                 if (m.bgp.msg.wd_len > 0):
                     withdrawals[bin] += 1
+                    if len(m.bgp.msg.attr) > 0:
+                        print '*' * 500
+                        exit
+
 
                 if m.bgp.msg.attr is not None:
                     for a in m.bgp.msg.attr:
