@@ -63,13 +63,21 @@ def main():
     #Volume features init
     updates = defaultdict(int)
     withdrawals = defaultdict(int)
+    implicit_withdrawals = defaultdict(int)
     announcements = defaultdict(int)
+    new_announcements = defaultdict(int)
+    dup1_announcements = defaultdict(int)
+    dup2_announcements = defaultdict(int)
+
     max_prefix = defaultdict(int)
     mean_prefix = defaultdict(int)
     count_origin = defaultdict(dd)
     count_ts_upds_ases = defaultdict(dd)
     upds_prefixes = defaultdict(dd)
     first_ts = 0
+
+    #Routing table
+    prefix_lookup = dict(dict(str))
 
     for f in files:
         count_updates = 0
@@ -104,9 +112,17 @@ def main():
                 if m.bgp.msg.nlri is not None:
                     announcements[bin] += 1
                     for nlri in m.bgp.msg.nlri:
-                        upds_prefixes[bin][nlri.prefix + '/' + str(nlri.plen)] += 1
-                        if upds_prefixes[bin][nlri.prefix + '/' + str(nlri.plen)] > 1:
-                                                   upds_prefixes[bin][nlri.prefix + '/' + str(nlri.plen)] = 1
+                        prefix = nlri.prefix + '/' + str(nlri.plen)
+                        upds_prefixes[bin][prefix] += 1
+                        if upds_prefixes[bin][prefix] > 1:
+                            #compara com rota anterior
+                                #se for a msm rota pode ser dup1 ou dup2
+                                    #se for msm attr eh dup1
+                                    #senao eh dup2 e implicit withdraw 2
+                                #se for rota diferente pode ser um implicit withdrawal
+                        else:
+                            new_announcements[bin] += 1
+                            #guarda rota
 
                 if (m.bgp.msg.wd_len > 0):
                     withdrawals[bin] += 1
