@@ -7,7 +7,7 @@ import datetime as dt
 from datetime import datetime
 from mrtparse import *
 from collections import defaultdict, OrderedDict
-
+from mrtprint import *
 import matplotlib.pyplot as plt
 import numpy as np
 import glob
@@ -15,6 +15,7 @@ import random
 import cPickle as pickle
 import argparse
 import operator
+
 
 def dd():
     return defaultdict(int)
@@ -118,22 +119,56 @@ def main():
                 if m.bgp.msg.nlri is not None:
                     announcements[bin] += 1
 
+                    print_mrt(m)
+                    print_bgp4mp(m)
+                    print '_'*60
                     for nlri in m.bgp.msg.nlri:
                         prefix = nlri.prefix + '/' + str(nlri.plen)
                         upds_prefixes[bin][prefix] += 1
+                        print prefix
 
                         if prefix_lookup.has_key(prefix):
+                            #Init vars
                             is_implicit_wd = False
                             is_implicit_dpath = False
-
+                            current_attrs = prefix_lookup[prefix]
+                            prefix_lookup[prefix] = {}
+                            #Traverse attributes
                             for attr in m.bgp.msg.attr:
-                                if prefix_lookup[prefix][BGP_ATTR_T[attr.type]] != attr:
-                                    prefix_lookup[prefix][BGP_ATTR_T[attr.type]] = attr
-                                    is_implicit_wd = True
+                                if BGP_ATTR_T[attr.type] == 'ORIGIN':
+                                    if attr.origin <> current_attrs['ORIGIN']:
+                                        prefix_lookup[prefix]['ORIGIN'] = attr.origin
+                                        is_implicit_wd = True
 
-                                    if BGP_ATTR_T[attr.type] == 'AS_PATH':
-                                        print str(prefix_lookup[prefix][BGP_ATTR_T[attr.type]].as_path)  + '<-->' + str(attr.as_path)
+                                elif BGP_ATTR_T[attr.type] == 'AS_PATH':
+                                    if attr.as_path != current_attrs['AS_PATH']:
+                                        prefix_lookup[prefix]['AS_PATH'] = attr.as_path
+                                        is_implicit_wd = True
                                         is_implicit_dpath = True
+
+                                elif BGP_ATTR_T[attr.type] == 'NEXT_HOP':
+                                    if attr.next_hop != current_attrs['NEXT_HOP']:
+                                        prefix_lookup[prefix]['NEXT_HOP'] = attr.next_hop
+                                        is_implicit_wd = True
+
+                                elif BGP_ATTR_T[attr.type] == 'MULTI_EXIT_DISC':
+                                    if attr.med != current_attrs['MULTI_EXIT_DISC']:
+                                        prefix_lookup[prefix]['MULTI_EXIT_DISC'] = attr.med
+                                        is_implicit_wd = True
+
+                                elif BGP_ATTR_T[attr.type] == 'ATOMIC_AGGREGATE':
+                                    if current_attrs['ATOMIC_AGGREGATE'] == True:
+                                        prefix_lookup[prefix]['ATOMIC_AGGREGATE'] = True
+                                        is_implicit_wd = True
+
+                                elif BGP_ATTR_T[attr.type] == 'AGGREGATOR':
+                                    if attr.aggregator != current_attrs['AGGREGATOR']:
+                                        prefix_lookup[prefix]['AGGREGATOR'] = attr.aggregator
+                                        is_implicit_wd = True
+                                elif BGP_ATTR_T[attr.type] == 'COMMUNITY':
+                                    if attr.comm != current_attrs['COMMUNITY']:
+                                        prefix_lookup[prefix]['COMMUNITY'] = attr.comm
+                                        is_implicit_wd = True
 
                             if is_implicit_wd == True:
                                 if is_implicit_dpath == True:
