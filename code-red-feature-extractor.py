@@ -19,6 +19,9 @@ import operator
 def dd():
     return defaultdict(int)
 
+def ddd():
+    return defaultdict(dd)
+
 count_prefixes_ts = defaultdict(dd)
 count_prefixes_upds = defaultdict(int)
 
@@ -41,33 +44,35 @@ def main():
     #Traverse files
 
     files = []
-    files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010713.*.gz")
-    files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010714.*.gz")
-    # files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010715.*.gz")
-    # files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010716.*.gz")
-    # files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010717.*.gz")
-    # files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010718.*.gz")
-    # files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010719.*.gz")
-    # files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010720.*.gz")
-    # files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010721.*.gz")
-    # files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010722.*.gz")
-    # files = files + glob.glob("/home/pc/ripe-ris/code-red/updates.20010723.*.gz")
+    # files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010713.*.gz")
+    # files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010714.*.gz")
+    # files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010715.*.gz")
+    files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010716.0*.gz")
+    # files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010717.*.gz")
+    # files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010718.*.gz")
+    # files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010719.*.gz")
+    # files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010720.*.gz")
+    # files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010721.*.gz")
+    # files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010722.*.gz")
+    # files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010723.*.gz")
     files = sorted(files)
 
     days = args.days
     days_checked    = 0
-    bin_size = 60*15
+    bin_size = 60*60
     window_size = 60
     count_ts = defaultdict(int)
 
     #Volume features init
     updates = defaultdict(int)
     withdrawals = defaultdict(int)
-    implicit_withdrawals = defaultdict(int)
+    implicit_withdrawals_spath = defaultdict(int)
+    implicit_withdrawals_dpath = defaultdict(int)
     announcements = defaultdict(int)
     new_announcements = defaultdict(int)
     dup1_announcements = defaultdict(int)
     dup2_announcements = defaultdict(int)
+    attr_count = defaultdict(int)
 
     max_prefix = defaultdict(int)
     mean_prefix = defaultdict(int)
@@ -77,7 +82,8 @@ def main():
     first_ts = 0
 
     #Routing table
-    prefix_lookup = dict(dict(str))
+    prefix_lookup = defaultdict(dd)
+
 
     for f in files:
         count_updates = 0
@@ -111,30 +117,45 @@ def main():
 
                 if m.bgp.msg.nlri is not None:
                     announcements[bin] += 1
+
                     for nlri in m.bgp.msg.nlri:
                         prefix = nlri.prefix + '/' + str(nlri.plen)
                         upds_prefixes[bin][prefix] += 1
-                        if upds_prefixes[bin][prefix] > 1:
-                            #compara com rota anterior
-                                #se for a msm rota pode ser dup1 ou dup2
-                                    #se for msm attr eh dup1
-                                    #senao eh dup2 e implicit withdraw 2
-                                #se for rota diferente pode ser um implicit withdrawal
+
+                        if prefix_lookup.has_key(prefix):
+                            is_implicit_wd = False
+                            is_implicit_dpath = False
+
+                            for attr in m.bgp.msg.attr:
+                                if prefix_lookup[prefix][BGP_ATTR_T[attr.type]] != attr:
+                                    prefix_lookup[prefix][BGP_ATTR_T[attr.type]] = attr
+                                    is_implicit_wd = True
+
+                                    if BGP_ATTR_T[attr.type] == 'AS_PATH':
+                                        print str(prefix_lookup[prefix][BGP_ATTR_T[attr.type]].as_path)  + '<-->' + str(attr.as_path)
+                                        is_implicit_dpath = True
+
+                            if is_implicit_wd == True:
+                                if is_implicit_dpath == True:
+                                    implicit_withdrawals_dpath[bin] += 1
+                                else:
+                                    implicit_withdrawals_spath[bin] += 1
+                            else:
+                                dup1_announcements[bin] += 1
                         else:
                             new_announcements[bin] += 1
-                            #guarda rota
+
+                            for attr in m.bgp.msg.attr:
+                                prefix_lookup[prefix][BGP_ATTR_T[attr.type]] = attr
 
                 if (m.bgp.msg.wd_len > 0):
                     withdrawals[bin] += 1
-                    if len(m.bgp.msg.attr) > 0:
-                        print '*' * 500
-                        exit
-
 
                 if m.bgp.msg.attr is not None:
-                    for a in m.bgp.msg.attr:
-                        if BGP_ATTR_T[a.type] == 'ORIGIN':
-                            count_origin[bin][a.origin] += 1
+                    for attr in m.bgp.msg.attr:
+                        if BGP_ATTR_T[attr.type] == 'ORIGIN':
+                            count_origin[bin][attr.origin] += 1
+
         print f + ': ' + str(count_updates)
 
     for bin, prefix_count in upds_prefixes.iteritems():
@@ -148,6 +169,10 @@ def main():
     withdrawals = defaultdict(int, dict(sorted(withdrawals.items(), key = operator.itemgetter(0))))
     max_prefix = defaultdict(int, dict(sorted(max_prefix.items(), key = operator.itemgetter(0))))
     mean_prefix = defaultdict(int, dict(sorted(mean_prefix.items(), key = operator.itemgetter(0))))
+    implicit_withdrawals_dpath = defaultdict(int, dict(sorted(implicit_withdrawals_dpath.items(), key = operator.itemgetter(0))))
+    implicit_withdrawals_spath = defaultdict(int, dict(sorted(implicit_withdrawals_spath.items(), key = operator.itemgetter(0))))
+    dup1_announcements = defaultdict(int, dict(sorted(dup1_announcements.items(), key = operator.itemgetter(0))))
+    new_announcements = defaultdict(int, dict(sorted(new_announcements.items(), key = operator.itemgetter(0))))
 
 
     #Filling blanks in the timeseries
@@ -157,6 +182,10 @@ def main():
         withdrawals[i]
         max_prefix[i]
         mean_prefix[i]
+        implicit_withdrawals_dpath[i]
+        implicit_withdrawals_spath[i]
+        dup1_announcements[i]
+        new_announcements[i]
 
     fig = plt.figure(1)
     plt.subplot(1,2,1)
@@ -188,7 +217,19 @@ def main():
     for k, v in upds_prefixes.iteritems():
         print 'upds_prefixes -> ' + str(dt.datetime.fromtimestamp(first_ts + bin_size*k)) + ' -> ' + str(len(v))
 
-    plt.show()
+    for k, v in implicit_withdrawals_dpath.iteritems():
+        print 'implicit_withdrawals_dpath -> ' + str(dt.datetime.fromtimestamp(first_ts + bin_size*k)) + ' -> ' + str(v)
+
+    for k, v in implicit_withdrawals_spath.iteritems():
+        print 'implicit_withdrawals_spath -> ' + str(dt.datetime.fromtimestamp(first_ts + bin_size*k)) + ' -> ' + str(v)
+
+    for k, v in dup1_announcements.iteritems():
+        print 'dup1_announcements -> ' + str(dt.datetime.fromtimestamp(first_ts + bin_size*k)) + ' -> ' + str(v)
+
+    for k, v in new_announcements.iteritems():
+        print 'new_announcements -> ' + str(dt.datetime.fromtimestamp(first_ts + bin_size*k)) + ' -> ' + str(v)
+
+    # plt.show()
 
 if __name__ == '__main__':
     main()
