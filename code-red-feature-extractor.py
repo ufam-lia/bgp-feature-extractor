@@ -20,8 +20,14 @@ import operator
 def dd():
     return defaultdict(int)
 
+def ddlist():
+    return defaultdict(list)
+
 def ddd():
     return defaultdict(dd)
+
+def dddlist():
+    return defaultdict(ddlist)
 
 count_prefixes_ts = defaultdict(dd)
 count_prefixes_upds = defaultdict(int)
@@ -83,8 +89,11 @@ def main():
     first_ts = 0
 
     #Routing table
-    prefix_lookup = defaultdict(dd)
-
+    prefix_lookup = defaultdict(ddd)
+    prefix_history = defaultdict(ddlist)
+    prefix_wd = []
+    prefix_dup = []
+    prefix_imp = []
 
     for f in files:
         count_updates = 0
@@ -117,57 +126,59 @@ def main():
                 # updates_ases[bin][m.bgp.peer_as] += 1
 
                 if m.bgp.msg.nlri is not None:
-                    announcements[bin] += 1
+                    # print_mrt(m)
+                    # print_bgp4mp(m)
+                    # print '_'*60
 
-                    print_mrt(m)
-                    print_bgp4mp(m)
-                    print '_'*60
                     for nlri in m.bgp.msg.nlri:
+                        announcements[bin] += 1
                         prefix = nlri.prefix + '/' + str(nlri.plen)
                         upds_prefixes[bin][prefix] += 1
-                        print prefix
+                        # prefix_history[m.bgp.peer_as][prefix].append((m, 'A'))
 
-                        if prefix_lookup.has_key(prefix):
+                        if prefix_lookup[m.bgp.peer_as].has_key(prefix):
                             #Init vars
                             is_implicit_wd = False
                             is_implicit_dpath = False
-                            current_attrs = prefix_lookup[prefix]
-                            prefix_lookup[prefix] = {}
+                            current_attrs = prefix_lookup[m.bgp.peer_as][prefix]
+                            prefix_lookup[m.bgp.peer_as][prefix] = defaultdict(str)
+
                             #Traverse attributes
                             for attr in m.bgp.msg.attr:
                                 if BGP_ATTR_T[attr.type] == 'ORIGIN':
                                     if attr.origin <> current_attrs['ORIGIN']:
-                                        prefix_lookup[prefix]['ORIGIN'] = attr.origin
+                                        prefix_lookup[m.bgp.peer_as][prefix]['ORIGIN'] = attr.origin
                                         is_implicit_wd = True
 
                                 elif BGP_ATTR_T[attr.type] == 'AS_PATH':
                                     if attr.as_path != current_attrs['AS_PATH']:
-                                        prefix_lookup[prefix]['AS_PATH'] = attr.as_path
+                                        prefix_lookup[m.bgp.peer_as][prefix]['AS_PATH'] = attr.as_path
                                         is_implicit_wd = True
                                         is_implicit_dpath = True
 
                                 elif BGP_ATTR_T[attr.type] == 'NEXT_HOP':
                                     if attr.next_hop != current_attrs['NEXT_HOP']:
-                                        prefix_lookup[prefix]['NEXT_HOP'] = attr.next_hop
+                                        prefix_lookup[m.bgp.peer_as][prefix]['NEXT_HOP'] = attr.next_hop
                                         is_implicit_wd = True
 
                                 elif BGP_ATTR_T[attr.type] == 'MULTI_EXIT_DISC':
                                     if attr.med != current_attrs['MULTI_EXIT_DISC']:
-                                        prefix_lookup[prefix]['MULTI_EXIT_DISC'] = attr.med
+                                        prefix_lookup[m.bgp.peer_as][prefix]['MULTI_EXIT_DISC'] = attr.med
                                         is_implicit_wd = True
 
                                 elif BGP_ATTR_T[attr.type] == 'ATOMIC_AGGREGATE':
                                     if current_attrs['ATOMIC_AGGREGATE'] == True:
-                                        prefix_lookup[prefix]['ATOMIC_AGGREGATE'] = True
+                                        prefix_lookup[m.bgp.peer_as][prefix]['ATOMIC_AGGREGATE'] = True
                                         is_implicit_wd = True
 
                                 elif BGP_ATTR_T[attr.type] == 'AGGREGATOR':
-                                    if attr.aggregator != current_attrs['AGGREGATOR']:
-                                        prefix_lookup[prefix]['AGGREGATOR'] = attr.aggregator
+                                    if attr.aggr != current_attrs['AGGREGATOR']:
+                                        prefix_lookup[m.bgp.peer_as][prefix]['AGGREGATOR'] = attr.aggr
                                         is_implicit_wd = True
+
                                 elif BGP_ATTR_T[attr.type] == 'COMMUNITY':
                                     if attr.comm != current_attrs['COMMUNITY']:
-                                        prefix_lookup[prefix]['COMMUNITY'] = attr.comm
+                                        prefix_lookup[m.bgp.peer_as][prefix]['COMMUNITY'] = attr.comm
                                         is_implicit_wd = True
 
                             if is_implicit_wd == True:
@@ -181,10 +192,20 @@ def main():
                             new_announcements[bin] += 1
 
                             for attr in m.bgp.msg.attr:
-                                prefix_lookup[prefix][BGP_ATTR_T[attr.type]] = attr
+                                prefix_lookup[m.bgp.peer_as][prefix][BGP_ATTR_T[attr.type]] = attr
 
                 if (m.bgp.msg.wd_len > 0):
                     withdrawals[bin] += 1
+                    for nlri in m.bgp.msg.withdrawn:
+                        prefix = nlri.prefix + '/' + str(nlri.plen)
+                        peer = m.bgp.peer_as
+
+                        # if len(prefix_history[peer][prefix]) > 0  and \
+                        #     prefix_history[peer][prefix][-1][1] == 'W':
+                        #     prefix_wd.append((peer, prefix))
+                        prefix_history[peer][prefix].append((m, 'W'))
+
+
 
                 if m.bgp.msg.attr is not None:
                     for attr in m.bgp.msg.attr:
@@ -192,6 +213,11 @@ def main():
                             count_origin[bin][attr.origin] += 1
 
         print f + ': ' + str(count_updates)
+        # for m in prefix_history['3549']['152.141.0.0/16']:
+        #     print_mrt(m[0])
+        #     print_bgp4mp(m[0])
+        #     print '*'*100
+
 
     for bin, prefix_count in upds_prefixes.iteritems():
         max_prefix[bin] = np.array(upds_prefixes[bin].values()).max()
@@ -263,6 +289,9 @@ def main():
 
     for k, v in new_announcements.iteritems():
         print 'new_announcements -> ' + str(dt.datetime.fromtimestamp(first_ts + bin_size*k)) + ' -> ' + str(v)
+
+    for k, v in announcements.iteritems():
+        print 'announcements -> ' + str(dt.datetime.fromtimestamp(first_ts + bin_size*k)) + ' -> ' + str(v)
 
     # plt.show()
 
