@@ -91,76 +91,14 @@ class Metrics(object):
                 bin = (m.ts - self.first_ts)/self.bin_size
                 window = (m.ts - self.first_ts)/self.window_size
                 self.updates[bin] += 1
+                peer = m.bgp.peer_as
                 # updates_ases[bin][m.bgp.peer_as] += 1
 
                 if m.bgp.msg.nlri is not None:
                     # print_mrt(m)
                     # print_bgp4mp(m)
                     # print '_'*60
-
-                    for nlri in m.bgp.msg.nlri:
-                        self.announcements[bin] += 1
-                        prefix = nlri.prefix + '/' + str(nlri.plen)
-                        self.upds_prefixes[bin][prefix] += 1
-                        # self.prefix_history[m.bgp.peer_as][prefix].append((m, 'A'))
-
-                        if self.prefix_lookup[m.bgp.peer_as].has_key(prefix):
-                            #Init vars
-                            is_implicit_wd = False
-                            is_implicit_dpath = False
-                            current_attrs = self.prefix_lookup[m.bgp.peer_as][prefix]
-                            self.prefix_lookup[m.bgp.peer_as][prefix] = defaultdict(str)
-
-                            #Traverse attributes
-                            for attr in m.bgp.msg.attr:
-                                if BGP_ATTR_T[attr.type] == 'ORIGIN':
-                                    if attr.origin <> current_attrs['ORIGIN']:
-                                        self.prefix_lookup[m.bgp.peer_as][prefix]['ORIGIN'] = attr.origin
-                                        is_implicit_wd = True
-
-                                elif BGP_ATTR_T[attr.type] == 'AS_PATH':
-                                    if attr.as_path != current_attrs['AS_PATH']:
-                                        self.prefix_lookup[m.bgp.peer_as][prefix]['AS_PATH'] = attr.as_path
-                                        is_implicit_wd = True
-                                        is_implicit_dpath = True
-
-                                elif BGP_ATTR_T[attr.type] == 'NEXT_HOP':
-                                    if attr.next_hop != current_attrs['NEXT_HOP']:
-                                        self.prefix_lookup[m.bgp.peer_as][prefix]['NEXT_HOP'] = attr.next_hop
-                                        is_implicit_wd = True
-
-                                elif BGP_ATTR_T[attr.type] == 'MULTI_EXIT_DISC':
-                                    if attr.med != current_attrs['MULTI_EXIT_DISC']:
-                                        self.prefix_lookup[m.bgp.peer_as][prefix]['MULTI_EXIT_DISC'] = attr.med
-                                        is_implicit_wd = True
-
-                                elif BGP_ATTR_T[attr.type] == 'ATOMIC_AGGREGATE':
-                                    if current_attrs['ATOMIC_AGGREGATE'] == True:
-                                        self.prefix_lookup[m.bgp.peer_as][prefix]['ATOMIC_AGGREGATE'] = True
-                                        is_implicit_wd = True
-
-                                elif BGP_ATTR_T[attr.type] == 'AGGREGATOR':
-                                    if attr.aggr != current_attrs['AGGREGATOR']:
-                                        self.prefix_lookup[m.bgp.peer_as][prefix]['AGGREGATOR'] = attr.aggr
-                                        is_implicit_wd = True
-
-                                elif BGP_ATTR_T[attr.type] == 'COMMUNITY':
-                                    if attr.comm != current_attrs['COMMUNITY']:
-                                        self.prefix_lookup[m.bgp.peer_as][prefix]['COMMUNITY'] = attr.comm
-                                        is_implicit_wd = True
-
-                            if is_implicit_wd == True:
-                                if is_implicit_dpath == True:
-                                    self.implicit_withdrawals_dpath[bin] += 1
-                                else:
-                                    self.implicit_withdrawals_spath[bin] += 1
-                            else:
-                                self.dup1_announcements[bin] += 1
-                        else:
-                            self.new_announcements[bin] += 1
-
-                            for attr in m.bgp.msg.attr:
-                                self.prefix_lookup[m.bgp.peer_as][prefix][BGP_ATTR_T[attr.type]] = attr
+                    self.classify_announcement(m)
 
                 if (m.bgp.msg.wd_len > 0):
                     self.withdrawals[bin] += 1
@@ -173,8 +111,6 @@ class Metrics(object):
                         #     prefix_wd.append((peer, prefix))
                         self.prefix_history[peer][prefix].append((m, 'W'))
 
-
-
                 if m.bgp.msg.attr is not None:
                     for attr in m.bgp.msg.attr:
                         if BGP_ATTR_T[attr.type] == 'ORIGIN':
@@ -182,14 +118,115 @@ class Metrics(object):
 
         print file + ': ' + str(self.count_updates)
 
-    def sort_dict(self, unsort_dict):
-        return defaultdict(int, dict(sorted(unsort_dict.items(), key = operator.itemgetter(0))))
+    def classify_announcement(self, m):
+        for nlri in m.bgp.msg.nlri:
+            self.announcements[bin] += 1
+            prefix = nlri.prefix + '/' + str(nlri.plen)
+            self.upds_prefixes[bin][prefix] += 1
+            # self.prefix_history[m.bgp.peer_as][prefix].append((m, 'A'))
+
+            if self.prefix_lookup[peer].has_key(prefix):
+                #Init vars
+                is_implicit_wd = False
+                is_implicit_dpath = False
+                current_attr = self.prefix_lookup[m.bgp.peer_as][prefix]
+                self.prefix_lookup[m.bgp.peer_as][prefix] = defaultdict(str)
+
+                #Traverse attributes
+                for new_attr in m.bgp.msg.attr:
+                    attr_name = BGP_ATTR_T[new_attr.type]
+
+                    #Check if there is different attributes
+                    if not self.is_equal(new_attr, current_attr):
+                        self.prefix_lookup[peer][prefix][attr_name] = new_attr
+
+                        is_implicit_wd = True
+                        if attr_name == 'AS_PATH':
+                            is_implicit_dpath = True
+                            break
+
+                #Figure which counter will be incremented
+                if is_implicit_wd == True:
+                    if is_implicit_dpath == True:
+                        self.implicit_withdrawals_dpath[bin] += 1
+                    else:
+                        self.implicit_withdrawals_spath[bin] += 1
+                else:
+                    self.dup1_announcements[bin] += 1
+            else:
+                self.new_announcements[bin] += 1
+                for attr in m.bgp.msg.attr:
+                    self.prefix_lookup[m.bgp.peer_as][prefix][BGP_ATTR_T[attr.type]] = attr
 
     def plot(self):
         for bin, prefix_count in self.upds_prefixes.iteritems():
             self.max_prefix[bin] = np.array(self.upds_prefixes[bin].values()).max()
             self.mean_prefix[bin] = np.array(self.upds_prefixes[bin].values()).mean()
 
+        self.sort_timeseries()
+        self.fill_blanks_timeseries()
+        self.plot_timeseries()
+        self.print_dicts()
+
+    def print_dicts(self):
+        self.print_dict('upds_prefixes', self.upds_prefixes)
+        self.print_dict('updates', self.updates)
+        self.print_dict('upds_prefixes', self.upds_prefixes)
+        self.print_dict('implicit_withdrawals_dpath', self.implicit_withdrawals_dpath)
+        self.print_dict('implicit_withdrawals_spath', self.implicit_withdrawals_spath)
+        self.print_dict('dup1_announcements', self.dup1_announcements)
+        self.print_dict('new_announcements', self.new_announcements)
+        self.print_dict('announcements', self.announcements)
+
+    def plot_timeseries(self):
+        fig = plt.figure(1)
+        plt.subplot(1,2,1)
+        plt.plot(range(len(self.updates.keys())), self.updates.values(), lw=1.25, color = 'black')
+        plt.plot(range(len(self.announcements.keys())), self.announcements.values(), lw=0.5, color = 'blue')
+        plt.plot(range(len(self.withdrawals.keys())), self.withdrawals.values(), lw=0.5, color = 'red')
+
+        plt.subplot(1,2,2)
+        plt.plot(range(len(self.max_prefix.keys())), self.max_prefix.values(), lw=0.5, color = 'blue')
+        plt.plot(range(len(self.mean_prefix.keys())), self.mean_prefix.values(), lw=0.5, color = 'red')
+
+        output = str(random.randint(1, 1000)) + '.png'
+        fig.savefig(output, bboxes_inches = '30', dpi = 400)
+        print output
+        os.system('shotwell ' + output + ' &')
+
+    def sort_dict(self, unsort_dict):
+        return defaultdict(int, dict(sorted(unsort_dict.items(), key = operator.itemgetter(0))))
+
+    def print_dict(self, name, dict):
+        for k, v in dict.iteritems():
+            print name + str(dt.datetime.fromtimestamp(self.first_ts + self.bin_size*k)) + ' -> ' + str(v)
+
+    def is_equal(self, new_attr, old_attr):
+        if BGP_ATTR_T[new_attr.type] == 'ORIGIN':
+            return new_attr.origin == old_attr['ORIGIN']
+
+        elif BGP_ATTR_T[new_attr.type] == 'AS_PATH':
+            return new_attr.as_path == old_attr['AS_PATH']
+
+        elif BGP_ATTR_T[new_attr.type] == 'NEXT_HOP':
+            return new_attr.next_hop == old_attr['NEXT_HOP']
+
+        elif BGP_ATTR_T[new_attr.type] == 'MULTI_EXIT_DISC':
+            return new_attr.med == old_attr['MULTI_EXIT_DISC']
+
+        elif BGP_ATTR_T[new_attr.type] == 'ATOMIC_AGGREGATE':
+            return True == old_attr['ATOMIC_AGGREGATE']
+
+        elif BGP_ATTR_T[new_attr.type] == 'AGGREGATOR':
+            return new_attr.aggr == old_attr['AGGREGATOR']
+
+        elif BGP_ATTR_T[new_attr.type] == 'COMMUNITY':
+            return new_attr.comm == old_attr['COMMUNITY']
+
+    def is_implicit_wd(self, bgp_msg):
+        pass
+
+    def sort_timeseries(self):
         #Ordering timeseries
         self.updates = self.sort_dict(self.updates)
         self.announcements = self.sort_dict(self.announcements)
@@ -201,7 +238,7 @@ class Metrics(object):
         self.dup1_announcements = self.sort_dict(self.dup1_announcements)
         self.new_announcements = self.sort_dict(self.new_announcements)
 
-
+    def fill_blanks_timeseries(self):
         #Filling blanks in the timeseries
         for i in range(self.updates.keys()[-1]):
             self.updates[i]
@@ -213,48 +250,3 @@ class Metrics(object):
             self.implicit_withdrawals_spath[i]
             self.dup1_announcements[i]
             self.new_announcements[i]
-
-        fig = plt.figure(1)
-        plt.subplot(1,2,1)
-        plt.plot(range(len(self.updates.keys())), self.updates.values(), lw=1.25, color = 'black')
-        plt.plot(range(len(self.announcements.keys())), self.announcements.values(), lw=0.5, color = 'blue')
-        plt.plot(range(len(self.withdrawals.keys())), self.withdrawals.values(), lw=0.5, color = 'red')
-
-        plt.subplot(1,2,2)
-        plt.plot(range(len(self.max_prefix.keys())), self.max_prefix.values(), lw=0.5, color = 'blue')
-        plt.plot(range(len(self.mean_prefix.keys())), self.mean_prefix.values(), lw=0.5, color = 'red')
-
-        # plt.xticks(range(0, len(count_ts.keys()), 86400), [datetime.fromtimestamp(x) for x in count_ts.keys() if (x % )])
-        # plt.plot(range(len(timeseries_ann_6893)), timeseries_ann_6893, lw=0.95, color = 'k')
-        output = str(random.randint(1, 1000)) + '.png'
-        fig.savefig(output, bboxes_inches = '30', dpi = 400)
-        print output
-        os.system('shotwell ' + output + ' &')
-
-        print 'first_ts -> ' + str(dt.datetime.fromtimestamp(self.first_ts))
-        # print 'count_origin[bin] -> ' + str(count_origin)
-        # print 'upds_prefixes[bin] -> ' + str(upds_prefixes)
-
-        for k, v in self.upds_prefixes.iteritems():
-            print 'prefixes ' + str(k) + ' -> ' + str(len(v))
-
-        for k, v in self.updates.iteritems():
-            print 'upds -> ' + str(k) + ' -> ' + str(v)
-
-        for k, v in self.upds_prefixes.iteritems():
-            print 'upds_prefixes -> ' + str(dt.datetime.fromtimestamp(self.first_ts + self.bin_size*k)) + ' -> ' + str(len(v))
-
-        for k, v in self.implicit_withdrawals_dpath.iteritems():
-            print 'implicit_withdrawals_dpath -> ' + str(dt.datetime.fromtimestamp(self.first_ts + self.bin_size*k)) + ' -> ' + str(v)
-
-        for k, v in self.implicit_withdrawals_spath.iteritems():
-            print 'implicit_withdrawals_spath -> ' + str(dt.datetime.fromtimestamp(self.first_ts + self.bin_size*k)) + ' -> ' + str(v)
-
-        for k, v in self.dup1_announcements.iteritems():
-            print 'dup1_announcements -> ' + str(dt.datetime.fromtimestamp(self.first_ts + self.bin_size*k)) + ' -> ' + str(v)
-
-        for k, v in self.new_announcements.iteritems():
-            print 'new_announcements -> ' + str(dt.datetime.fromtimestamp(self.first_ts + self.bin_size*k)) + ' -> ' + str(v)
-
-        for k, v in self.announcements.iteritems():
-            print 'announcements -> ' + str(dt.datetime.fromtimestamp(self.first_ts + self.bin_size*k)) + ' -> ' + str(v)
