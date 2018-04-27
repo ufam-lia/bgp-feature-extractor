@@ -31,6 +31,14 @@ def dddlist():
 BGPMessageST = [BGP4MP_ST['BGP4MP_MESSAGE'],BGP4MP_ST['BGP4MP_MESSAGE_AS4'],BGP4MP_ST['BGP4MP_MESSAGE_LOCAL'],BGP4MP_ST['BGP4MP_MESSAGE_AS4_LOCAL'],BGP4MP_ST['BGP4MP_MESSAGE_ADDPATH'],BGP4MP_ST['BGP4MP_MESSAGE_AS4_ADDPATH'],BGP4MP_ST['BGP4MP_MESSAGE_LOCAL_ADDPATH'],BGP4MP_ST['BGP4MP_MESSAGE_AS4_LOCAL_ADDPATH']]
 BGPStateChangeST = [ BGP4MP_ST['BGP4MP_STATE_CHANGE'], BGP4MP_ST['BGP4MP_STATE_CHANGE_AS4']]
 
+def is_bgp_update(m):
+    if (m.type == MRT_T['BGP4MP'] or m.type == MRT_T['BGP4MP_ET']) \
+       and m.subtype in BGPMessageST \
+       and m.bgp.msg is not None \
+       and m.bgp.msg.type == BGP_MSG_T['UPDATE']:
+        return True
+    else:
+        return False
 
 class Metrics(object):
     """docstring for Metrics."""
@@ -68,11 +76,11 @@ class Metrics(object):
         self.count_announcements = 0
 
     def add(self, file):
+        #init
         self.count_updates = 0
         self.count_announcements = 0
-
         d = Reader(file)
-        current_day = dt.datetime.fromtimestamp(d.next().mrt.ts).date()
+
         if self.first_ts == 0:
             self.first_ts = d.next().mrt.ts
 
@@ -82,14 +90,13 @@ class Metrics(object):
                 prerror(m)
                 continue
 
-            if (m.type == MRT_T['BGP4MP'] or m.type == MRT_T['BGP4MP_ET']) \
-               and m.subtype in BGPMessageST \
-               and m.bgp.msg is not None \
-               and m.bgp.msg.type == BGP_MSG_T['UPDATE']:
-                self.count_updates += 1
-                #Total number of annoucements/withdrawals/updates
+            if is_bgp_update(m):
+                #Init
                 bin = (m.ts - self.first_ts)/self.bin_size
                 window = (m.ts - self.first_ts)/self.window_size
+
+                #Total number of annoucements/withdrawals/updates
+                self.count_updates += 1
                 self.updates[bin] += 1
                 peer = m.bgp.peer_as
                 # updates_ases[bin][m.bgp.peer_as] += 1
@@ -99,24 +106,24 @@ class Metrics(object):
                     # print_bgp4mp(m)
                     # print '_'*60
                     self.classify_announcement(m)
-
-                if (m.bgp.msg.wd_len > 0):
-                    self.withdrawals[bin] += 1
-                    for nlri in m.bgp.msg.withdrawn:
-                        prefix = nlri.prefix + '/' + str(nlri.plen)
-                        peer = m.bgp.peer_as
-
-                        # if len(prefix_history[peer][prefix]) > 0  and \
-                        #     prefix_history[peer][prefix][-1][1] == 'W':
-                        #     prefix_wd.append((peer, prefix))
-                        self.prefix_history[peer][prefix].append((m, 'W'))
+                self.classify_withdrawal(m)
 
                 if m.bgp.msg.attr is not None:
                     for attr in m.bgp.msg.attr:
                         if BGP_ATTR_T[attr.type] == 'ORIGIN':
                             self.count_origin[bin][attr.origin] += 1
 
-        print file + ': ' + str(self.count_updates)
+    def classify_withdrawal(self, m):
+        if (m.bgp.msg.wd_len > 0):
+            self.withdrawals[bin] += 1
+            for nlri in m.bgp.msg.withdrawn:
+                prefix = nlri.prefix + '/' + str(nlri.plen)
+                peer = m.bgp.peer_as
+
+                # if len(prefix_history[peer][prefix]) > 0  and \
+                #     prefix_history[peer][prefix][-1][1] == 'W':
+                #     prefix_wd.append((peer, prefix))
+                self.prefix_history[peer][prefix].append((m, 'W'))
 
     def classify_announcement(self, m):
         for nlri in m.bgp.msg.nlri:
@@ -125,7 +132,7 @@ class Metrics(object):
             self.upds_prefixes[bin][prefix] += 1
             # self.prefix_history[m.bgp.peer_as][prefix].append((m, 'A'))
 
-            if self.prefix_lookup[peer].has_key(prefix):
+            if self.prefix_lookup[m.bgp.peer_as].has_key(prefix):
                 #Init vars
                 is_implicit_wd = False
                 is_implicit_dpath = False
@@ -138,7 +145,7 @@ class Metrics(object):
 
                     #Check if there is different attributes
                     if not self.is_equal(new_attr, current_attr):
-                        self.prefix_lookup[peer][prefix][attr_name] = new_attr
+                        self.prefix_lookup[m.bgp.peer_as][prefix][attr_name] = new_attr
 
                         is_implicit_wd = True
                         if attr_name == 'AS_PATH':

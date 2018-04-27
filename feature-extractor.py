@@ -76,7 +76,7 @@ def main():
 
     for f in files:
         metrics.add(f)
-
+        print f + ': ' + str(metrics.count_updates)
     metrics.plot()
 
 if __name__ == '__main__':
