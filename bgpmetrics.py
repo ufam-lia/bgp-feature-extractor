@@ -116,14 +116,14 @@ class Metrics(object):
     def classify_withdrawal(self, m):
         if (m.bgp.msg.wd_len > 0):
             self.withdrawals[bin] += 1
+
             for nlri in m.bgp.msg.withdrawn:
                 prefix = nlri.prefix + '/' + str(nlri.plen)
-                peer = m.bgp.peer_as
 
                 # if len(prefix_history[peer][prefix]) > 0  and \
                 #     prefix_history[peer][prefix][-1][1] == 'W':
                 #     prefix_wd.append((peer, prefix))
-                self.prefix_history[peer][prefix].append((m, 'W'))
+                # self.prefix_history[peer][prefix].append((m, 'W'))
 
     def classify_announcement(self, m):
         for nlri in m.bgp.msg.nlri:
