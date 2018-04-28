@@ -32,14 +32,11 @@ BGPMessageST = [BGP4MP_ST['BGP4MP_MESSAGE'],BGP4MP_ST['BGP4MP_MESSAGE_AS4'],BGP4
 BGPStateChangeST = [ BGP4MP_ST['BGP4MP_STATE_CHANGE'], BGP4MP_ST['BGP4MP_STATE_CHANGE_AS4']]
 
 def is_bgp_update(m):
-    if (m.type == MRT_T['BGP4MP'] or m.type == MRT_T['BGP4MP_ET']) \
-       and m.subtype in BGPMessageST \
-       and m.bgp.msg is not None \
-       and m.bgp.msg.type == BGP_MSG_T['UPDATE']:
-        return True
-    else:
-        return False
-
+    return (m.type == MRT_T['BGP4MP'] \
+            or m.type == MRT_T['BGP4MP_ET']) \
+            and m.subtype in BGPMessageST \
+            and m.bgp.msg is not None \
+            and m.bgp.msg.type == BGP_MSG_T['UPDATE']
 class Metrics(object):
     """docstring for Metrics."""
     def __init__(self):
