@@ -37,6 +37,7 @@ def is_bgp_update(m):
             and m.subtype in BGPMessageST \
             and m.bgp.msg is not None \
             and m.bgp.msg.type == BGP_MSG_T['UPDATE']
+
 class Metrics(object):
     """docstring for Metrics."""
     def __init__(self):
@@ -89,14 +90,14 @@ class Metrics(object):
 
             if is_bgp_update(m):
                 #Init
-                bin = (m.ts - self.first_ts)/self.bin_size
+                self.bin = (m.ts - self.first_ts)/self.bin_size
                 window = (m.ts - self.first_ts)/self.window_size
 
                 #Total number of annoucements/withdrawals/updates
                 self.count_updates += 1
-                self.updates[bin] += 1
+                self.updates[self.bin] += 1
                 peer = m.bgp.peer_as
-                # updates_ases[bin][m.bgp.peer_as] += 1
+                # updates_ases[self.bin][m.bgp.peer_as] += 1
 
                 if m.bgp.msg.nlri is not None:
                     # print_mrt(m)
@@ -108,11 +109,11 @@ class Metrics(object):
                 if m.bgp.msg.attr is not None:
                     for attr in m.bgp.msg.attr:
                         if BGP_ATTR_T[attr.type] == 'ORIGIN':
-                            self.count_origin[bin][attr.origin] += 1
+                            self.count_origin[self.bin][attr.origin] += 1
 
     def classify_withdrawal(self, m):
         if (m.bgp.msg.wd_len > 0):
-            self.withdrawals[bin] += 1
+            self.withdrawals[self.bin] += 1
 
             for nlri in m.bgp.msg.withdrawn:
                 prefix = nlri.prefix + '/' + str(nlri.plen)
@@ -124,9 +125,9 @@ class Metrics(object):
 
     def classify_announcement(self, m):
         for nlri in m.bgp.msg.nlri:
-            self.announcements[bin] += 1
+            self.announcements[self.bin] += 1
             prefix = nlri.prefix + '/' + str(nlri.plen)
-            self.upds_prefixes[bin][prefix] += 1
+            self.upds_prefixes[self.bin][prefix] += 1
             # self.prefix_history[m.bgp.peer_as][prefix].append((m, 'A'))
 
             if self.prefix_lookup[m.bgp.peer_as].has_key(prefix):
@@ -152,13 +153,13 @@ class Metrics(object):
                 #Figure which counter will be incremented
                 if is_implicit_wd == True:
                     if is_implicit_dpath == True:
-                        self.implicit_withdrawals_dpath[bin] += 1
+                        self.implicit_withdrawals_dpath[self.bin] += 1
                     else:
-                        self.implicit_withdrawals_spath[bin] += 1
+                        self.implicit_withdrawals_spath[self.bin] += 1
                 else:
-                    self.dup1_announcements[bin] += 1
+                    self.dup1_announcements[self.bin] += 1
             else:
-                self.new_announcements[bin] += 1
+                self.new_announcements[self.bin] += 1
                 for attr in m.bgp.msg.attr:
                     self.prefix_lookup[m.bgp.peer_as][prefix][BGP_ATTR_T[attr.type]] = attr
 
@@ -173,7 +174,6 @@ class Metrics(object):
         self.print_dicts()
 
     def print_dicts(self):
-        self.print_dict('upds_prefixes', self.upds_prefixes)
         self.print_dict('updates', self.updates)
         self.print_dict('upds_prefixes', self.upds_prefixes)
         self.print_dict('implicit_withdrawals_dpath', self.implicit_withdrawals_dpath)
@@ -203,7 +203,7 @@ class Metrics(object):
 
     def print_dict(self, name, dict):
         for k, v in dict.iteritems():
-            print name + str(dt.datetime.fromtimestamp(self.first_ts + self.bin_size*k)) + ' -> ' + str(v)
+            print name + str(dt.datetime.fromtimestamp(self.first_ts + self.bin_size * k)) + ' -> ' + str(v)
 
     def is_equal(self, new_attr, old_attr):
         if BGP_ATTR_T[new_attr.type] == 'ORIGIN':
