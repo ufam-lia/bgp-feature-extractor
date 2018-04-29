@@ -56,6 +56,8 @@ class Metrics(object):
         self.new_announcements = defaultdict(int)
         self.dup1_announcements = defaultdict(int)
         self.dup2_announcements = defaultdict(int)
+        self.new_ann_after_wd = defaultdict(int)
+        self.flap_announcements = defaultdict(int)
         self.attr_count = defaultdict(int)
         self.max_prefix = defaultdict(int)
         self.mean_prefix = defaultdict(int)
@@ -65,7 +67,8 @@ class Metrics(object):
         self.first_ts = 0
 
         #Routing table
-        self.prefix_lookup = defaultdict(ddd)
+        self.prefix_lookup = defaultdict(dddlist)
+        self.prefix_withdrawals = defaultdict(dd)
         self.prefix_history = defaultdict(ddlist)
         self.prefix_wd = []
         self.prefix_dup = []
@@ -117,51 +120,70 @@ class Metrics(object):
 
             for nlri in m.bgp.msg.withdrawn:
                 prefix = nlri.prefix + '/' + str(nlri.plen)
-
-                # if len(prefix_history[peer][prefix]) > 0  and \
-                #     prefix_history[peer][prefix][-1][1] == 'W':
-                #     prefix_wd.append((peer, prefix))
-                # self.prefix_history[peer][prefix].append((m, 'W'))
+                self.prefix_withdrawals[m.bgp.peer_as][prefix] = True
 
     def classify_announcement(self, m):
         for nlri in m.bgp.msg.nlri:
             self.announcements[self.bin] += 1
             prefix = nlri.prefix + '/' + str(nlri.plen)
             self.upds_prefixes[self.bin][prefix] += 1
-            # self.prefix_history[m.bgp.peer_as][prefix].append((m, 'A'))
 
-            if self.prefix_lookup[m.bgp.peer_as].has_key(prefix):
-                #Init vars
-                is_implicit_wd = False
-                is_implicit_dpath = False
-                current_attr = self.prefix_lookup[m.bgp.peer_as][prefix]
-                self.prefix_lookup[m.bgp.peer_as][prefix] = defaultdict(str)
-
-                #Traverse attributes
-                for new_attr in m.bgp.msg.attr:
-                    attr_name = BGP_ATTR_T[new_attr.type]
-
-                    #Check if there is different attributes
-                    if not self.is_equal(new_attr, current_attr):
-                        self.prefix_lookup[m.bgp.peer_as][prefix][attr_name] = new_attr
-
-                        is_implicit_wd = True
-                        if attr_name == 'AS_PATH':
-                            is_implicit_dpath = True
-                            break
-
-                #Figure which counter will be incremented
-                if is_implicit_wd == True:
-                    if is_implicit_dpath == True:
-                        self.implicit_withdrawals_dpath[self.bin] += 1
-                    else:
-                        self.implicit_withdrawals_spath[self.bin] += 1
-                else:
-                    self.dup1_announcements[self.bin] += 1
+            if self.prefix_lookup[m.bgp.peer_as].has_key(prefix) and not self.prefix_withdrawals[m.bgp.peer_as][prefix]:
+                self.classify_reannouncement(m, prefix)
             else:
-                self.new_announcements[self.bin] += 1
-                for attr in m.bgp.msg.attr:
-                    self.prefix_lookup[m.bgp.peer_as][prefix][BGP_ATTR_T[attr.type]] = attr
+                self.classify_new_announcement(m, prefix)
+
+
+    def classify_reannouncement(self, m, prefix):
+        is_implicit_wd = False
+        current_attr = self.prefix_lookup[m.bgp.peer_as][prefix]
+        self.prefix_lookup[m.bgp.peer_as][prefix] = defaultdict(str)
+
+        #Traverse attributes
+        for new_attr in m.bgp.msg.attr:
+            attr_name = BGP_ATTR_T[new_attr.type]
+
+            #Check if there is different attributes
+            if not self.is_equal(new_attr, current_attr):
+                self.prefix_lookup[m.bgp.peer_as][prefix][attr_name] = new_attr
+
+                is_implicit_wd = True
+                if attr_name == 'AS_PATH':
+                    is_implicit_dpath = True
+
+        #Figure it out which counter will be incremented
+        if is_implicit_wd == True:
+            if is_implicit_dpath == True:
+                self.implicit_withdrawals_dpath[self.bin] += 1
+            else:
+                self.implicit_withdrawals_spath[self.bin] += 1
+        else:
+            self.dup1_announcements[self.bin] += 1
+
+    def classify_new_announcement(self, m, prefix):
+        if not self.prefix_withdrawals[m.bgp.peer_as][prefix]:
+            self.new_announcements[self.bin] += 1
+            for attr in m.bgp.msg.attr:
+                self.prefix_lookup[m.bgp.peer_as][prefix][BGP_ATTR_T[attr.type]] = attr
+        else:
+            #Init vars
+            self.prefix_withdrawals[m.bgp.peer_as][prefix] = False
+            current_attr = self.prefix_lookup[m.bgp.peer_as][prefix]
+            self.prefix_lookup[m.bgp.peer_as][prefix] = defaultdict(str)
+
+            #Traverse attributes
+            for new_attr in m.bgp.msg.attr:
+                attr_name = BGP_ATTR_T[new_attr.type]
+                #Check if there is different attributes
+                if not self.is_equal(new_attr, current_attr):
+                    self.prefix_lookup[m.bgp.peer_as][prefix][attr_name] = new_attr
+                    is_diff_announcement = True
+
+            #Figure it out which counter will be incremented
+            if is_diff_announcement:
+                self.new_ann_after_wd[self.bin] += 1
+            else:
+                self.flap_announcements[self.bin] += 1
 
     def plot(self):
         for bin, prefix_count in self.upds_prefixes.iteritems():
