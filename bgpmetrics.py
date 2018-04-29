@@ -226,7 +226,7 @@ class Metrics(object):
 
     def print_dict(self, name, dict):
         for k, v in dict.iteritems():
-            print name + str(dt.datetime.fromtimestamp(self.first_ts + self.bin_size * k)) + ' -> ' + str(v)
+            print name + '  ' + str(dt.datetime.fromtimestamp(self.first_ts + self.bin_size * k)) + ' -> ' + str(v)
 
     def is_equal(self, new_attr, old_attr):
         if BGP_ATTR_T[new_attr.type] == 'ORIGIN':
@@ -277,3 +277,5 @@ class Metrics(object):
             self.implicit_withdrawals_spath[i]
             self.dup1_announcements[i]
             self.new_announcements[i]
+            self.new_ann_after_wd[i]
+            self.flap_announcements[i]
