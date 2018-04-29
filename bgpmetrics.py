@@ -202,7 +202,8 @@ class Metrics(object):
         self.print_dict('implicit_withdrawals_spath', self.implicit_withdrawals_spath)
         self.print_dict('dup1_announcements', self.dup1_announcements)
         self.print_dict('new_announcements', self.new_announcements)
-        self.print_dict('announcements', self.announcements)
+        self.print_dict('new_ann_after_wd', self.new_ann_after_wd)
+        self.print_dict('flap_announcements', self.flap_announcements)
 
     def plot_timeseries(self):
         fig = plt.figure(1)
