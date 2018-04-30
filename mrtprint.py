@@ -1,4 +1,3 @@
-
 import sys
 from optparse import OptionParser
 import datetime as dt
