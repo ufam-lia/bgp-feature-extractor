@@ -132,16 +132,14 @@ class Metrics(object):
             self.announcements[self.bin] += 1
             prefix = nlri.prefix + '/' + str(nlri.plen)
             self.upds_prefixes[self.bin][prefix] += 1
-            # print prefix + ' @ ' + m.bgp.peer_as
             #Store history
             # self.prefix_history[m.bgp.peer_as][prefix].append(m)
-            if m.bgp.peer_as == '3549' and prefix == '196.13.251.0/24':
-                pass
-            self.counter += 1
-            # print self.counter
+
             if self.prefix_lookup[m.bgp.peer_as].has_key(prefix) and not self.prefix_withdrawals[m.bgp.peer_as][prefix]:
+                # Reannouncements may be duplicates or implicit withdrawals
                 self.classify_reannouncement(m, prefix)
             else:
+                # A new announcement may be a flap, NADA or a plain new announcement
                 self.classify_new_announcement(m, prefix)
 
 
@@ -150,27 +148,26 @@ class Metrics(object):
         is_implicit_dpath = False
 
         current_attr = self.prefix_lookup[m.bgp.peer_as][prefix]
-        # self.prefix_lookup[m.bgp.peer_as][prefix] = defaultdict(str)
 
         #Traverse attributes
         # print prefix + ' @ ' + m.bgp.peer_as
         for new_attr in m.bgp.msg.attr:
             attr_name = BGP_ATTR_T[new_attr.type]
 
-            # if prefix == '65.202.5.0/24':
-            #     print '***************************'
-            #     print 'self.prefix_lookup[m.bgp.peer_as][prefix]'
-            #     print self.prefix_lookup[m.bgp.peer_as][prefix]
-            #     print 'current_attr'
-            #     print current_attr
-            #     print '***************************'
-
             #Check if there is different attributes
-            self.prefix_lookup[m.bgp.peer_as][prefix][attr_name] = new_attr
-            if not self.is_equal(new_attr, current_attr):
-                is_implicit_wd = True
-                if attr_name == 'AS_PATH':
-                    is_implicit_dpath = True
+            try:
+                print 'AS_PATH OLD' + str(current_attr['AS_PATH'].as_path)
+                print '*****'
+                if not self.is_equal(new_attr, current_attr):
+                    is_implicit_wd = True
+                    if attr_name == 'AS_PATH':
+                        print '*'
+                        is_implicit_dpath = True
+
+                self.prefix_lookup[m.bgp.peer_as][prefix][attr_name] = new_attr
+                print 'AS_PATH NEW' + str(current_attr['AS_PATH'].as_path)
+            except Exception as e:
+                pass
 
         #Figure it out which counter will be incremented
         if is_implicit_wd:
@@ -188,9 +185,6 @@ class Metrics(object):
             for attr in m.bgp.msg.attr:
                 self.prefix_lookup[m.bgp.peer_as][prefix][BGP_ATTR_T[attr.type]] = attr
 
-            # if prefix == '65.202.5.0/24':
-            #     print 'self.prefix_lookup[m.bgp.peer_as][prefix]'
-            #     print self.prefix_lookup[m.bgp.peer_as][prefix]
         else:
             #Init vars
             self.prefix_withdrawals[m.bgp.peer_as][prefix] = False
@@ -214,6 +208,46 @@ class Metrics(object):
                 self.flap_announcements[self.bin] += 1
                 self.prefix_flap.add(prefix)
 
+    def is_equal(self, new_attr, old_attr):
+        try:
+            if BGP_ATTR_T[new_attr.type] == 'ORIGIN':
+                if new_attr.origin <> old_attr['ORIGIN'].origin:
+                    self.diff_counter['ORIGIN'] += 1
+                return new_attr.origin == old_attr['ORIGIN'].origin
+
+            elif BGP_ATTR_T[new_attr.type] == 'AS_PATH':
+                if new_attr.as_path[0]['val'] <> old_attr['AS_PATH'].as_path[0]['val']:
+                    self.diff_counter['AS_PATH'] += 1
+                return new_attr.as_path[0]['val'] == old_attr['AS_PATH'].as_path[0]['val']
+
+            elif BGP_ATTR_T[new_attr.type] == 'NEXT_HOP':
+                if new_attr.next_hop <> old_attr['NEXT_HOP'].next_hop:
+                    self.diff_counter['NEXT_HOP'] += 1
+                return new_attr.next_hop == old_attr['NEXT_HOP'].next_hop
+
+            elif BGP_ATTR_T[new_attr.type] == 'MULTI_EXIT_DISC':
+                if new_attr.med <> old_attr['MULTI_EXIT_DISC'].med:
+                    self.diff_counter['MULTI_EXIT_DISC'] += 1
+                return new_attr.med == old_attr['MULTI_EXIT_DISC'].med
+
+            elif BGP_ATTR_T[new_attr.type] == 'ATOMIC_AGGREGATE':
+                if not old_attr['ATOMIC_AGGREGATE']:
+                    self.diff_counter['ATOMIC_AGGREGATE'] += 1
+                return True == old_attr['ATOMIC_AGGREGATE']
+
+            elif BGP_ATTR_T[new_attr.type] == 'AGGREGATOR':
+                if new_attr.aggr <> old_attr['AGGREGATOR'].aggr:
+                    self.diff_counter['AGGREGATOR'] += 1
+                return new_attr.aggr == old_attr['AGGREGATOR'].aggr
+
+            elif BGP_ATTR_T[new_attr.type] == 'COMMUNITY':
+                if new_attr.comm <> old_attr['COMMUNITY'].comm:
+                    self.diff_counter['COMMUNITY'] += 1
+                return new_attr.comm == old_attr['COMMUNITY'].comm
+        except Exception as e:
+            self.error_counter[e.message] += 1
+            return False
+
     def plot(self):
         for bin, prefix_count in self.upds_prefixes.iteritems():
             self.max_prefix[bin] = np.array(self.upds_prefixes[bin].values()).max()
@@ -224,13 +258,6 @@ class Metrics(object):
         self.plot_timeseries()
         self.print_dicts()
 
-        for prefix in self.prefix_nada:
-            for peer in self.prefix_history.keys():
-                qtd_bgp_msgs = len(self.prefix_history[peer][prefix])
-                # if qtd_bgp_msgs > 20:
-                #     print peer + ' @ ' +  prefix + '->' + str(qtd_bgp_msgs)
-                #     self.print_prefix_history(peer, prefix)
-                #     return
         # print self.diff_counter
         # print self.error_counter
 
@@ -274,51 +301,6 @@ class Metrics(object):
     def print_dict(self, name, dict):
         for k, v in dict.iteritems():
             print name + '  ' + str(dt.datetime.fromtimestamp(self.first_ts + self.bin_size * k)) + ' -> ' + str(v)
-
-    def is_equal(self, new_attr, old_attr):
-        try:
-            if BGP_ATTR_T[new_attr.type] == 'ORIGIN':
-                if new_attr.origin <> old_attr['ORIGIN'].origin:
-                    self.diff_counter['ORIGIN'] += 1
-                return new_attr.origin == old_attr['ORIGIN'].origin
-
-            elif BGP_ATTR_T[new_attr.type] == 'AS_PATH':
-                if new_attr.as_path[0]['val'] <> old_attr['AS_PATH'].as_path[0]['val']:
-                    self.diff_counter['AS_PATH'] += 1
-                else:
-                    self.diff_counter['AS_PATH_SAME'] += 1
-                    print 'AS_PATH OLD:' + str(old_attr['AS_PATH'].as_path[0]['val'])
-                    print 'AS_PATH NEW:' + str(new_attr.as_path[0]['val'])
-                    # print ''
-                return new_attr.as_path[0]['val'] == old_attr['AS_PATH'].as_path[0]['val']
-
-            elif BGP_ATTR_T[new_attr.type] == 'NEXT_HOP':
-                if new_attr.next_hop <> old_attr['NEXT_HOP'].next_hop:
-                    self.diff_counter['NEXT_HOP'] += 1
-                return new_attr.next_hop == old_attr['NEXT_HOP'].next_hop
-
-            elif BGP_ATTR_T[new_attr.type] == 'MULTI_EXIT_DISC':
-                if new_attr.med <> old_attr['MULTI_EXIT_DISC'].med:
-                    self.diff_counter['MULTI_EXIT_DISC'] += 1
-                return new_attr.med == old_attr['MULTI_EXIT_DISC'].med
-
-            elif BGP_ATTR_T[new_attr.type] == 'ATOMIC_AGGREGATE':
-                if not old_attr['ATOMIC_AGGREGATE']:
-                    self.diff_counter['ATOMIC_AGGREGATE'] += 1
-                return True == old_attr['ATOMIC_AGGREGATE']
-
-            elif BGP_ATTR_T[new_attr.type] == 'AGGREGATOR':
-                if new_attr.aggr <> old_attr['AGGREGATOR'].aggr:
-                    self.diff_counter['AGGREGATOR'] += 1
-                return new_attr.aggr == old_attr['AGGREGATOR'].aggr
-
-            elif BGP_ATTR_T[new_attr.type] == 'COMMUNITY':
-                if new_attr.comm <> old_attr['COMMUNITY'].comm:
-                    self.diff_counter['COMMUNITY'] += 1
-                return new_attr.comm == old_attr['COMMUNITY'].comm
-        except Exception as e:
-            self.error_counter[e.message] += 1
-            return False
 
     def is_implicit_wd(self, bgp_msg):
         pass
