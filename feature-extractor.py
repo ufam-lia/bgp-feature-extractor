@@ -57,11 +57,13 @@ def main():
     #Traverse files
 
     files = []
+    files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010716.0*.gz")
+    # files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010716.010*.gz")
+
     # files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010713.*.gz")
     # files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010714.*.gz")
     # files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010715.*.gz")
-    files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010716.00*.gz")
-    files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010716.010*.gz")
+    # files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010716.*.gz")
     # files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010717.*.gz")
     # files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010718.*.gz")
     # files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010719.*.gz")

@@ -16,6 +16,7 @@ import cPickle as pickle
 import argparse
 import operator
 import pdir
+from getsizeoflib import total_size
 
 def dd():
     return defaultdict(int)
@@ -37,7 +38,7 @@ def is_bgp_update(m):
             or m.type == MRT_T['BGP4MP_ET']) \
             and m.subtype in BGPMessageST \
             and m.bgp.msg is not None \
-            and m.bgp.msg.type == BGP_MSG_T['UPDATE']
+            # and m.bgp.msg.type == BGP_MSG_T['UPDATE']
 
 def is_bgp_open(m):
     return (m.type == MRT_T['BGP4MP'] \
@@ -105,6 +106,8 @@ class Metrics(object):
                 continue
 
             if is_bgp_update(m):
+                if m.bgp.msg.type <> 2 and m.bgp.msg.type <> 4:
+                    print m.bgp.msg.type
                 #Init
                 self.bin = (m.ts - self.first_ts)/self.bin_size
                 window = (m.ts - self.first_ts)/self.window_size
@@ -180,7 +183,7 @@ class Metrics(object):
 
         #Figure it out which counter will be incremented
         if is_implicit_wd:
-            self.prefix_imp.add(prefix)
+            # self.prefix_imp.add(prefix)
             if is_implicit_dpath:
                 self.implicit_withdrawals_dpath[self.bin] += 1
                 self.print_classification(m, 'IMPLICIT_DIFF_PATH', prefix)
@@ -215,11 +218,11 @@ class Metrics(object):
             #Figure it out which counter will be incremented
             if is_diff_announcement:
                 self.new_ann_after_wd[self.bin] += 1
-                self.prefix_nada.add(prefix)
+                # self.prefix_nada.add(prefix)
                 self.print_classification(m, 'NEW ANN. AFTER WITHDRAW', prefix)
             else:
                 self.flap_announcements[self.bin] += 1
-                self.prefix_flap.add(prefix)
+                # self.prefix_flap.add(prefix)
                 self.print_classification(m, 'FLAP', prefix)
         else:
             self.ann_after_wd_unknown[self.bin] += 1
@@ -289,8 +292,37 @@ class Metrics(object):
                      # self.print_prefix_history(peer, prefix)
                      # return
 
-        # print self.diff_counter
+        print self.diff_counter
         # print self.error_counter
+        print 'self.updates ->' + str(total_size(self.updates))
+        print 'self.withdrawals ->' + str(total_size(self.withdrawals))
+        print 'self.implicit_withdrawals_spath ->' + str(total_size(self.implicit_withdrawals_spath))
+        print 'self.implicit_withdrawals_dpath ->' + str(total_size(self.implicit_withdrawals_dpath))
+        print 'self.announcements ->' + str(total_size(self.announcements))
+        print 'self.new_announcements ->' + str(total_size(self.new_announcements))
+        print 'self.dup_announcements ->' + str(total_size(self.dup_announcements))
+        print 'self.new_ann_after_wd ->' + str(total_size(self.new_ann_after_wd))
+        print 'self.flap_announcements ->' + str(total_size(self.flap_announcements))
+        print 'self.ann_after_wd_unknown ->' + str(total_size(self.ann_after_wd_unknown))
+        print 'self.attr_count ->' + str(total_size(self.attr_count))
+        print 'self.max_prefix ->' + str(total_size(self.max_prefix))
+        print 'self.mean_prefix ->' + str(total_size(self.mean_prefix))
+        print 'self.count_origin ->' + str(total_size(self.count_origin))
+        print 'self.count_ts_upds_ases ->' + str(total_size(self.count_ts_upds_ases))
+        print 'self.upds_prefixes ->' + str(total_size(self.upds_prefixes))
+        print 'self.first_ts ->' + str(total_size(self.first_ts))
+        print 'self.diff_counter ->' + str(total_size(self.diff_counter))
+        print 'self.error_counter ->' + str(total_size(self.error_counter))
+        print 'self.prefix_withdrawals ->' + str(total_size(self.prefix_withdrawals))
+        print 'self.prefix_history ->' + str(total_size(self.prefix_history))
+        print 'self.prefix_wd ->' + str(total_size(self.prefix_wd))
+        print 'self.prefix_dup ->' + str(total_size(self.prefix_dup))
+        print 'self.prefix_imp ->' + str(total_size(self.prefix_imp))
+        print 'self.prefix_nada ->' + str(total_size(self.prefix_nada))
+        print 'self.prefix_flap ->' + str(total_size(self.prefix_flap))
+        print 'self.count_updates ->' + str(total_size(self.count_updates))
+        print 'self.count_announcements ->' + str(total_size(self.count_announcements))
+        print 'self.counter ->' + str(total_size(self.counter))
 
     def print_classification(self, m, type, prefix):
         if prefix == '' and m.bgp.peer_as == '':
