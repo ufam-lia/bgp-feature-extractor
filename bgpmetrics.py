@@ -40,7 +40,11 @@ def is_bgp_update(m):
             and m.bgp.msg.type == BGP_MSG_T['UPDATE']
 
 def is_bgp_open(m):
-    pass
+    return (m.type == MRT_T['BGP4MP'] \
+            or m.type == MRT_T['BGP4MP_ET']) \
+            and m.subtype in BGPMessageST \
+            and m.bgp.msg is not None \
+            and m.bgp.msg.type == BGP_MSG_T['OPEN']
 
 class Metrics(object):
     """docstring for Metrics."""
@@ -116,6 +120,7 @@ class Metrics(object):
                 self.count_origin_attr(m)
 
             elif is_bgp_open(m):
+                print_bgp4mp(m)
                 pass
 
     def count_origin_attr(self, m):
@@ -169,14 +174,9 @@ class Metrics(object):
             #Check if there is different attributes
             if not self.is_equal(new_attr, current_attr):
                 is_implicit_wd = True
-                if prefix == '206.139.216.0/21' and m.bgp.peer_as == '4608':
-                    print attr_name
                 if attr_name == 'AS_PATH':
                     is_implicit_dpath = True
             self.prefix_lookup[m.bgp.peer_as][prefix][BGP_ATTR_T[new_attr.type]] = new_attr
-
-        if prefix == '206.139.216.0/21' and m.bgp.peer_as == '4608' and self.prefix_lookup[m.bgp.peer_as][prefix]['AGGREGATOR'] != []:
-            print self.prefix_lookup[m.bgp.peer_as][prefix]['AGGREGATOR'].aggr
 
         #Figure it out which counter will be incremented
         if is_implicit_wd:
@@ -293,15 +293,10 @@ class Metrics(object):
         # print self.error_counter
 
     def print_classification(self, m, type, prefix):
-        if prefix == '206.139.216.0/21' and m.bgp.peer_as == '4608':
+        if prefix == '' and m.bgp.peer_as == '':
             print '#'*15 + type + '#'*15
             print 'Timestamp: %s' % (dt.datetime.fromtimestamp(m.ts))
             print_bgp4mp(m)
-
-            # print self.prefix_lookup[m.bgp.peer_as][prefix]
-
-            # if type == 'IMPLICIT_DIFF_PATH':
-            #     print self.prefix_lookup[m.bgp.peer_as][prefix]['AS_PATH'].as_path
 
     def print_prefix_history(self, peer, prefix):
         for msg in self.prefix_history[peer][prefix]:
