@@ -39,6 +39,9 @@ def is_bgp_update(m):
             and m.bgp.msg is not None \
             and m.bgp.msg.type == BGP_MSG_T['UPDATE']
 
+def is_bgp_open(m):
+    pass
+
 class Metrics(object):
     """docstring for Metrics."""
     def __init__(self):
@@ -105,17 +108,21 @@ class Metrics(object):
                 #Total number of annoucements/withdrawals/updates
                 self.count_updates += 1
                 self.updates[self.bin] += 1
-                peer = m.bgp.peer_as
-                # updates_ases[self.bin][m.bgp.peer_as] += 1
 
                 if m.bgp.msg.nlri is not None:
                     self.classify_announcement(m)
                 self.classify_withdrawal(m)
 
-                if m.bgp.msg.attr is not None:
-                    for attr in m.bgp.msg.attr:
-                        if BGP_ATTR_T[attr.type] == 'ORIGIN':
-                            self.count_origin[self.bin][attr.origin] += 1
+                self.count_origin_attr(m)
+
+            elif is_bgp_open(m):
+                pass
+
+    def count_origin_attr(self, m):
+        if m.bgp.msg.attr is not None:
+            for attr in m.bgp.msg.attr:
+                if BGP_ATTR_T[attr.type] == 'ORIGIN':
+                    self.count_origin[self.bin][attr.origin] += 1
 
     def classify_withdrawal(self, m):
         if (m.bgp.msg.wd_len > 0):
@@ -151,7 +158,7 @@ class Metrics(object):
         current_attr = self.prefix_lookup[m.bgp.peer_as][prefix]
         self.prefix_lookup[m.bgp.peer_as][prefix] = defaultdict(list)
 
-        #
+        #If update msg and RIB state have a diff number of attributes, then it's a implicit wd
         if len(current_attr.keys()) != len(m.bgp.msg.attr):
             is_implicit_wd = True
 
