@@ -76,6 +76,7 @@ class Metrics(object):
         self.first_ts = 0
         self.diff_counter = defaultdict(int)
         self.error_counter = defaultdict(int)
+        self.msg_counter = defaultdict(int)
 
         #Routing table
         self.prefix_lookup = defaultdict(dddlist)
@@ -141,6 +142,7 @@ class Metrics(object):
                 self.prefix_withdrawals[m.bgp.peer_as][prefix] = True
                 self.print_classification(m, 'WITHDRAW', prefix)
                 # self.prefix_history[m.bgp.peer_as][prefix].append(m)
+                self.msg_counter[m.bgp.peer_as + '@' + prefix] += 1
 
     def classify_announcement(self, m):
         for nlri in m.bgp.msg.nlri:
@@ -149,6 +151,7 @@ class Metrics(object):
             self.upds_prefixes[self.bin][prefix] += 1
             #Store history
             # self.prefix_history[m.bgp.peer_as][prefix].append(m)
+            self.msg_counter[m.bgp.peer_as + '@' + prefix] += 1
 
             if self.prefix_lookup[m.bgp.peer_as].has_key(prefix) and not self.prefix_withdrawals[m.bgp.peer_as][prefix]:
                 # Reannouncements may be duplicates or implicit withdrawals
@@ -231,7 +234,6 @@ class Metrics(object):
             self.print_classification(m, 'ANN. AFTER WITHDRAW - UNKNOWN', prefix)
 
     def is_equal(self, new_attr, old_attr):
-        # try:
         if BGP_ATTR_T[new_attr.type] == 'ORIGIN':
             if new_attr.origin <> old_attr['ORIGIN'].origin:
                 self.diff_counter['ORIGIN'] += 1
@@ -268,11 +270,6 @@ class Metrics(object):
             if old_attr['COMMUNITY'] != [] and new_attr.comm <> old_attr['COMMUNITY'].comm:
                 self.diff_counter['COMMUNITY'] += 1
             return (old_attr['COMMUNITY'] != []) and (new_attr.comm == old_attr['COMMUNITY'].comm)
-        # except Exception as e:
-        #     self.error_counter[e.message] += 1
-        #     print e.message
-        #     sys.exit()
-        #     return False
 
     def plot(self):
         for bin, prefix_count in self.upds_prefixes.iteritems():
@@ -292,37 +289,26 @@ class Metrics(object):
                      # self.print_prefix_history(peer, prefix)
                      # return
 
-        print self.diff_counter
+        # print self.diff_counter
         # print self.error_counter
-        print 'self.updates ->' + str(total_size(self.updates))
-        print 'self.withdrawals ->' + str(total_size(self.withdrawals))
-        print 'self.implicit_withdrawals_spath ->' + str(total_size(self.implicit_withdrawals_spath))
-        print 'self.implicit_withdrawals_dpath ->' + str(total_size(self.implicit_withdrawals_dpath))
-        print 'self.announcements ->' + str(total_size(self.announcements))
-        print 'self.new_announcements ->' + str(total_size(self.new_announcements))
-        print 'self.dup_announcements ->' + str(total_size(self.dup_announcements))
-        print 'self.new_ann_after_wd ->' + str(total_size(self.new_ann_after_wd))
-        print 'self.flap_announcements ->' + str(total_size(self.flap_announcements))
-        print 'self.ann_after_wd_unknown ->' + str(total_size(self.ann_after_wd_unknown))
-        print 'self.attr_count ->' + str(total_size(self.attr_count))
-        print 'self.max_prefix ->' + str(total_size(self.max_prefix))
-        print 'self.mean_prefix ->' + str(total_size(self.mean_prefix))
-        print 'self.count_origin ->' + str(total_size(self.count_origin))
-        print 'self.count_ts_upds_ases ->' + str(total_size(self.count_ts_upds_ases))
-        print 'self.upds_prefixes ->' + str(total_size(self.upds_prefixes))
-        print 'self.first_ts ->' + str(total_size(self.first_ts))
-        print 'self.diff_counter ->' + str(total_size(self.diff_counter))
-        print 'self.error_counter ->' + str(total_size(self.error_counter))
-        print 'self.prefix_withdrawals ->' + str(total_size(self.prefix_withdrawals))
-        print 'self.prefix_history ->' + str(total_size(self.prefix_history))
-        print 'self.prefix_wd ->' + str(total_size(self.prefix_wd))
-        print 'self.prefix_dup ->' + str(total_size(self.prefix_dup))
-        print 'self.prefix_imp ->' + str(total_size(self.prefix_imp))
-        print 'self.prefix_nada ->' + str(total_size(self.prefix_nada))
-        print 'self.prefix_flap ->' + str(total_size(self.prefix_flap))
-        print 'self.count_updates ->' + str(total_size(self.count_updates))
-        print 'self.count_announcements ->' + str(total_size(self.count_announcements))
-        print 'self.counter ->' + str(total_size(self.counter))
+        print 'self.upds_prefixes ->' + str(total_size(self.upds_prefixes)/1024) + 'KB'
+        print 'self.prefix_withdrawals ->' + str(total_size(self.prefix_withdrawals)/1024) + 'KB'
+        print 'self.prefix_lookup ->' + str(total_size(self.prefix_lookup)/1024) + 'KB'
+
+        print 'self.upds_prefixes ->' + str(len(self.upds_prefixes.keys())) + ' keys'
+        print 'self.prefix_withdrawals ->' + str(len(self.prefix_withdrawals.keys())) + ' keys'
+
+        prefix_lookup_counter = 0
+        for peers, prefixes in self.prefix_lookup.iteritems():
+            prefix_lookup_counter += len(prefixes.keys())
+
+        print 'self.prefix_lookup ->' + str(prefix_lookup_counter) + ' keys'
+        print 'TEST ->' + str(total_size(self.prefix_lookup['3549']['65.202.5.0/24']))
+
+        # prefix_heavy_hitters = dict(sorted(self.msg_counter.items(), key = operator.itemgetter(1)))
+        prefix_heavy_hitters = sorted(self.msg_counter.items(), key = operator.itemgetter(1), reverse = True)
+        print prefix_heavy_hitters[0:5]
+        # print total_size(self.prefix_lookup[])
 
     def print_classification(self, m, type, prefix):
         if prefix == '' and m.bgp.peer_as == '':
