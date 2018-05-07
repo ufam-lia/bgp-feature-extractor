@@ -17,6 +17,8 @@ import argparse
 import operator
 import pdir
 from getsizeoflib import total_size
+from guppy import hpy
+import gc
 
 def dd():
     return defaultdict(int)
@@ -91,16 +93,27 @@ class Metrics(object):
         self.count_announcements = 0
         self.counter = 0
 
+        self.mem_use = hpy()
+        self.after = self.mem_use.heap().size
+        self.before = self.mem_use.heap().size
+
     def add(self, file):
         #init
         self.count_updates = 0
         self.count_announcements = 0
         d = Reader(file)
 
+
         if self.first_ts == 0:
             self.first_ts = d.next().mrt.ts
 
+        gc.collect()
+
+
         for m in d:
+            self.before = self.mem_use.heap().size
+            print '5 -> ' + str(self.before - self.after)
+
             m = m.mrt
             if m.err == MRT_ERR_C['MRT Header Error']:
                 prerror(m)
@@ -121,11 +134,13 @@ class Metrics(object):
                     self.classify_announcement(m)
                 self.classify_withdrawal(m)
 
-                self.count_origin_attr(m)
+                # self.count_origin_attr(m)
 
             elif is_bgp_open(m):
                 print_bgp4mp(m)
                 pass
+
+            self.after = self.mem_use.heap().size
 
     def count_origin_attr(self, m):
         if m.bgp.msg.attr is not None:
@@ -155,18 +170,50 @@ class Metrics(object):
 
             if self.prefix_lookup[m.bgp.peer_as].has_key(prefix) and not self.prefix_withdrawals[m.bgp.peer_as][prefix]:
                 # Reannouncements may be duplicates or implicit withdrawals
+                # print 'ANNOU'
+                # print 'self.mem_use.heap()[0] -> ' + str(self.mem_use.heap())
+                # print 'total_size(self.prefix_lookup) -> ' + str(total_size(self.prefix_lookup))
+
+                # self.before = self.mem_use.heap().size
+                # print 'OUT OF REANN -> '+ str(self.before - self.after)
                 self.classify_reannouncement(m, prefix)
+                # self.after = self.mem_use.heap().size
+                # print 'AFTER REANN -> '+ str(self.after - self.before)
+
+                if (self.after - self.before) > 1024:
+                    print print_bgp4mp(m)
+                # print ''
+                # print 'ANNOU - AFTER'
+                # print 'self.mem_use.heap()[0] -> ' + str(self.mem_use.heap())
+                # print 'total_size(self.prefix_lookup) -> ' + str(total_size(self.prefix_lookup))
+                # print ''
             else:
+                # Reannouncements may be duplicates or implicit withdrawals
+                # print 'NEW'
+                # print 'self.mem_use.heap()[0] -> ' + str(self.mem_use.heap())
+                # print 'total_size(self.prefix_lookup) -> ' + str(total_size(self.prefix_lookup))
                 # A new announcement may be a flap, NADA or a plain new announcement
+                # self.before = self.mem_use.heap().size
+                # print 'OUT OF NEW ANN -> '+ str(self.before - self.after)
                 self.classify_new_announcement(m, prefix)
+                # self.after = self.mem_use.heap().size
+                # print 'NEW ANN -> '+ str(self.after - self.before)
+
+                if (self.after - self.before) > 10024:
+                     print_bgp4mp(m)
+                # print ''
+                # print 'NEW - AFTER'
+                # print 'self.mem_use.heap()[0] -> ' + str(self.mem_use.heap())
+                # print 'total_size(self.prefix_lookup) -> ' + str(total_size(self.prefix_lookup))
+                # print ''
 
 
     def classify_reannouncement(self, m, prefix):
         is_implicit_wd = False
         is_implicit_dpath = False
 
-
         current_attr = self.prefix_lookup[m.bgp.peer_as][prefix]
+
         self.prefix_lookup[m.bgp.peer_as][prefix] = defaultdict(list)
 
         #If update msg and RIB state have a diff number of attributes, then it's a implicit wd
@@ -197,12 +244,15 @@ class Metrics(object):
             self.dup_announcements[self.bin] += 1
             self.print_classification(m, 'DUPLICATE', prefix)
 
+        del current_attr
+
     def classify_new_announcement(self, m, prefix):
         if not self.prefix_withdrawals[m.bgp.peer_as][prefix]:
             self.new_announcements[self.bin] += 1
             for attr in m.bgp.msg.attr:
                 self.prefix_lookup[m.bgp.peer_as][prefix][BGP_ATTR_T[attr.type]] = attr
-            self.print_classification(m, 'NEW ANNOUNCEMENT', prefix)
+            # self.print_classification(m, 'NEW ANNOUNCEMENT', prefix)
+
         elif self.prefix_lookup[m.bgp.peer_as][prefix]['ORIGIN'] != []:
             #Init vars
             self.prefix_withdrawals[m.bgp.peer_as][prefix] = False
@@ -222,16 +272,17 @@ class Metrics(object):
             if is_diff_announcement:
                 self.new_ann_after_wd[self.bin] += 1
                 # self.prefix_nada.add(prefix)
-                self.print_classification(m, 'NEW ANN. AFTER WITHDRAW', prefix)
+                # self.print_classification(m, 'NEW ANN. AFTER WITHDRAW', prefix)
             else:
                 self.flap_announcements[self.bin] += 1
                 # self.prefix_flap.add(prefix)
-                self.print_classification(m, 'FLAP', prefix)
+                # self.print_classification(m, 'FLAP', prefix)
+            del current_attr
         else:
             self.ann_after_wd_unknown[self.bin] += 1
             for attr in m.bgp.msg.attr:
                 self.prefix_lookup[m.bgp.peer_as][prefix][BGP_ATTR_T[attr.type]] = attr
-            self.print_classification(m, 'ANN. AFTER WITHDRAW - UNKNOWN', prefix)
+            # self.print_classification(m, 'ANN. AFTER WITHDRAW - UNKNOWN', prefix)
 
     def is_equal(self, new_attr, old_attr):
         if BGP_ATTR_T[new_attr.type] == 'ORIGIN':
@@ -279,7 +330,7 @@ class Metrics(object):
         self.sort_timeseries()
         self.fill_blanks_timeseries()
         self.plot_timeseries()
-        self.print_dicts()
+        # self.print_dicts()
 
         for prefix in self.prefix_nada:
              for peer in self.prefix_history.keys():
@@ -291,23 +342,40 @@ class Metrics(object):
 
         # print self.diff_counter
         # print self.error_counter
+        prefix_lookup_size = 0
+        c = 0
+        for peers, prefixes in self.prefix_lookup.iteritems():
+            prefix_lookup_size += sys.getsizeof(peers)
+            prefix_lookup_size += sys.getsizeof(prefixes)
+
+            for prefix, attrs in prefixes.iteritems():
+                prefix_lookup_size += sys.getsizeof(prefix)
+                prefix_lookup_size += sys.getsizeof(attrs)
+
+                for attr_name_, attr_ in attrs.iteritems():
+                    # print pdir(attr_)
+                    prefix_lookup_size += sys.getsizeof(attr_)
+                    prefix_lookup_size += sys.getsizeof(attr_name_)
+                    c += 1
+
         print 'self.upds_prefixes ->' + str(total_size(self.upds_prefixes)/1024) + 'KB'
         print 'self.prefix_withdrawals ->' + str(total_size(self.prefix_withdrawals)/1024) + 'KB'
         print 'self.prefix_lookup ->' + str(total_size(self.prefix_lookup)/1024) + 'KB'
+        print 'self.prefix_lookup2 ->' + str(prefix_lookup_size/1024) + 'KB'
 
-        print 'self.upds_prefixes ->' + str(len(self.upds_prefixes.keys())) + ' keys'
-        print 'self.prefix_withdrawals ->' + str(len(self.prefix_withdrawals.keys())) + ' keys'
+        # print 'self.upds_prefixes ->' + str(len(self.upds_prefixes.keys())) + ' keys'
+        # print 'self.prefix_withdrawals ->' + str(len(self.prefix_withdrawals.keys())) + ' keys'
 
-        prefix_lookup_counter = 0
-        for peers, prefixes in self.prefix_lookup.iteritems():
-            prefix_lookup_counter += len(prefixes.keys())
-
-        print 'self.prefix_lookup ->' + str(prefix_lookup_counter) + ' keys'
-        print 'TEST ->' + str(total_size(self.prefix_lookup['3549']['65.202.5.0/24']))
-
-        # prefix_heavy_hitters = dict(sorted(self.msg_counter.items(), key = operator.itemgetter(1)))
-        prefix_heavy_hitters = sorted(self.msg_counter.items(), key = operator.itemgetter(1), reverse = True)
-        print prefix_heavy_hitters[0:5]
+        # prefix_lookup_counter = 0
+        # for peers, prefixes in self.prefix_lookup.iteritems():
+        #     prefix_lookup_counter += len(prefixes.keys())
+        #
+        # print 'self.prefix_lookup ->' + str(prefix_lookup_counter) + ' keys'
+        # print 'TEST ->' + str(total_size(self.prefix_lookup['3549']['65.202.5.0/24']))
+        #
+        # # prefix_heavy_hitters = dict(sorted(self.msg_counter.items(), key = operator.itemgetter(1)))
+        # prefix_heavy_hitters = sorted(self.msg_counter.items(), key = operator.itemgetter(1), reverse = True)
+        # print prefix_heavy_hitters[0:5]
         # print total_size(self.prefix_lookup[])
 
     def print_classification(self, m, type, prefix):
