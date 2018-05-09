@@ -125,6 +125,7 @@ class Metrics(object):
 
                 if m.bgp.msg.nlri is not None:
                     self.classify_announcement(m)
+                    self.clasify_as_path(m)
                 self.classify_withdrawal(m)
 
                 self.count_origin_attr(m)
@@ -132,6 +133,31 @@ class Metrics(object):
             elif is_bgp_open(m):
                 print_bgp4mp(m)
                 pass
+
+    def classify_as_path(self, m):
+        for attr in m.bgp.msg.attr:
+            if BGP_ATTR_T[attr.type] == 'AS_PATH':
+                for as_path in attr.as_path:
+                    #   - [ ] Maximum AS-PATH length
+                    #   - [ ] Average AS-PATH length
+                    #   - [ ] Maximum unique AS-PATH length
+                    #   - [ ] Average unique AS-PATH length
+                    #   - [ ] Maximum of rare ASes in the path
+                    #   - [ ] Average of rare ASes in the path
+                    #   - [ ] Maximum edit distance
+                    #   - [ ] Average edit distance
+                    #   - [ ] Maximum edit distance equals $n$ ($n = 1,2,...$)
+                    #   - [ ] Maximum AS-path edit distance equals $n$ ($n = 1,2,...$)
+                    # - Stateful
+                    #   - [ ] Observation of rare ASes in the path
+                    #   - [ ] Announcement to longer path
+                    #   - [ ] Announcement to shorter path
+                    #   - [ ] AS-PATH change according to geographic location
+                    #   - [ ] Prefix origin change
+                    #   - [ ] Number of new paths announced after withdrawing an old path
+                    #   - [ ] Number of new-path announcements
+                    #   - [ ] Interarrival time of different types of events (average)
+                    #   - [ ] Interarrival time of different types of events (standard deviation)
 
     def count_origin_attr(self, m):
         if m.bgp.msg.attr is not None:
