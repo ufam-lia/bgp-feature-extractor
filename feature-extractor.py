@@ -15,7 +15,7 @@ import random
 import cPickle as pickle
 import argparse
 import operator
-from bgpmetrics import Metrics
+from bgpmetricsdev import Metrics
 
 def dd():
     return defaultdict(int)
@@ -76,15 +76,9 @@ def main():
     metrics = Metrics()
 
     for f in files:
-        print metrics.mem_use.heap()[0]
-        print metrics.mem_use.heap().size/(1024*1024)
         metrics.add(f)
         # print f + ': ' + str(metrics.count_updates)
-    print metrics.mem_use.heap()
-    print metrics.mem_use.heap().size/(1024*1024)
     metrics.plot()
-    print metrics.mem_use.heap()
-    print metrics.mem_use.heap().size/(1024*1024)
 
 if __name__ == '__main__':
     main()

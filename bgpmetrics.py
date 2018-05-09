@@ -93,10 +93,6 @@ class Metrics(object):
         self.count_announcements = 0
         self.counter = 0
 
-        self.mem_use = hpy()
-        self.after = self.mem_use.heap().size
-        self.before = self.mem_use.heap().size
-
     def add(self, file):
         #init
         self.count_updates = 0
@@ -109,10 +105,7 @@ class Metrics(object):
 
         gc.collect()
 
-
         for m in d:
-            self.before = self.mem_use.heap().size
-            print '5 -> ' + str(self.before - self.after)
 
             m = m.mrt
             if m.err == MRT_ERR_C['MRT Header Error']:
@@ -134,13 +127,11 @@ class Metrics(object):
                     self.classify_announcement(m)
                 self.classify_withdrawal(m)
 
-                # self.count_origin_attr(m)
+                self.count_origin_attr(m)
 
             elif is_bgp_open(m):
                 print_bgp4mp(m)
                 pass
-
-            self.after = self.mem_use.heap().size
 
     def count_origin_attr(self, m):
         if m.bgp.msg.attr is not None:
@@ -169,43 +160,9 @@ class Metrics(object):
             self.msg_counter[m.bgp.peer_as + '@' + prefix] += 1
 
             if self.prefix_lookup[m.bgp.peer_as].has_key(prefix) and not self.prefix_withdrawals[m.bgp.peer_as][prefix]:
-                # Reannouncements may be duplicates or implicit withdrawals
-                # print 'ANNOU'
-                # print 'self.mem_use.heap()[0] -> ' + str(self.mem_use.heap())
-                # print 'total_size(self.prefix_lookup) -> ' + str(total_size(self.prefix_lookup))
-
-                # self.before = self.mem_use.heap().size
-                # print 'OUT OF REANN -> '+ str(self.before - self.after)
                 self.classify_reannouncement(m, prefix)
-                # self.after = self.mem_use.heap().size
-                # print 'AFTER REANN -> '+ str(self.after - self.before)
-
-                if (self.after - self.before) > 1024:
-                    print print_bgp4mp(m)
-                # print ''
-                # print 'ANNOU - AFTER'
-                # print 'self.mem_use.heap()[0] -> ' + str(self.mem_use.heap())
-                # print 'total_size(self.prefix_lookup) -> ' + str(total_size(self.prefix_lookup))
-                # print ''
             else:
-                # Reannouncements may be duplicates or implicit withdrawals
-                # print 'NEW'
-                # print 'self.mem_use.heap()[0] -> ' + str(self.mem_use.heap())
-                # print 'total_size(self.prefix_lookup) -> ' + str(total_size(self.prefix_lookup))
-                # A new announcement may be a flap, NADA or a plain new announcement
-                # self.before = self.mem_use.heap().size
-                # print 'OUT OF NEW ANN -> '+ str(self.before - self.after)
                 self.classify_new_announcement(m, prefix)
-                # self.after = self.mem_use.heap().size
-                # print 'NEW ANN -> '+ str(self.after - self.before)
-
-                if (self.after - self.before) > 10024:
-                     print_bgp4mp(m)
-                # print ''
-                # print 'NEW - AFTER'
-                # print 'self.mem_use.heap()[0] -> ' + str(self.mem_use.heap())
-                # print 'total_size(self.prefix_lookup) -> ' + str(total_size(self.prefix_lookup))
-                # print ''
 
 
     def classify_reannouncement(self, m, prefix):
@@ -257,7 +214,7 @@ class Metrics(object):
             #Init vars
             self.prefix_withdrawals[m.bgp.peer_as][prefix] = False
             current_attr = self.prefix_lookup[m.bgp.peer_as][prefix]
-            # self.prefix_lookup[m.bgp.peer_as][prefix] = defaultdict(str)
+            self.prefix_lookup[m.bgp.peer_as][prefix] = defaultdict(list)
 
             is_diff_announcement = False
             #Traverse attributes
