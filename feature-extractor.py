@@ -15,7 +15,7 @@ import random
 import cPickle as pickle
 import argparse
 import operator
-from bgpmetricsdev import Metrics
+from bgpmetrics import Metrics
 
 def dd():
     return defaultdict(int)
@@ -57,8 +57,11 @@ def main():
     #Traverse files
 
     files = []
-    files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010716.00*.gz")
-    files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010716.010*.gz")
+    files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010731.1938.gz")
+    files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20180509.1945.gz")
+
+    # files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010716.0*.gz")
+    # files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010716.010*.gz")
 
     # files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010713.*.gz")
     # files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010714.*.gz")
@@ -74,10 +77,15 @@ def main():
     files = sorted(files)
 
     metrics = Metrics()
-
+    c = 0
     for f in files:
         metrics.add(f)
-        # print f + ': ' + str(metrics.count_updates)
+        print f + ': ' + str(metrics.count_updates)
+        for peer, prefixes in metrics.prefix_lookup.iteritems():
+            print peer + ' -> ' + str(len(prefixes.keys()))
+        c += 1
+
+    print metrics.count_msgs
     metrics.plot()
 
 if __name__ == '__main__':

@@ -92,13 +92,15 @@ class Metrics(object):
         self.count_updates = 0
         self.count_announcements = 0
         self.counter = 0
+        self.count_msgs = defaultdict(int)
+        self.peer_upds = defaultdict(int)
 
     def add(self, file):
         #init
         self.count_updates = 0
         self.count_announcements = 0
+        self.peer_upds = defaultdict(int)
         d = Reader(file)
-
 
         if self.first_ts == 0:
             self.first_ts = d.next().mrt.ts
@@ -113,8 +115,12 @@ class Metrics(object):
                 continue
 
             if is_bgp_update(m):
-                if m.bgp.msg.type <> 2 and m.bgp.msg.type <> 4:
-                    print m.bgp.msg.type
+                self.count_msgs[BGP_MSG_T[m.bgp.msg.type]] += 1
+                
+                # if BGP_MSG_T[m.bgp.msg.type] != 'UPDATE':
+                #     print m.bgp.peer_as
+                #     print BGP_MSG_T[m.bgp.msg.type]
+
                 #Init
                 self.bin = (m.ts - self.first_ts)/self.bin_size
                 window = (m.ts - self.first_ts)/self.window_size
@@ -122,10 +128,12 @@ class Metrics(object):
                 #Total number of annoucements/withdrawals/updates
                 self.count_updates += 1
                 self.updates[self.bin] += 1
-
+                self.peer_upds[m.bgp.peer_as] += 1
+                print m.bgp.peer_as
+                
                 if m.bgp.msg.nlri is not None:
                     self.classify_announcement(m)
-                    self.clasify_as_path(m)
+                    # self.clasify_as_path(m)
                 self.classify_withdrawal(m)
 
                 self.count_origin_attr(m)
@@ -138,6 +146,7 @@ class Metrics(object):
         for attr in m.bgp.msg.attr:
             if BGP_ATTR_T[attr.type] == 'AS_PATH':
                 for as_path in attr.as_path:
+                    pass
                     #   - [ ] Maximum AS-PATH length
                     #   - [ ] Average AS-PATH length
                     #   - [ ] Maximum unique AS-PATH length
@@ -166,6 +175,8 @@ class Metrics(object):
                     self.count_origin[self.bin][attr.origin] += 1
 
     def classify_withdrawal(self, m):
+        self.peer_upds[m.bgp.peer_as] += 1
+        
         if (m.bgp.msg.wd_len > 0):
             self.withdrawals[self.bin] += 1
 
@@ -177,6 +188,8 @@ class Metrics(object):
                 self.msg_counter[m.bgp.peer_as + '@' + prefix] += 1
 
     def classify_announcement(self, m):
+        self.peer_upds[m.bgp.peer_as] += 1
+
         for nlri in m.bgp.msg.nlri:
             self.announcements[self.bin] += 1
             prefix = nlri.prefix + '/' + str(nlri.plen)
@@ -341,10 +354,10 @@ class Metrics(object):
                     prefix_lookup_size += sys.getsizeof(attr_name_)
                     c += 1
 
-        print 'self.upds_prefixes ->' + str(total_size(self.upds_prefixes)/1024) + 'KB'
-        print 'self.prefix_withdrawals ->' + str(total_size(self.prefix_withdrawals)/1024) + 'KB'
-        print 'self.prefix_lookup ->' + str(total_size(self.prefix_lookup)/1024) + 'KB'
-        print 'self.prefix_lookup2 ->' + str(prefix_lookup_size/1024) + 'KB'
+        # print 'self.upds_prefixes ->' + str(total_size(self.upds_prefixes)/1024) + 'KB'
+        # print 'self.prefix_withdrawals ->' + str(total_size(self.prefix_withdrawals)/1024) + 'KB'
+        # print 'self.prefix_lookup ->' + str(total_size(self.prefix_lookup)/1024) + 'KB'
+        # print 'self.prefix_lookup2 ->' + str(prefix_lookup_size/1024) + 'KB'
 
         # print 'self.upds_prefixes ->' + str(len(self.upds_prefixes.keys())) + ' keys'
         # print 'self.prefix_withdrawals ->' + str(len(self.prefix_withdrawals.keys())) + ' keys'
