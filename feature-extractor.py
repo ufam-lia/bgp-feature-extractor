@@ -58,7 +58,7 @@ def main():
 
     files = []
     files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010731.1938.gz")
-    files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20180509.1945.gz")
+    # files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20180509.1945.gz")
 
     # files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010716.0*.gz")
     # files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010716.010*.gz")

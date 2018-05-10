@@ -116,7 +116,7 @@ class Metrics(object):
 
             if is_bgp_update(m):
                 self.count_msgs[BGP_MSG_T[m.bgp.msg.type]] += 1
-                
+
                 # if BGP_MSG_T[m.bgp.msg.type] != 'UPDATE':
                 #     print m.bgp.peer_as
                 #     print BGP_MSG_T[m.bgp.msg.type]
@@ -129,11 +129,10 @@ class Metrics(object):
                 self.count_updates += 1
                 self.updates[self.bin] += 1
                 self.peer_upds[m.bgp.peer_as] += 1
-                print m.bgp.peer_as
-                
+
                 if m.bgp.msg.nlri is not None:
                     self.classify_announcement(m)
-                    # self.clasify_as_path(m)
+                    self.classify_as_path(m)
                 self.classify_withdrawal(m)
 
                 self.count_origin_attr(m)
@@ -146,6 +145,7 @@ class Metrics(object):
         for attr in m.bgp.msg.attr:
             if BGP_ATTR_T[attr.type] == 'AS_PATH':
                 for as_path in attr.as_path:
+                    print as_path
                     pass
                     #   - [ ] Maximum AS-PATH length
                     #   - [ ] Average AS-PATH length
@@ -176,7 +176,7 @@ class Metrics(object):
 
     def classify_withdrawal(self, m):
         self.peer_upds[m.bgp.peer_as] += 1
-        
+
         if (m.bgp.msg.wd_len > 0):
             self.withdrawals[self.bin] += 1
 
