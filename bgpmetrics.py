@@ -20,6 +20,9 @@ from getsizeoflib import total_size
 from guppy import hpy
 import gc
 
+os.environ['TZ'] = 'US'
+time.tzset()
+
 def dd():
     return defaultdict(int)
 
