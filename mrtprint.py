@@ -84,6 +84,8 @@ def print_td(m):
     for attr in m.td.attr:
         print_bgp_attr(attr, 1)
 
+    sys.stdout.write(contents)
+
 def print_td_v2(m):
     global indt_num
     indt_num = 0

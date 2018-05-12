@@ -60,7 +60,8 @@ def main():
     rib_files = []
 
     rib_files = rib_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/bview*.gz")
-    update_files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010731.1938.gz")
+    print rib_files
+    update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010731.1938.gz")
     # files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20180509.1945.gz")
 
     # files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010716.0*.gz")
@@ -77,7 +78,7 @@ def main():
     # files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010721.*.gz")
     # files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010722.*.gz")
     # files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010723.*.gz")
-    files = sorted(files)
+    update_files = sorted(update_files)
 
     metrics = Metrics()
     c = 0
@@ -85,8 +86,9 @@ def main():
     metrics.init_rib(rib_files[0])
 
     for f in update_files:
-        metrics.add(f)
+        metrics.add_updates(f)
         print f + ': ' + str(metrics.count_updates)
+
         for peer, prefixes in metrics.prefix_lookup.iteritems():
             print peer + ' -> ' + str(len(prefixes.keys()))
         c += 1

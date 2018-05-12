@@ -98,7 +98,46 @@ class Metrics(object):
         self.count_msgs = defaultdict(int)
         self.peer_upds = defaultdict(int)
 
-    def add(self, file):
+    def init_rib(self, file):
+        d = Reader(file)
+
+        for m in d:
+
+            m = m.mrt
+            if m.err == MRT_ERR_C['MRT Header Error']:
+                prerror(m)
+                continue
+
+            if is_bgp_update(m):
+                print BGP_MSG_T[m.bgp.msg.type]
+                self.count_msgs[BGP_MSG_T[m.bgp.msg.type]] += 1
+
+                # if BGP_MSG_T[m.bgp.msg.type] != 'UPDATE':
+                #     print m.bgp.peer_as
+                #     print BGP_MSG_T[m.bgp.msg.type]
+                print BGP_MSG_T[m.bgp.msg.type]
+
+                #Init
+                self.bin = (m.ts - self.first_ts)/self.bin_size
+                window = (m.ts - self.first_ts)/self.window_size
+
+                #Total number of annoucements/withdrawals/updates
+                self.count_updates += 1
+                self.updates[self.bin] += 1
+                self.peer_upds[m.bgp.peer_as] += 1
+
+                if m.bgp.msg.nlri is not None:
+                    self.classify_announcement(m)
+                    self.classify_as_path(m)
+                self.classify_withdrawal(m)
+
+                self.count_origin_attr(m)
+
+            elif is_bgp_open(m):
+                print_bgp4mp(m)
+                pass
+
+    def add_updates(self, file):
         #init
         self.count_updates = 0
         self.count_announcements = 0
@@ -107,8 +146,6 @@ class Metrics(object):
 
         if self.first_ts == 0:
             self.first_ts = d.next().mrt.ts
-
-        gc.collect()
 
         for m in d:
 
@@ -148,7 +185,7 @@ class Metrics(object):
         for attr in m.bgp.msg.attr:
             if BGP_ATTR_T[attr.type] == 'AS_PATH':
                 for as_path in attr.as_path:
-                    print as_path
+                    # print as_path
                     pass
                     #   - [ ] Maximum AS-PATH length
                     #   - [ ] Average AS-PATH length
