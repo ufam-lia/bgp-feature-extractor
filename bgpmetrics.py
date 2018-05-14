@@ -17,7 +17,7 @@ import argparse
 import operator
 import pdir
 from getsizeoflib import total_size
-from guppy import hpy
+# from guppy import hpy
 import gc
 
 os.environ['TZ'] = 'US'
@@ -44,6 +44,11 @@ def is_bgp_update(m):
             and m.subtype in BGPMessageST \
             and m.bgp.msg is not None \
             # and m.bgp.msg.type == BGP_MSG_T['UPDATE']
+
+def is_table_dump(m):
+    return (m.type == MRT_T['TABLE_DUMP'] \
+            or m.type == MRT_T['TABLE_DUMP_V2']) \
+            and m.td is not None
 
 def is_bgp_open(m):
     return (m.type == MRT_T['BGP4MP'] \
@@ -97,45 +102,49 @@ class Metrics(object):
         self.counter = 0
         self.count_msgs = defaultdict(int)
         self.peer_upds = defaultdict(int)
+        self.prfx_set = defaultdict(dd)
+        self.prefix_found = 0
+        self.peer_found = 0
+        self.table_exchange_period = False
+        self.rib_count = 0
+        self.table_exchange_period = dict()
 
     def init_rib(self, file):
         d = Reader(file)
 
-        for m in d:
+        prfx_count = defaultdict(int)
+        peer_count = defaultdict(int)
 
+        for m in d:
             m = m.mrt
             if m.err == MRT_ERR_C['MRT Header Error']:
                 prerror(m)
                 continue
 
-            if is_bgp_update(m):
-                print BGP_MSG_T[m.bgp.msg.type]
-                self.count_msgs[BGP_MSG_T[m.bgp.msg.type]] += 1
+            if is_table_dump(m):
+                peer = m.td.peer_as
+                prefix = str(m.td.prefix) + '/' + str(m.td.plen)
 
-                # if BGP_MSG_T[m.bgp.msg.type] != 'UPDATE':
-                #     print m.bgp.peer_as
-                #     print BGP_MSG_T[m.bgp.msg.type]
-                print BGP_MSG_T[m.bgp.msg.type]
+                self.print_classification(m, 'RIB', prefix)
+                self.prfx_set[peer][prefix] += 1
+                prfx_count[prefix] += 1
+                peer_count[peer] += 1
 
-                #Init
-                self.bin = (m.ts - self.first_ts)/self.bin_size
-                window = (m.ts - self.first_ts)/self.window_size
+                for attr in m.td.attr:
+                    self.prefix_lookup[peer][prefix][BGP_ATTR_T[attr.type]] = attr
 
-                #Total number of annoucements/withdrawals/updates
-                self.count_updates += 1
-                self.updates[self.bin] += 1
-                self.peer_upds[m.bgp.peer_as] += 1
+        rolou = False
 
-                if m.bgp.msg.nlri is not None:
-                    self.classify_announcement(m)
-                    self.classify_as_path(m)
-                self.classify_withdrawal(m)
+        for prefix, peers in prfx_count.iteritems():
+            if peers > 1:
+                rolou = True
+                print prefix
 
-                self.count_origin_attr(m)
+        for peer, prefix_count in peer_count.iteritems():
+            print str(peer) + '->' + str(prefix_count)
 
-            elif is_bgp_open(m):
-                print_bgp4mp(m)
-                pass
+        if not rolou:
+            print 'not rolou'
 
     def add_updates(self, file):
         #init
@@ -147,8 +156,8 @@ class Metrics(object):
         if self.first_ts == 0:
             self.first_ts = d.next().mrt.ts
 
-        for m in d:
-
+        m = d.next()
+        while m:
             m = m.mrt
             if m.err == MRT_ERR_C['MRT Header Error']:
                 prerror(m)
@@ -161,8 +170,8 @@ class Metrics(object):
                 #     print m.bgp.peer_as
                 #     print BGP_MSG_T[m.bgp.msg.type]
 
-                #Init
                 self.bin = (m.ts - self.first_ts)/self.bin_size
+                #Init
                 window = (m.ts - self.first_ts)/self.window_size
 
                 #Total number of annoucements/withdrawals/updates
@@ -172,7 +181,6 @@ class Metrics(object):
 
                 if m.bgp.msg.nlri is not None:
                     self.classify_announcement(m)
-                    self.classify_as_path(m)
                 self.classify_withdrawal(m)
 
                 self.count_origin_attr(m)
@@ -181,7 +189,10 @@ class Metrics(object):
                 print_bgp4mp(m)
                 pass
 
-    def classify_as_path(self, m):
+            m = next(d, None)
+            # del m
+
+    def classify_as_path(self, m, prefix):
         for attr in m.bgp.msg.attr:
             if BGP_ATTR_T[attr.type] == 'AS_PATH':
                 for as_path in attr.as_path:
@@ -234,6 +245,8 @@ class Metrics(object):
             self.announcements[self.bin] += 1
             prefix = nlri.prefix + '/' + str(nlri.plen)
             self.upds_prefixes[self.bin][prefix] += 1
+            self.dbg_prefix(m, prefix)
+
             #Store history
             # self.prefix_history[m.bgp.peer_as][prefix].append(m)
             self.msg_counter[m.bgp.peer_as + '@' + prefix] += 1
@@ -242,6 +255,18 @@ class Metrics(object):
                 self.classify_reannouncement(m, prefix)
             else:
                 self.classify_new_announcement(m, prefix)
+
+    def dbg_prefix(self, m, prefix):
+        if self.prfx_set[m.bgp.peer_as][prefix] == 1:
+            self.rib_count += 1
+            self.prfx_set[m.bgp.peer_as][prefix] = 0
+            self.prefix_found = prefix
+            self.peer_found = m.bgp.peer_as
+
+            # print_bgp4mp(m)
+            # print '*'*50
+            # print self.prefix_lookup[m.bgp.peer_as][prefix]
+            # os.abort()
 
 
     def classify_reannouncement(self, m, prefix):
@@ -259,6 +284,9 @@ class Metrics(object):
         #Traverse attributes
         for new_attr in m.bgp.msg.attr:
             attr_name = BGP_ATTR_T[new_attr.type]
+
+            if attr_name == 'AS_PATH':
+                self.classify_as_path(m)
 
             #Check if there is different attributes
             if not self.is_equal(new_attr, current_attr):
@@ -280,14 +308,18 @@ class Metrics(object):
             self.dup_announcements[self.bin] += 1
             self.print_classification(m, 'DUPLICATE', prefix)
 
-        del current_attr
-
     def classify_new_announcement(self, m, prefix):
         if not self.prefix_withdrawals[m.bgp.peer_as][prefix]:
             self.new_announcements[self.bin] += 1
+
+            if prefix == self.prefix_found and m.bgp.peer_as == self.peer_found:
+                print self.prefix_lookup
             for attr in m.bgp.msg.attr:
                 self.prefix_lookup[m.bgp.peer_as][prefix][BGP_ATTR_T[attr.type]] = attr
-            # self.print_classification(m, 'NEW ANNOUNCEMENT', prefix)
+                #Classify AS PATH
+                if BGP_ATTR_T[new_attr.type] == 'AS_PATH':
+                    self.classify_as_path(m, prefix)
+            self.print_classification(m, 'NEW ANNOUNCEMENT', prefix)
 
         elif self.prefix_lookup[m.bgp.peer_as][prefix]['ORIGIN'] != []:
             #Init vars
@@ -302,23 +334,26 @@ class Metrics(object):
                 #Check if there is different attributes
                 if not self.is_equal(new_attr, current_attr):
                     is_diff_announcement = True
+                #Classify AS PATH
+                if attr_name == 'AS_PATH':
+                    self.classify_as_path(m, prefix)
 
                 self.prefix_lookup[m.bgp.peer_as][prefix][attr_name] = new_attr
             #Figure it out which counter will be incremented
             if is_diff_announcement:
                 self.new_ann_after_wd[self.bin] += 1
                 # self.prefix_nada.add(prefix)
-                # self.print_classification(m, 'NEW ANN. AFTER WITHDRAW', prefix)
+                self.print_classification(m, 'NEW ANN. AFTER WITHDRAW', prefix)
             else:
                 self.flap_announcements[self.bin] += 1
                 # self.prefix_flap.add(prefix)
-                # self.print_classification(m, 'FLAP', prefix)
+                self.print_classification(m, 'FLAP', prefix)
             del current_attr
         else:
             self.ann_after_wd_unknown[self.bin] += 1
             for attr in m.bgp.msg.attr:
                 self.prefix_lookup[m.bgp.peer_as][prefix][BGP_ATTR_T[attr.type]] = attr
-            # self.print_classification(m, 'ANN. AFTER WITHDRAW - UNKNOWN', prefix)
+            self.print_classification(m, 'ANN. AFTER WITHDRAW - UNKNOWN', prefix)
 
     def is_equal(self, new_attr, old_attr):
         if BGP_ATTR_T[new_attr.type] == 'ORIGIN':
@@ -378,30 +413,30 @@ class Metrics(object):
 
         # print self.diff_counter
         # print self.error_counter
-        prefix_lookup_size = 0
-        c = 0
-        for peers, prefixes in self.prefix_lookup.iteritems():
-            prefix_lookup_size += sys.getsizeof(peers)
-            prefix_lookup_size += sys.getsizeof(prefixes)
-
-            for prefix, attrs in prefixes.iteritems():
-                prefix_lookup_size += sys.getsizeof(prefix)
-                prefix_lookup_size += sys.getsizeof(attrs)
-
-                for attr_name_, attr_ in attrs.iteritems():
-                    # print pdir(attr_)
-                    prefix_lookup_size += sys.getsizeof(attr_)
-                    prefix_lookup_size += sys.getsizeof(attr_name_)
-                    c += 1
-
+        # prefix_lookup_size = 0
+        # c = 0
+        # for peers, prefixes in self.prefix_lookup.iteritems():
+        #     prefix_lookup_size += sys.getsizeof(peers)
+        #     prefix_lookup_size += sys.getsizeof(prefixes)
+        #
+        #     for prefix, attrs in prefixes.iteritems():
+        #         prefix_lookup_size += sys.getsizeof(prefix)
+        #         prefix_lookup_size += sys.getsizeof(attrs)
+        #
+        #         for attr_name_, attr_ in attrs.iteritems():
+        #             # print pdir(attr_)
+        #             prefix_lookup_size += sys.getsizeof(attr_)
+        #             prefix_lookup_size += sys.getsizeof(attr_name_)
+        #             c += 1
+        #
         # print 'self.upds_prefixes ->' + str(total_size(self.upds_prefixes)/1024) + 'KB'
         # print 'self.prefix_withdrawals ->' + str(total_size(self.prefix_withdrawals)/1024) + 'KB'
         # print 'self.prefix_lookup ->' + str(total_size(self.prefix_lookup)/1024) + 'KB'
         # print 'self.prefix_lookup2 ->' + str(prefix_lookup_size/1024) + 'KB'
-
+        #
         # print 'self.upds_prefixes ->' + str(len(self.upds_prefixes.keys())) + ' keys'
         # print 'self.prefix_withdrawals ->' + str(len(self.prefix_withdrawals.keys())) + ' keys'
-
+        #
         # prefix_lookup_counter = 0
         # for peers, prefixes in self.prefix_lookup.iteritems():
         #     prefix_lookup_counter += len(prefixes.keys())
@@ -415,10 +450,25 @@ class Metrics(object):
         # print total_size(self.prefix_lookup[])
 
     def print_classification(self, m, type, prefix):
-        if prefix == '' and m.bgp.peer_as == '':
-            print '#'*15 + type + '#'*15
-            print 'Timestamp: %s' % (dt.datetime.fromtimestamp(m.ts))
-            print_bgp4mp(m)
+        # if prefix == self.prefix_found and m.bgp.peer_as == self.peer_found:
+
+        if prefix == '2.31.96.0/24':
+            if MRT_T[m.type] == 'BGP4MP' or  MRT_T[m.type] == 'BGP4MP_ET':
+                peer = m.bgp.peer_as
+                if peer == '2686':
+                    print '#'*15 + type + '#'*15
+                    print 'Timestamp: %s' % (dt.datetime.fromtimestamp(m.ts))
+                    print_bgp4mp(m)
+            else:
+                peer = m.td.peer_as
+                if peer == '2686':
+                    print '#'*15 + type + '#'*15
+                    print 'Timestamp: %s' % (dt.datetime.fromtimestamp(m.ts))
+                    print_td(m)
+
+            if type != 'RIB':
+                self.print_dicts()
+                # os.abort()
 
     def print_prefix_history(self, peer, prefix):
         for msg in self.prefix_history[peer][prefix]:

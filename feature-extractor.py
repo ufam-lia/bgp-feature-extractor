@@ -45,6 +45,7 @@ BGPStateChangeST = [ BGP4MP_ST['BGP4MP_STATE_CHANGE'], BGP4MP_ST['BGP4MP_STATE_C
 #         super(Metrics, self).__init__()
 #         self.arg = arg
 
+
 def main():
     parser = argparse.ArgumentParser(description='Process BGP timeseries')
     parser.add_argument('--days', type=int)
@@ -59,25 +60,28 @@ def main():
     update_files = []
     rib_files = []
 
+    #RIB files
     rib_files = rib_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/bview*.gz")
-    print rib_files
-    update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010731.1938.gz")
-    # files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20180509.1945.gz")
+    # rib_files = rib_files + glob.glob("/home/pc/ripe-ris/bview.20180501.0000.gz")
 
-    # files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010716.0*.gz")
-    # files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010716.010*.gz")
+    #Update files
+    # update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010731.1938.gz")
+    # update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20180509.1945.gz")
 
-    # files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010713.*.gz")
-    # files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010714.*.gz")
-    # files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010715.*.gz")
-    # files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010716.*.gz")
-    # files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010717.*.gz")
-    # files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010718.*.gz")
-    # files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010719.*.gz")
-    # files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010720.*.gz")
-    # files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010721.*.gz")
-    # files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010722.*.gz")
-    # files = files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010723.*.gz")
+    update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010716.*.gz")
+    # update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010716.010*.gz")
+
+    #update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010713.*.gz")
+    #update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010714.*.gz")
+    #update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010715.*.gz")
+    #update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010716.*.gz")
+    #update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010717.*.gz")
+    #update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010718.*.gz")
+    #update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010719.*.gz")
+    #update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010720.*.gz")
+    #update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010721.*.gz")
+    #update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010722.*.gz")
+    #update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010723.*.gz")
     update_files = sorted(update_files)
 
     metrics = Metrics()
@@ -85,15 +89,15 @@ def main():
 
     metrics.init_rib(rib_files[0])
 
+    for k, v in metrics.prefix_lookup.iteritems():
+        c += len(v.keys())
+    print c
+
     for f in update_files:
         metrics.add_updates(f)
         print f + ': ' + str(metrics.count_updates)
 
-        for peer, prefixes in metrics.prefix_lookup.iteritems():
-            print peer + ' -> ' + str(len(prefixes.keys()))
-        c += 1
-
-    print metrics.count_msgs
+    print metrics.rib_count
     metrics.plot()
 
 if __name__ == '__main__':
