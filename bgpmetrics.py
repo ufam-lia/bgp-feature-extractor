@@ -88,6 +88,29 @@ class Metrics(object):
         self.error_counter = defaultdict(int)
         self.msg_counter = defaultdict(int)
 
+        #AS path features
+        self.as_path_lengths = defaultdict()
+                #   - [ ] Maximum AS-PATH length
+                #   - [ ] Average AS-PATH length
+                #   - [ ] Maximum unique AS-PATH length
+                #   - [ ] Average unique AS-PATH length
+                #   - [ ] Maximum of rare ASes in the path
+                #   - [ ] Average of rare ASes in the path
+                #   - [ ] Maximum edit distance
+                #   - [ ] Average edit distance
+                #   - [ ] Maximum edit distance equals $n$ ($n = 1,2,...$)
+                #   - [ ] Maximum AS-path edit distance equals $n$ ($n = 1,2,...$)
+                # - Stateful
+                #   - [ ] Observation of rare ASes in the path
+                #   - [ ] Announcement to longer path
+                #   - [ ] Announcement to shorter path
+                #   - [ ] AS-PATH change according to geographic location
+                #   - [ ] Prefix origin change
+                #   - [ ] Number of new paths announced after withdrawing an old path
+                #   - [ ] Number of new-path announcements
+                #   - [ ] Interarrival time of different types of events (average)
+                #   - [ ] Interarrival time of different types of events (standard deviation)
+
         #Routing table
         self.prefix_lookup = defaultdict(dddlist)
         self.prefix_withdrawals = defaultdict(dd)
@@ -311,14 +334,15 @@ class Metrics(object):
     def classify_new_announcement(self, m, prefix):
         if not self.prefix_withdrawals[m.bgp.peer_as][prefix]:
             self.new_announcements[self.bin] += 1
-
             if prefix == self.prefix_found and m.bgp.peer_as == self.peer_found:
                 print self.prefix_lookup
+
             for attr in m.bgp.msg.attr:
                 self.prefix_lookup[m.bgp.peer_as][prefix][BGP_ATTR_T[attr.type]] = attr
                 #Classify AS PATH
                 if BGP_ATTR_T[new_attr.type] == 'AS_PATH':
                     self.classify_as_path(m, prefix)
+
             self.print_classification(m, 'NEW ANNOUNCEMENT', prefix)
 
         elif self.prefix_lookup[m.bgp.peer_as][prefix]['ORIGIN'] != []:
@@ -353,6 +377,11 @@ class Metrics(object):
             self.ann_after_wd_unknown[self.bin] += 1
             for attr in m.bgp.msg.attr:
                 self.prefix_lookup[m.bgp.peer_as][prefix][BGP_ATTR_T[attr.type]] = attr
+                attr_name = BGP_ATTR_T[attr.type]
+
+                if attr_name == 'AS_PATH':
+                    self.classify_as_path(m)
+
             self.print_classification(m, 'ANN. AFTER WITHDRAW - UNKNOWN', prefix)
 
     def is_equal(self, new_attr, old_attr):
