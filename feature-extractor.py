@@ -63,12 +63,13 @@ def main():
     #RIB files
     rib_files = rib_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/bview*.gz")
     # rib_files = rib_files + glob.glob("/home/pc/ripe-ris/bview.20180501.0000.gz")
+    # rib_files = rib_files + glob.glob("/home/pc/ripe-ris/bview.20180501.0000.gz")
 
     #Update files
-    # update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010731.1938.gz")
+    update_files = update_files + glob.glob("/home/pc/Downloads/updates.20180515.20*.gz")
     # update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20180509.1945.gz")
 
-    update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010716.*.gz")
+    # update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010716.*.gz")
     # update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010716.010*.gz")
 
     #update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010713.*.gz")
@@ -87,7 +88,7 @@ def main():
     metrics = Metrics()
     c = 0
 
-    metrics.init_rib(rib_files[0])
+    # metrics.init_rib(rib_files[0])
 
     for k, v in metrics.prefix_lookup.iteritems():
         c += len(v.keys())

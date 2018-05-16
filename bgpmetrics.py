@@ -89,27 +89,32 @@ class Metrics(object):
         self.msg_counter = defaultdict(int)
 
         #AS path features
-        self.as_path_lengths = defaultdict()
-                #   - [ ] Maximum AS-PATH length
-                #   - [ ] Average AS-PATH length
-                #   - [ ] Maximum unique AS-PATH length
-                #   - [ ] Average unique AS-PATH length
-                #   - [ ] Maximum of rare ASes in the path
-                #   - [ ] Average of rare ASes in the path
-                #   - [ ] Maximum edit distance
-                #   - [ ] Average edit distance
-                #   - [ ] Maximum edit distance equals $n$ ($n = 1,2,...$)
-                #   - [ ] Maximum AS-path edit distance equals $n$ ($n = 1,2,...$)
-                # - Stateful
-                #   - [ ] Observation of rare ASes in the path
-                #   - [ ] Announcement to longer path
-                #   - [ ] Announcement to shorter path
-                #   - [ ] AS-PATH change according to geographic location
-                #   - [ ] Prefix origin change
-                #   - [ ] Number of new paths announced after withdrawing an old path
-                #   - [ ] Number of new-path announcements
-                #   - [ ] Interarrival time of different types of events (average)
-                #   - [ ] Interarrival time of different types of events (standard deviation)
+        self.as_path_max_length = 0
+        self.as_paths = []
+        self.unique_as_paths = [] #Ignore prepending
+        self.distinct_as_paths = set() #Ignore repeated AS paths
+        self.as_paths_distribution = defaultdict(int)
+        # - Stateless
+        #   - [x] Maximum AS-PATH length (any)
+        #   - [x] Average AS-PATH length (any)
+        #   - [x] Maximum unique AS-PATH length (any)
+        #   - [x] Average unique AS-PATH length (any)
+        # - Stateful
+        #   - [ ] Maximum edit distance (reann) (new aft. wd)
+        #   - [ ] Average edit distance  (reann) (new aft. wd)
+        #   - [ ] Maximum edit distance equals $n$ ($n = 1,2,...$) (reann) (new aft. wd)
+        #   - [ ] Maximum AS-path edit distance equals $n$ ($n = 1,2,...$) (reann) (new aft. wd)
+        #   - [x] Observation of rare ASes in the path (any)
+        #   - [x] Maximum of rare ASes in the path (any)
+        #   - [x] Average of rare ASes in the path (any)
+        #   - [ ] Announcement to longer path  (reann) (new aft. wd)
+        #   - [ ] Announcement to shorter path  (reann) (new aft. wd)
+        #   - [ ] AS-PATH change according to geographic location
+        #   - [ ] Prefix origin change (reann)
+        #   - [ ] Number of new paths announced after withdrawing an old path (new aft. wd)
+        #   - [ ] Number of new-path announcements (any)
+        #   - [ ] Interarrival time of different types of events (average)
+        #   - [ ] Interarrival time of different types of events (standard deviation)
 
         #Routing table
         self.prefix_lookup = defaultdict(dddlist)
@@ -215,32 +220,38 @@ class Metrics(object):
             m = next(d, None)
             # del m
 
-    def classify_as_path(self, m, prefix):
-        for attr in m.bgp.msg.attr:
-            if BGP_ATTR_T[attr.type] == 'AS_PATH':
-                for as_path in attr.as_path:
-                    # print as_path
-                    pass
-                    #   - [ ] Maximum AS-PATH length
-                    #   - [ ] Average AS-PATH length
-                    #   - [ ] Maximum unique AS-PATH length
-                    #   - [ ] Average unique AS-PATH length
-                    #   - [ ] Maximum of rare ASes in the path
-                    #   - [ ] Average of rare ASes in the path
-                    #   - [ ] Maximum edit distance
-                    #   - [ ] Average edit distance
-                    #   - [ ] Maximum edit distance equals $n$ ($n = 1,2,...$)
-                    #   - [ ] Maximum AS-path edit distance equals $n$ ($n = 1,2,...$)
-                    # - Stateful
-                    #   - [ ] Observation of rare ASes in the path
-                    #   - [ ] Announcement to longer path
-                    #   - [ ] Announcement to shorter path
-                    #   - [ ] AS-PATH change according to geographic location
-                    #   - [ ] Prefix origin change
-                    #   - [ ] Number of new paths announced after withdrawing an old path
-                    #   - [ ] Number of new-path announcements
-                    #   - [ ] Interarrival time of different types of events (average)
-                    #   - [ ] Interarrival time of different types of events (standard deviation)
+    def classify_as_path(self, attr, prefix):
+        for as_path in attr.as_path:
+            if as_path['type'] == 2:
+                self.as_paths.append(as_path)
+                self.unique_as_paths.append(set(as_path['val'])) #Ignore prepending
+                self.distinct_as_paths.add(str(as_path['val'])) #Ignore repeated AS paths
+                for asn in set(as_path['val']):
+                    self.as_paths_distribution[asn] += 1
+                if as_path['len'] > self.as_path_max_length:
+                    self.as_path_max_length = as_path['len']
+
+                self.as_path_max_length = 0
+                #   - [ ] Maximum AS-PATH length
+                #   - [ ] Average AS-PATH length
+                #   - [ ] Maximum unique AS-PATH length
+                #   - [ ] Average unique AS-PATH length
+                #   - [ ] Maximum of rare ASes in the path
+                #   - [ ] Average of rare ASes in the path
+                #   - [ ] Maximum edit distance
+                #   - [ ] Average edit distance
+                #   - [ ] Maximum edit distance equals $n$ ($n = 1,2,...$)
+                #   - [ ] Maximum AS-path edit distance equals $n$ ($n = 1,2,...$)
+                # - Stateful
+                #   - [ ] Observation of rare ASes in the path
+                #   - [ ] Announcement to longer path
+                #   - [ ] Announcement to shorter path
+                #   - [ ] AS-PATH change according to geographic location
+                #   - [ ] Prefix origin change
+                #   - [ ] Number of new paths announced after withdrawing an old path
+                #   - [ ] Number of new-path announcements
+                #   - [ ] Interarrival time of different types of events (average)
+                #   - [ ] Interarrival time of different types of events (standard deviation)
 
     def count_origin_attr(self, m):
         if m.bgp.msg.attr is not None:
@@ -309,7 +320,7 @@ class Metrics(object):
             attr_name = BGP_ATTR_T[new_attr.type]
 
             if attr_name == 'AS_PATH':
-                self.classify_as_path(m)
+                self.classify_as_path(new_attr, prefix)
 
             #Check if there is different attributes
             if not self.is_equal(new_attr, current_attr):
@@ -340,8 +351,8 @@ class Metrics(object):
             for attr in m.bgp.msg.attr:
                 self.prefix_lookup[m.bgp.peer_as][prefix][BGP_ATTR_T[attr.type]] = attr
                 #Classify AS PATH
-                if BGP_ATTR_T[new_attr.type] == 'AS_PATH':
-                    self.classify_as_path(m, prefix)
+                if BGP_ATTR_T[attr.type] == 'AS_PATH':
+                    self.classify_as_path(attr, prefix)
 
             self.print_classification(m, 'NEW ANNOUNCEMENT', prefix)
 
@@ -360,7 +371,7 @@ class Metrics(object):
                     is_diff_announcement = True
                 #Classify AS PATH
                 if attr_name == 'AS_PATH':
-                    self.classify_as_path(m, prefix)
+                    self.classify_as_path(new_attr, prefix)
 
                 self.prefix_lookup[m.bgp.peer_as][prefix][attr_name] = new_attr
             #Figure it out which counter will be incremented
@@ -380,7 +391,7 @@ class Metrics(object):
                 attr_name = BGP_ATTR_T[attr.type]
 
                 if attr_name == 'AS_PATH':
-                    self.classify_as_path(m)
+                    self.classify_as_path(attr, prefix)
 
             self.print_classification(m, 'ANN. AFTER WITHDRAW - UNKNOWN', prefix)
 
