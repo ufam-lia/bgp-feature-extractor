@@ -66,10 +66,10 @@ def main():
     # rib_files = rib_files + glob.glob("/home/pc/ripe-ris/bview.20180501.0000.gz")
 
     #Update files
-    update_files = update_files + glob.glob("/home/pc/Downloads/updates.20180515.20*.gz")
+    # update_files = update_files + glob.glob("/home/pc/Downloads/updates.20180515.20*.gz")
     # update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20180509.1945.gz")
 
-    # update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010716.*.gz")
+    update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010716.*.gz")
     # update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010716.010*.gz")
 
     #update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010713.*.gz")

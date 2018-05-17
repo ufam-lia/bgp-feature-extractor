@@ -89,11 +89,16 @@ class Metrics(object):
         self.msg_counter = defaultdict(int)
 
         #AS path features
-        self.as_path_max_length = 0
         self.as_paths = []
         self.unique_as_paths = [] #Ignore prepending
         self.distinct_as_paths = set() #Ignore repeated AS paths
         self.as_paths_distribution = defaultdict(int)
+        self.as_path_max_length = defaultdict(int)
+        self.as_path_avg_length = defaultdict(int)
+        self.unique_as_path_max_length = defaultdict(int)
+        self.unique_as_path_avg_length = defaultdict(int)
+        self.num_of_paths_rcvd = defaultdict(int)
+
         # - Stateless
         #   - [x] Maximum AS-PATH length (any)
         #   - [x] Average AS-PATH length (any)
@@ -223,19 +228,28 @@ class Metrics(object):
     def classify_as_path(self, attr, prefix):
         for as_path in attr.as_path:
             if as_path['type'] == 2:
-                self.as_paths.append(as_path)
-                self.unique_as_paths.append(set(as_path['val'])) #Ignore prepending
-                self.distinct_as_paths.add(str(as_path['val'])) #Ignore repeated AS paths
-                for asn in set(as_path['val']):
-                    self.as_paths_distribution[asn] += 1
-                if as_path['len'] > self.as_path_max_length:
-                    self.as_path_max_length = as_path['len']
+                unique_as_path = set(as_path['val'])
+                # self.num_of_paths_rcvd += 1
 
-                self.as_path_max_length = 0
-                #   - [ ] Maximum AS-PATH length
-                #   - [ ] Average AS-PATH length
-                #   - [ ] Maximum unique AS-PATH length
-                #   - [ ] Average unique AS-PATH length
+                self.as_paths.append(as_path)
+                self.unique_as_paths.append(unique_as_path) #Ignore prepending
+                self.distinct_as_paths.add(str(as_path['val'])) #Ignore repeated AS paths
+
+                for asn in unique_as_path:
+                    self.as_paths_distribution[asn] += 1
+                if as_path['len'] > self.as_path_max_length[self.bin]:
+                    self.as_path_max_length[self.bin] = as_path['len']
+                if len(unique_as_path) > self.unique_as_path_max_length[self.bin]:
+                    self.unique_as_path_max_length[self.bin] = len(unique_as_path)
+
+                self.num_of_paths_rcvd[self.bin] += 1
+                self.as_path_avg_length[self.bin] = (as_path['len'] * self.num_of_paths_rcvd[self.bin] + self.as_path_avg_length[self.bin])/self.num_of_paths_rcvd[self.bin]
+                self.unique_as_path_avg_length[self.bin] = (len(unique_as_path) * self.num_of_paths_rcvd[self.bin] + self.unique_as_path_max_length[self.bin])/self.num_of_paths_rcvd[self.bin]
+
+                #   - [x] Maximum AS-PATH length
+                #   - [x] Average AS-PATH length
+                #   - [x] Maximum unique AS-PATH length
+                #   - [x] Average unique AS-PATH length
                 #   - [ ] Maximum of rare ASes in the path
                 #   - [ ] Average of rare ASes in the path
                 #   - [ ] Maximum edit distance
@@ -441,6 +455,11 @@ class Metrics(object):
         self.sort_timeseries()
         self.fill_blanks_timeseries()
         self.plot_timeseries()
+        print self.as_paths_distribution
+        print self.as_path_max_length
+        print self.unique_as_path_max_length
+        print self.as_path_avg_length
+        print self.unique_as_path_avg_length
         # self.print_dicts()
 
         for prefix in self.prefix_nada:
