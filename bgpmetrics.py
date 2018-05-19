@@ -25,13 +25,12 @@ time.tzset()
 
 def dd():
     return defaultdict(int)
-
+def ddarr():
+    return defaultdict(np.zeros(1))
 def ddlist():
     return defaultdict(list)
-
 def ddd():
     return defaultdict(dd)
-
 def dddlist():
     return defaultdict(ddlist)
 
@@ -62,7 +61,7 @@ class Metrics(object):
     def __init__(self):
         super(Metrics, self).__init__()
 
-        self.bin_size = 60*60
+        self.bin_size = 60*5
         self.window_size = 60
         self.count_ts = defaultdict(int)
 
@@ -98,6 +97,12 @@ class Metrics(object):
         self.unique_as_path_max_length = defaultdict(int)
         self.unique_as_path_avg_length = defaultdict(int)
         self.num_of_paths_rcvd = defaultdict(int)
+        self.window_end = 0
+        self.rare_threshold = 0
+        self.max_rare_ases = defaultdict(int)
+        self.avg_rare_ases = defaultdict(int)
+        self.number_rare_ases = defaultdict(int)
+        self.counter_rare_ases = defaultdict(int)
 
         # - Stateless
         #   - [x] Maximum AS-PATH length (any)
@@ -225,7 +230,7 @@ class Metrics(object):
             m = next(d, None)
             # del m
 
-    def classify_as_path(self, attr, prefix):
+    def classify_as_path(m, self, m, attr, prefix):
         for as_path in attr.as_path:
             if as_path['type'] == 2:
                 unique_as_path = set(as_path['val'])
@@ -235,8 +240,23 @@ class Metrics(object):
                 self.unique_as_paths.append(unique_as_path) #Ignore prepending
                 self.distinct_as_paths.add(str(as_path['val'])) #Ignore repeated AS paths
 
+
+                if m.ts > self.window_end:
+                    self.window_end = m.ts + bin_size
+                    self.rare_threshold = np.percentile(np.array(metrics.as_paths_distribution.values()),15)
+
+                rare_ases = 0
+
                 for asn in unique_as_path:
                     self.as_paths_distribution[asn] += 1
+                    if self.as_paths_distribution[asn] < self.rare_threshold:
+                        rare_ases += 1
+
+                    if self.rare_ases_counter.has_key(self.bin):
+                        no.append(self.rare_ases_counter[bin], rare_ases)
+                    else:
+                        self.rare_ases_counter[bin] = np.array(rare_ases)
+
                 if as_path['len'] > self.as_path_max_length[self.bin]:
                     self.as_path_max_length[self.bin] = as_path['len']
                 if len(unique_as_path) > self.unique_as_path_max_length[self.bin]:
@@ -334,7 +354,7 @@ class Metrics(object):
             attr_name = BGP_ATTR_T[new_attr.type]
 
             if attr_name == 'AS_PATH':
-                self.classify_as_path(new_attr, prefix)
+                self.classify_as_path(m, new_attr, prefix)
 
             #Check if there is different attributes
             if not self.is_equal(new_attr, current_attr):
@@ -366,7 +386,7 @@ class Metrics(object):
                 self.prefix_lookup[m.bgp.peer_as][prefix][BGP_ATTR_T[attr.type]] = attr
                 #Classify AS PATH
                 if BGP_ATTR_T[attr.type] == 'AS_PATH':
-                    self.classify_as_path(attr, prefix)
+                    self.classify_as_path(m, attr, prefix)
 
             self.print_classification(m, 'NEW ANNOUNCEMENT', prefix)
 
@@ -385,7 +405,7 @@ class Metrics(object):
                     is_diff_announcement = True
                 #Classify AS PATH
                 if attr_name == 'AS_PATH':
-                    self.classify_as_path(new_attr, prefix)
+                    self.classify_as_path(m, new_attr, prefix)
 
                 self.prefix_lookup[m.bgp.peer_as][prefix][attr_name] = new_attr
             #Figure it out which counter will be incremented
@@ -405,7 +425,7 @@ class Metrics(object):
                 attr_name = BGP_ATTR_T[attr.type]
 
                 if attr_name == 'AS_PATH':
-                    self.classify_as_path(attr, prefix)
+                    self.classify_as_path(m, attr, prefix)
 
             self.print_classification(m, 'ANN. AFTER WITHDRAW - UNKNOWN', prefix)
 
@@ -564,7 +584,7 @@ class Metrics(object):
         # os.system('shotwell ' + output + ' &')
 
     def sort_dict(self, unsort_dict):
-        return defaultdict(int, dict(sorted(unsort_dict.items(), key = operator.itemgetter(0))))
+        return defaultdict(int, dict(sorted(unsort_dict.items(), key = operator.itemgetter(1))))
 
     def print_dict(self, name, dict):
         for k, v in dict.iteritems():

@@ -69,7 +69,7 @@ def main():
     # update_files = update_files + glob.glob("/home/pc/Downloads/updates.20180515.20*.gz")
     # update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20180509.1945.gz")
 
-    update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010716.*.gz")
+    update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010713.*.gz")
     # update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010716.010*.gz")
 
     #update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010713.*.gz")
@@ -97,6 +97,20 @@ def main():
     for f in update_files:
         metrics.add_updates(f)
         print f + ': ' + str(metrics.count_updates)
+        # print 'as_paths_distribution -> ' + str(metrics.as_paths_distribution)
+        # print 'as_path_max_length -> ' + str(metrics.as_path_max_length)
+        # print 'unique_as_path_max_length -> ' + str(metrics.unique_as_path_max_length)
+        # print 'as_path_avg_length -> ' + str(metrics.as_path_avg_length)
+        # print 'unique_as_path_avg_length -> ' + str(metrics.unique_as_path_avg_length)
+        as_paths_distribution_sorted = sorted(metrics.as_paths_distribution.items(), reverse = True, key = operator.itemgetter(1))
+        i = 1
+        for k, v in as_paths_distribution_sorted[-len(as_paths_distribution_sorted)/5:-1]:
+        # for k, v in as_paths_distribution_sorted:
+            # print '#' + str(i) + ' AS:' + str(k) + ' - ' + str(v)
+            i += 1
+        # print sorted(set(metrics.as_paths_distribution.values()))
+        print np.percentile(np.array(metrics.as_paths_distribution.values()),15)
+        print '*'*50
 
     print metrics.rib_count
     metrics.plot()
