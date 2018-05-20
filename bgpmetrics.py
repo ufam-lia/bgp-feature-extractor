@@ -56,6 +56,27 @@ def is_bgp_open(m):
             and m.bgp.msg is not None \
             and m.bgp.msg.type == BGP_MSG_T['OPEN']
 
+def edit_distance(l1, l2):
+    rows = len(l1)+1
+    cols = len(l2)+1
+    dist = [[0 for x in range(cols)] for x in range(rows)]
+
+    for i in range(1, rows):
+        dist[i][0] = i
+    for i in range(1, cols):
+        dist[0][i] = i
+
+    for col in range(1, cols):
+        for row in range(1, rows):
+            if l1[row-1] == l2[col-1]:
+                cost = 0
+            else:
+                cost = 1
+            dist[row][col] = min(dist[row-1][col] + 1,      # deletion
+                                 dist[row][col-1] + 1,      # insertion
+                                 dist[row-1][col-1] + cost) # substitution
+    return dist[row][col]
+
 class Metrics(object):
     """docstring for Metrics."""
     def __init__(self):
@@ -89,20 +110,29 @@ class Metrics(object):
 
         #AS path features
         self.as_paths = []
+        self.num_of_paths_rcvd = defaultdict(int)
         self.unique_as_paths = [] #Ignore prepending
         self.distinct_as_paths = set() #Ignore repeated AS paths
         self.as_paths_distribution = defaultdict(int)
         self.as_path_max_length = defaultdict(int)
         self.as_path_avg_length = defaultdict(int)
-        self.unique_as_path_max_length = defaultdict(int)
-        self.unique_as_path_avg_length = defaultdict(int)
-        self.num_of_paths_rcvd = defaultdict(int)
+        self.unique_as_path_max = defaultdict(int)
+        self.unique_as_path_avg = defaultdict(int)
         self.window_end = 0
+
         self.rare_threshold = 0
-        self.max_rare_ases = defaultdict(int)
-        self.avg_rare_ases = defaultdict(int)
+        self.rare_ases_iteration = 1
+        self.rare_ases_max = defaultdict(int)
+        self.rare_ases_avg = defaultdict(int)
         self.number_rare_ases = defaultdict(int)
-        self.counter_rare_ases = defaultdict(int)
+        self.rare_ases_counter = defaultdict(int)
+
+        self.edit_distance_max = defaultdict(int)
+        self.edit_distance_avg = defaultdict(int)
+        self.edit_distance_counter = defaultdict(int)
+        self.edit_distance_unique_counter = defaultdict(int)
+        self.edit_distance_dict = defaultdict(dd)
+        self.edit_distance_unique_dict = defaultdict(dd)
 
         # - Stateless
         #   - [x] Maximum AS-PATH length (any)
@@ -122,7 +152,6 @@ class Metrics(object):
         #   - [ ] AS-PATH change according to geographic location
         #   - [ ] Prefix origin change (reann)
         #   - [ ] Number of new paths announced after withdrawing an old path (new aft. wd)
-        #   - [ ] Number of new-path announcements (any)
         #   - [ ] Interarrival time of different types of events (average)
         #   - [ ] Interarrival time of different types of events (standard deviation)
 
@@ -230,7 +259,7 @@ class Metrics(object):
             m = next(d, None)
             # del m
 
-    def classify_as_path(m, self, m, attr, prefix):
+    def classify_as_path(self, m, attr, prefix):
         for as_path in attr.as_path:
             if as_path['type'] == 2:
                 unique_as_path = set(as_path['val'])
@@ -239,45 +268,51 @@ class Metrics(object):
                 self.as_paths.append(as_path)
                 self.unique_as_paths.append(unique_as_path) #Ignore prepending
                 self.distinct_as_paths.add(str(as_path['val'])) #Ignore repeated AS paths
-
-
-                if m.ts > self.window_end:
-                    self.window_end = m.ts + bin_size
-                    self.rare_threshold = np.percentile(np.array(metrics.as_paths_distribution.values()),15)
-
                 rare_ases = 0
-
                 for asn in unique_as_path:
                     self.as_paths_distribution[asn] += 1
                     if self.as_paths_distribution[asn] < self.rare_threshold:
                         rare_ases += 1
+                        print 'rare_ases ->' + str(rare_ases)
 
-                    if self.rare_ases_counter.has_key(self.bin):
-                        no.append(self.rare_ases_counter[bin], rare_ases)
+                self.rare_ases_iteration += 1
+                if self.rare_ases_iteration % 1000 == 0:
+                    self.rare_threshold = np.percentile(np.array(self.as_paths_distribution.values()), 20)
+                    print 'self.rare_threshold ->' + str(self.rare_threshold)
+
+                if self.rare_ases_iteration > 1000:
+                    if type(self.rare_ases_counter[self.bin]) != int:
+                        self.rare_ases_counter[self.bin] = np.append(self.rare_ases_counter[self.bin], rare_ases)
                     else:
-                        self.rare_ases_counter[bin] = np.array(rare_ases)
+                        self.rare_ases_counter[self.bin] = np.array(rare_ases)
+
+                    if rare_ases > self.rare_ases_max[bin]:
+                        self.rare_ases_max[bin] = rare_ases
+                        print 'self.rare_ases_max[bin] ->' + str(self.rare_ases_max[bin])
 
                 if as_path['len'] > self.as_path_max_length[self.bin]:
                     self.as_path_max_length[self.bin] = as_path['len']
-                if len(unique_as_path) > self.unique_as_path_max_length[self.bin]:
-                    self.unique_as_path_max_length[self.bin] = len(unique_as_path)
+                if len(unique_as_path) > self.unique_as_path_max[self.bin]:
+                    self.unique_as_path_max[self.bin] = len(unique_as_path)
+
+                # print self.rare_ases_counter
+
+                if type(self.rare_ases_counter[self.bin]) != int:
+                    self.rare_ases_avg[self.bin] = self.rare_ases_counter[self.bin].mean()
+                    print self.rare_ases_avg[self.bin]
 
                 self.num_of_paths_rcvd[self.bin] += 1
                 self.as_path_avg_length[self.bin] = (as_path['len'] * self.num_of_paths_rcvd[self.bin] + self.as_path_avg_length[self.bin])/self.num_of_paths_rcvd[self.bin]
-                self.unique_as_path_avg_length[self.bin] = (len(unique_as_path) * self.num_of_paths_rcvd[self.bin] + self.unique_as_path_max_length[self.bin])/self.num_of_paths_rcvd[self.bin]
+                self.unique_as_path_avg[self.bin] = (len(unique_as_path) * self.num_of_paths_rcvd[self.bin] + self.unique_as_path_max[self.bin])/self.num_of_paths_rcvd[self.bin]
 
                 #   - [x] Maximum AS-PATH length
                 #   - [x] Average AS-PATH length
                 #   - [x] Maximum unique AS-PATH length
                 #   - [x] Average unique AS-PATH length
-                #   - [ ] Maximum of rare ASes in the path
-                #   - [ ] Average of rare ASes in the path
-                #   - [ ] Maximum edit distance
-                #   - [ ] Average edit distance
-                #   - [ ] Maximum edit distance equals $n$ ($n = 1,2,...$)
-                #   - [ ] Maximum AS-path edit distance equals $n$ ($n = 1,2,...$)
+                #   - [x] Maximum of rare ASes in the path
+                #   - [x] Average of rare ASes in the path
                 # - Stateful
-                #   - [ ] Observation of rare ASes in the path
+                #   - [x] Observation of rare ASes in the path
                 #   - [ ] Announcement to longer path
                 #   - [ ] Announcement to shorter path
                 #   - [ ] AS-PATH change according to geographic location
@@ -286,6 +321,32 @@ class Metrics(object):
                 #   - [ ] Number of new-path announcements
                 #   - [ ] Interarrival time of different types of events (average)
                 #   - [ ] Interarrival time of different types of events (standard deviation)
+
+    def calc_edit_distance(self, m, new_path, old_path, prefix):
+        dist = edit_distance(new_path, old_path)
+        dist_unique = edit_distance(list(set(new_path)),list(set(new_path)))
+
+        self.edit_distance_dict[self.bin][dist] += 1
+        self.edit_distance_dict[self.bin][dist_unique] += 1
+
+        if dist > self.edit_distance_max[self.bin]:
+            self.edit_distance_max[self.bin] = dist
+
+        if type(self.edit_distance_counter[self.bin]) != int:
+            self.edit_distance_counter[self.bin] = np.append(self.edit_distance_counter[self.bin], dist)
+            print 'self.edit_distance_counter -> '+ str( self.edit_distance_counter[self.bin].mean())
+            # self.edit_distance_avg[self.bin] = self.edit_distance_counter[self.bin].mean()
+        else:
+            self.edit_distance_counter[self.bin] = np.array(dist)
+
+        if type(self.rare_ases_counter[self.bin]) != int:
+            print self.rare_ases_avg[self.bin]
+
+        #   - [x] Maximum edit distance
+        #   - [x] Average edit distance
+        #   - [x] Maximum AS-path edit distance equals $n$ ($n = 1,2,...$)
+        #   - [x] Maximum unique AS-path edit distance equals $n$ ($n = 1,2,...$)
+
 
     def count_origin_attr(self, m):
         if m.bgp.msg.attr is not None:
@@ -355,6 +416,7 @@ class Metrics(object):
 
             if attr_name == 'AS_PATH':
                 self.classify_as_path(m, new_attr, prefix)
+                self.calc_edit_distance(m, new_attr.as_path[0]['val'], current_attr['AS_PATH'].as_path[0]['val'], prefix)
 
             #Check if there is different attributes
             if not self.is_equal(new_attr, current_attr):
@@ -475,11 +537,11 @@ class Metrics(object):
         self.sort_timeseries()
         self.fill_blanks_timeseries()
         self.plot_timeseries()
-        print self.as_paths_distribution
-        print self.as_path_max_length
-        print self.unique_as_path_max_length
-        print self.as_path_avg_length
-        print self.unique_as_path_avg_length
+        # print self.as_paths_distribution
+        # print self.as_path_max_length
+        # print self.unique_as_path_max
+        # print self.as_path_avg_length
+        # print self.unique_as_path_avg
         # self.print_dicts()
 
         for prefix in self.prefix_nada:
