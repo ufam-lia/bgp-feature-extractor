@@ -77,31 +77,51 @@ def edit_distance(l1, l2):
                                  dist[row-1][col-1] + cost) # substitution
     return dist[row][col]
 
-class Metrics(object):
-    """docstring for Metrics."""
+class Features(object):
     def __init__(self):
-        super(Metrics, self).__init__()
+        self.imp_wd_spath = 0
+        self.imp_wd_dpath = 0
+        self.announcements = 0
+        self.news = 0
+        self.dups = 0
+        self.nadas = 0
+        self.flaps = 0
+        self.origin = 0
+        self.origin_changes = 0
+        self.as_path_max = 0
+        self.as_path_avg = 0
+        self.unique_as_path_max = 0
+        self.unique_as_path_avg = 0
+        self.rare_ases_max = 0
+        self.rare_ases_avg = 0
+        self.number_rare_ases = 0
+        self.edit_distance_max = 0
+        self.edit_distance_avg = 0
+        self.edit_distance_dict = 0
+        self.edit_distance_unique_dict = 0
+        self.ann_to_shorter = 0
+        self.ann_to_longer = 0
+        pass
 
-        self.bin_size = 60*5
-        self.window_size = 60
-        self.count_ts = defaultdict(int)
+class Metrics(object):
 
+    def volume_attr_init(self):
         #Volume features init
         self.updates = defaultdict(int)
         self.withdrawals = defaultdict(int)
-        self.implicit_withdrawals_spath = defaultdict(int)
-        self.implicit_withdrawals_dpath = defaultdict(int)
-        self.announcements = defaultdict(int)
-        self.new_announcements = defaultdict(int)
-        self.dup_announcements = defaultdict(int)
-        self.new_ann_after_wd = defaultdict(int)
-        self.flap_announcements = defaultdict(int)
-        self.ann_after_wd_unknown = defaultdict(int)
+        self.implicit_withdrawals_spath = defaultdict(int) #*feature*
+        self.implicit_withdrawals_dpath = defaultdict(int) #*feature*
+        self.announcements = defaultdict(int) #*feature*
+        self.new_announcements = defaultdict(int) #*feature*
+        self.dup_announcements = defaultdict(int) #*feature*
+        self.new_ann_after_wd = defaultdict(int) #*feature*
+        self.flap_announcements = defaultdict(int) #*feature*
+        self.ann_after_wd_unknown = defaultdict(int) #*feature?*
         self.attr_count = defaultdict(int)
         self.max_prefix = defaultdict(int)
         self.mean_prefix = defaultdict(int)
-        self.count_origin = defaultdict(dd)
-        self.count_origin_changes = defaultdict(int)
+        self.count_origin = defaultdict(dd) #*feature*
+        self.count_origin_changes = defaultdict(int) #*feature*
         self.count_ts_upds_ases = defaultdict(dd)
         self.upds_prefixes = defaultdict(dd)
         self.first_ts = 0
@@ -109,35 +129,37 @@ class Metrics(object):
         self.error_counter = defaultdict(int)
         self.msg_counter = defaultdict(int)
 
+    def as_path_attr_init(self):
         #AS path features
         self.as_paths = []
         self.num_of_paths_rcvd = defaultdict(int)
         self.unique_as_paths = [] #Ignore prepending
         self.distinct_as_paths = set() #Ignore repeated AS paths
         self.as_paths_distribution = defaultdict(int)
-        self.as_path_max_length = defaultdict(int)
-        self.as_path_avg_length = defaultdict(int)
-        self.unique_as_path_max = defaultdict(int)
-        self.unique_as_path_avg = defaultdict(int)
+        self.as_path_max_length = defaultdict(int) #*feature*
+        self.as_path_avg_length = defaultdict(int) #*feature*
+        self.unique_as_path_max = defaultdict(int) #*feature*
+        self.unique_as_path_avg = defaultdict(int) #*feature*
         self.window_end = 0
 
         self.rare_threshold = 0
         self.rare_ases_iteration = 1
-        self.rare_ases_max = defaultdict(int)
-        self.rare_ases_avg = defaultdict(int)
-        self.number_rare_ases = defaultdict(int)
+        self.rare_ases_max = defaultdict(int) #*feature*
+        self.rare_ases_avg = defaultdict(int) #*feature*
+        self.number_rare_ases = defaultdict(int) #*feature*
         self.rare_ases_counter = defaultdict(int)
 
-        self.edit_distance_max = defaultdict(int)
-        self.edit_distance_avg = defaultdict(int)
+        self.edit_distance_max = defaultdict(int) #*feature*
+        self.edit_distance_avg = defaultdict(int) #*feature*
         self.edit_distance_counter = defaultdict(int)
         self.edit_distance_unique_counter = defaultdict(int)
-        self.edit_distance_dict = defaultdict(dd)
-        self.edit_distance_unique_dict = defaultdict(dd)
+        self.edit_distance_dict = defaultdict(dd) #*feature*
+        self.edit_distance_unique_dict = defaultdict(dd) #*feature*
 
-        self.ann_to_shorter = defaultdict(int)
-        self.ann_to_longer = defaultdict(int)
+        self.ann_to_shorter = defaultdict(int) #*feature*
+        self.ann_to_longer = defaultdict(int) #*feature*
 
+    def rib_attr_init(self):
         #Routing table
         self.prefix_lookup = defaultdict(dddlist)
         self.prefix_withdrawals = defaultdict(dd)
@@ -158,6 +180,17 @@ class Metrics(object):
         self.table_exchange_period = False
         self.rib_count = 0
         self.table_exchange_period = dict()
+
+    def __init__(self):
+        super(Metrics, self).__init__()
+
+        self.bin_size = 60*5
+        self.window_size = 60
+        self.count_ts = defaultdict(int)
+
+        self.volume_attr_init()
+        self.as_path_attr_init()
+        self.rib_attr_init()
 
     def init_rib(self, file):
         d = Reader(file)
@@ -610,7 +643,7 @@ class Metrics(object):
         output = str(random.randint(1, 1000)) + '.png'
         fig.savefig(output, bboxes_inches = '30', dpi = 400)
         print output
-        # os.system('shotwell ' + output + ' &')
+        os.system('shotwell ' + output + ' &')
 
     def sort_dict(self, unsort_dict):
         return defaultdict(int, dict(sorted(unsort_dict.items(), key = operator.itemgetter(1))))

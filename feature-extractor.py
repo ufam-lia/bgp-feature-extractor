@@ -98,17 +98,17 @@ def main():
         # print 'unique_as_path_max_length -> ' + str(metrics.unique_as_path_max_length)
         # print 'as_path_avg_length -> ' + str(metrics.as_path_avg_length)
         # print 'unique_as_path_avg_length -> ' + str(metrics.unique_as_path_avg_length)
-        as_paths_distribution_sorted = sorted(metrics.as_paths_distribution.items(), reverse = True, key = operator.itemgetter(1))
-        i = 1
-        for k, v in as_paths_distribution_sorted[-len(as_paths_distribution_sorted)/5:-1]:
+        # as_paths_distribution_sorted = sorted(metrics.as_paths_distribution.items(), reverse = True, key = operator.itemgetter(1))
+        # i = 1
+        # for k, v in as_paths_distribution_sorted[-len(as_paths_distribution_sorted)/5:-1]:
         # for k, v in as_paths_distribution_sorted:
             # print '#' + str(i) + ' AS:' + str(k) + ' - ' + str(v)
-            i += 1
+            # i += 1
         # print sorted(set(metrics.as_paths_distribution.values()))
         # print np.percentile(np.array(metrics.as_paths_distribution.values()),15)
         # print '*'*50
 
-        metrics.plot()
+    metrics.plot()
 
 if __name__ == '__main__':
     main()
