@@ -101,6 +101,7 @@ class Metrics(object):
         self.max_prefix = defaultdict(int)
         self.mean_prefix = defaultdict(int)
         self.count_origin = defaultdict(dd)
+        self.count_origin_changes = defaultdict(int)
         self.count_ts_upds_ases = defaultdict(dd)
         self.upds_prefixes = defaultdict(dd)
         self.first_ts = 0
@@ -134,26 +135,27 @@ class Metrics(object):
         self.edit_distance_dict = defaultdict(dd)
         self.edit_distance_unique_dict = defaultdict(dd)
 
+        self.ann_to_shorter = defaultdict(int)
+        self.ann_to_longer = defaultdict(int)
+
         # - Stateless
         #   - [x] Maximum AS-PATH length (any)
         #   - [x] Average AS-PATH length (any)
         #   - [x] Maximum unique AS-PATH length (any)
         #   - [x] Average unique AS-PATH length (any)
         # - Stateful
-        #   - [ ] Maximum edit distance (reann) (new aft. wd)
-        #   - [ ] Average edit distance  (reann) (new aft. wd)
-        #   - [ ] Maximum edit distance equals $n$ ($n = 1,2,...$) (reann) (new aft. wd)
-        #   - [ ] Maximum AS-path edit distance equals $n$ ($n = 1,2,...$) (reann) (new aft. wd)
+        #   - [x] Maximum edit distance (reann) (new aft. wd)
+        #   - [x] Average edit distance  (reann) (new aft. wd)
+        #   - [x] Maximum edit distance equals $n$ ($n = 1,2,...$) (reann) (new aft. wd)
+        #   - [x] Maximum AS-path edit distance equals $n$ ($n = 1,2,...$) (reann) (new aft. wd)
         #   - [x] Observation of rare ASes in the path (any)
         #   - [x] Maximum of rare ASes in the path (any)
         #   - [x] Average of rare ASes in the path (any)
-        #   - [ ] Announcement to longer path  (reann) (new aft. wd)
-        #   - [ ] Announcement to shorter path  (reann) (new aft. wd)
+        #   - [x] Announcement to longer path  (reann) (new aft. wd)
+        #   - [x] Announcement to shorter path  (reann) (new aft. wd)
         #   - [ ] AS-PATH change according to geographic location
         #   - [ ] Prefix origin change (reann)
-        #   - [ ] Number of new paths announced after withdrawing an old path (new aft. wd)
-        #   - [ ] Interarrival time of different types of events (average)
-        #   - [ ] Interarrival time of different types of events (standard deviation)
+
 
         #Routing table
         self.prefix_lookup = defaultdict(dddlist)
@@ -313,14 +315,9 @@ class Metrics(object):
                 #   - [x] Average of rare ASes in the path
                 # - Stateful
                 #   - [x] Observation of rare ASes in the path
-                #   - [ ] Announcement to longer path
-                #   - [ ] Announcement to shorter path
-                #   - [ ] AS-PATH change according to geographic location
+                #   - [x] Announcement to longer path
+                #   - [x] Announcement to shorter path
                 #   - [ ] Prefix origin change
-                #   - [ ] Number of new paths announced after withdrawing an old path
-                #   - [ ] Number of new-path announcements
-                #   - [ ] Interarrival time of different types of events (average)
-                #   - [ ] Interarrival time of different types of events (standard deviation)
 
     def calc_edit_distance(self, m, new_path, old_path, prefix):
         dist = edit_distance(new_path, old_path)
@@ -334,13 +331,12 @@ class Metrics(object):
 
         if type(self.edit_distance_counter[self.bin]) != int:
             self.edit_distance_counter[self.bin] = np.append(self.edit_distance_counter[self.bin], dist)
-            print 'self.edit_distance_counter -> '+ str( self.edit_distance_counter[self.bin].mean())
-            # self.edit_distance_avg[self.bin] = self.edit_distance_counter[self.bin].mean()
+            # print 'self.edit_distance_counter -> '+ str( self.edit_distance_counter[self.bin].mean())
         else:
             self.edit_distance_counter[self.bin] = np.array(dist)
 
         if type(self.rare_ases_counter[self.bin]) != int:
-            print self.rare_ases_avg[self.bin]
+            self.edit_distance_avg[self.bin] = self.edit_distance_counter[self.bin].mean()
 
         #   - [x] Maximum edit distance
         #   - [x] Average edit distance
@@ -415,8 +411,17 @@ class Metrics(object):
             attr_name = BGP_ATTR_T[new_attr.type]
 
             if attr_name == 'AS_PATH':
+                new_path = new_attr.as_path[0]
+                curr_path = current_attr['AS_PATH'].as_path[0]
                 self.classify_as_path(m, new_attr, prefix)
-                self.calc_edit_distance(m, new_attr.as_path[0]['val'], current_attr['AS_PATH'].as_path[0]['val'], prefix)
+                self.calc_edit_distance(m, new_path['val'], curr_path['val'], prefix)
+
+                if new_path['len'] > curr_path['len']:
+                    self.ann_to_longer[self.bin] += 1
+                    print 'self.ann_to_longer -> ' + str(self.ann_to_longer[self.bin])
+                elif new_path['len'] < curr_path['len']:
+                    self.ann_to_shorter[self.bin] += 1
+                    print 'self.ann_to_shorter -> ' + str(self.ann_to_shorter[self.bin])
 
             #Check if there is different attributes
             if not self.is_equal(new_attr, current_attr):
@@ -468,9 +473,19 @@ class Metrics(object):
                 #Classify AS PATH
                 if attr_name == 'AS_PATH':
                     self.classify_as_path(m, new_attr, prefix)
+                    self.calc_edit_distance(m, new_attr.as_path[0]['val'], current_attr['AS_PATH'].as_path[0]['val'], prefix)
+                    #Announcement to longer or shorter path?
+                    new_path = new_attr.as_path[0]
+                    curr_path = current_attr['AS_PATH'].as_path[0]
+                    if new_path['len'] > curr_path['len']:
+                        self.ann_to_longer[self.bin] += 1
+                        print 'self.ann_to_longer -> ' + str(self.ann_to_longer[self.bin])
+                    elif new_path['len'] < curr_path['len']:
+                        self.ann_to_shorter[self.bin] += 1
+                        print 'self.ann_to_shorter -> ' + str(self.ann_to_shorter[self.bin])
 
                 self.prefix_lookup[m.bgp.peer_as][prefix][attr_name] = new_attr
-            #Figure it out which counter will be incremented
+            #Figure it out which attribute counter will be incremented
             if is_diff_announcement:
                 self.new_ann_after_wd[self.bin] += 1
                 # self.prefix_nada.add(prefix)
