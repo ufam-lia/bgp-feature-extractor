@@ -103,6 +103,68 @@ class Features(object):
         self.ann_to_longer = 0
         pass
 
+    def features_to_dict(self):
+        features = dict()
+
+        features['imp_wd_spath'] = self.imp_wd_spath
+        features['imp_wd_dpath'] = self.imp_wd_dpath
+        features['announcements'] = self.announcements
+        features['news'] = self.news
+        features['dups'] = self.dups
+        features['nadas'] = self.nadas
+        features['flaps'] = self.flaps
+        # features['origin'] = self.origin
+        features['origin_changes'] = self.origin_changes
+        features['as_path_max'] = self.as_path_max
+        features['as_path_avg'] = self.as_path_avg
+        features['unique_as_path_max'] = self.unique_as_path_max
+        features['unique_as_path_avg'] = self.unique_as_path_avg
+        features['rare_ases_max'] = self.rare_ases_max
+        features['rare_ases_avg'] = self.rare_ases_avg
+        features['number_rare_ases'] = self.number_rare_ases
+        features['edit_distance_max'] = self.edit_distance_max
+        features['edit_distance_avg'] = self.edit_distance_avg
+        # features['edit_distance_dict'] = self.edit_distance_dict
+        # features['edit_distance_unique_dict'] = self.edit_distance_unique_dict
+        features['ann_to_shorter'] = self.ann_to_shorter
+        features['ann_to_longer'] = self.ann_to_longer
+
+        return features
+
+    def features_to_flat_dict(self):
+        features = dict()
+
+        features['imp_wd_spath'] = self.imp_wd_spath
+        features['imp_wd_dpath'] = self.imp_wd_dpath
+        features['announcements'] = self.announcements
+        features['news'] = self.news
+        features['dups'] = self.dups
+        features['nadas'] = self.nadas
+        features['flaps'] = self.flaps
+        features['origin_changes'] = self.origin_changes
+        features['as_path_max'] = self.as_path_max
+        features['as_path_avg'] = self.as_path_avg
+        features['unique_as_path_max'] = self.unique_as_path_max
+        features['unique_as_path_avg'] = self.unique_as_path_avg
+        features['rare_ases_max'] = self.rare_ases_max
+        features['rare_ases_avg'] = self.rare_ases_avg
+        features['number_rare_ases'] = self.number_rare_ases
+        features['edit_distance_max'] = self.edit_distance_max
+        features['edit_distance_avg'] = self.edit_distance_avg
+        features['ann_to_shorter'] = self.ann_to_shorter
+        features['ann_to_longer'] = self.ann_to_longer
+
+        for k, v in self.origin.iteritems():
+            features['origin_' + str(k) + '_'] = v
+
+        for k, v in self.edit_distance_dict.iteritems():
+            features['edit_distance_dict_' + str(k) + '_'] = v
+
+        for k, v in self.edit_distance_dict.iteritems():
+            features['edit_distance_unique_dict_' + str(k) + '_'] = v
+
+        return features
+
 class Metrics(object):
 
     def volume_attr_init(self):
@@ -201,7 +263,6 @@ class Metrics(object):
         for m in d:
             m = m.mrt
             if m.err == MRT_ERR_C['MRT Header Error']:
-                prerror(m)
                 continue
 
             if is_table_dump(m):
@@ -210,8 +271,6 @@ class Metrics(object):
 
                 self.print_classification(m, 'RIB', prefix)
                 self.prfx_set[peer][prefix] += 1
-                prfx_count[prefix] += 1
-                peer_count[peer] += 1
 
                 for attr in m.td.attr:
                     self.prefix_lookup[peer][prefix][BGP_ATTR_T[attr.type]] = attr
@@ -229,17 +288,19 @@ class Metrics(object):
         if not rolou:
             print 'not rolou'
 
+    def increment_update_counters(self, m):
+        self.count_updates += 1
+        self.updates[self.bin] += 1
+        self.peer_upds[m.bgp.peer_as] += 1
+
+    def update_time_bin(self, m):
+        self.bin = (m.ts - self.first_ts)/self.bin_size
+
     def add_updates(self, file):
-        #init
-        self.count_updates = 0
-        self.count_announcements = 0
-        self.peer_upds = defaultdict(int)
         d = Reader(file)
-
-        if self.first_ts == 0:
-            self.first_ts = d.next().mrt.ts
-
         m = d.next()
+        if self.first_ts == 0:
+            self.first_ts = m.mrt.ts
         while m:
             m = m.mrt
             if m.err == MRT_ERR_C['MRT Header Error']:
@@ -247,33 +308,20 @@ class Metrics(object):
                 continue
 
             if is_bgp_update(m):
-                self.count_msgs[BGP_MSG_T[m.bgp.msg.type]] += 1
-
-                self.bin = (m.ts - self.first_ts)/self.bin_size
-                window = (m.ts - self.first_ts)/self.window_size
+                self.update_time_bin(m)
 
                 #Total number of annoucements/withdrawals/updates
-                self.count_updates += 1
-                self.updates[self.bin] += 1
-                self.peer_upds[m.bgp.peer_as] += 1
-
+                self.increment_update_counters(m)
                 if m.bgp.msg.nlri is not None:
                     self.classify_announcement(m)
                 self.classify_withdrawal(m)
-
                 self.count_origin_attr(m)
-
-            elif is_bgp_open(m):
-                print_bgp4mp(m)
-                pass
-
             m = next(d, None)
 
     def classify_as_path(self, m, attr, prefix):
         for as_path in attr.as_path:
             if as_path['type'] == 2:
                 unique_as_path = set(as_path['val'])
-                # self.num_of_paths_rcvd += 1
 
                 self.as_paths.append(as_path)
                 self.unique_as_paths.append(unique_as_path) #Ignore prepending
@@ -285,31 +333,34 @@ class Metrics(object):
                         rare_ases += 1
                         # print 'rare_ases ->' + str(rare_ases)
 
+                #Periodically recalculates threshold
                 self.rare_ases_iteration += 1
                 if self.rare_ases_iteration % 1000 == 0:
                     self.rare_threshold = np.percentile(np.array(self.as_paths_distribution.values()), 20)
-                    print 'self.rare_threshold ->' + str(self.rare_threshold)
+                    # print 'self.rare_threshold ->' + str(self.rare_threshold)
 
+                #Just consider AS-paths above the initial threshold
                 if self.rare_ases_iteration > 1000:
                     if type(self.rare_ases_counter[self.bin]) != int:
                         self.rare_ases_counter[self.bin] = np.append(self.rare_ases_counter[self.bin], rare_ases)
                     else:
                         self.rare_ases_counter[self.bin] = np.array(rare_ases)
 
-                    if rare_ases > self.rare_ases_max[bin]:
-                        self.rare_ases_max[bin] = rare_ases
-                        print 'self.rare_ases_max[bin] ->' + str(self.rare_ases_max[bin])
+                    if rare_ases > self.rare_ases_max[self.bin]:
+                        self.rare_ases_max[self.bin] = rare_ases
+
+                    # if type(self.rare_ases_counter[self.bin]) != int:
+                    self.rare_ases_avg[self.bin] = self.rare_ases_counter[self.bin].mean()
+                        # print self.rare_ases_avg[self.bin]
+
+                    #Rare ASes per time bin
+                    self.number_rare_ases[self.bin] += rare_ases
 
                 if as_path['len'] > self.as_path_max_length[self.bin]:
                     self.as_path_max_length[self.bin] = as_path['len']
                 if len(unique_as_path) > self.unique_as_path_max[self.bin]:
                     self.unique_as_path_max[self.bin] = len(unique_as_path)
 
-                # print self.rare_ases_counter
-
-                if type(self.rare_ases_counter[self.bin]) != int:
-                    self.rare_ases_avg[self.bin] = self.rare_ases_counter[self.bin].mean()
-                    # print self.rare_ases_avg[self.bin]
 
                 self.num_of_paths_rcvd[self.bin] += 1
                 self.as_path_avg_length[self.bin] = (as_path['len'] * self.num_of_paths_rcvd[self.bin] + self.as_path_avg_length[self.bin])/self.num_of_paths_rcvd[self.bin]
@@ -319,8 +370,8 @@ class Metrics(object):
         dist = edit_distance(new_path, old_path)
         dist_unique = edit_distance(list(set(new_path)),list(set(new_path)))
 
-        self.edit_distance_dict[self.bin][dist] += 1
-        self.edit_distance_dict[self.bin][dist_unique] += 1
+        self.edit_distance_dict[dist][self.bin] += 1
+        self.edit_distance_unique_dict[dist_unique][self.bin] += 1
 
         if dist > self.edit_distance_max[self.bin]:
             self.edit_distance_max[self.bin] = dist
@@ -331,14 +382,15 @@ class Metrics(object):
         else:
             self.edit_distance_counter[self.bin] = np.array(dist)
 
-        if type(self.rare_ases_counter[self.bin]) != int:
+        if type(self.edit_distance_counter[self.bin]) != int:
             self.edit_distance_avg[self.bin] = self.edit_distance_counter[self.bin].mean()
+
 
     def count_origin_attr(self, m):
         if m.bgp.msg.attr is not None:
             for attr in m.bgp.msg.attr:
                 if BGP_ATTR_T[attr.type] == 'ORIGIN':
-                    self.count_origin[self.bin][attr.origin] += 1
+                    self.count_origin[attr.origin][self.bin] += 1
 
     def classify_withdrawal(self, m):
         self.peer_upds[m.bgp.peer_as] += 1
@@ -426,75 +478,81 @@ class Metrics(object):
             self.dup_announcements[self.bin] += 1
             self.print_classification(m, 'DUPLICATE', prefix)
 
+    def classify_new_ann_simple(self, m, prefix):
+        self.new_announcements[self.bin] += 1
+        if prefix == self.prefix_found and m.bgp.peer_as == self.peer_found:
+            print self.prefix_lookup
+
+        for attr in m.bgp.msg.attr:
+            self.prefix_lookup[m.bgp.peer_as][prefix][BGP_ATTR_T[attr.type]] = attr
+            #Classify AS PATH
+            if BGP_ATTR_T[attr.type] == 'AS_PATH':
+                self.classify_as_path(m, attr, prefix)
+        self.print_classification(m, 'NEW ANNOUNCEMENT', prefix)
+
+    def classify_new_ann_after_wd(self, m, prefix):
+        #Init vars
+        self.prefix_withdrawals[m.bgp.peer_as][prefix] = False
+        current_attr = self.prefix_lookup[m.bgp.peer_as][prefix]
+        self.prefix_lookup[m.bgp.peer_as][prefix] = defaultdict(list)
+
+        is_diff_announcement = False
+        #Traverse attributes
+        for new_attr in m.bgp.msg.attr:
+            attr_name = BGP_ATTR_T[new_attr.type]
+            #Check if there is different attributes
+            if not self.is_equal(new_attr, current_attr):
+                is_diff_announcement = True
+
+            #Classify AS PATH
+            if attr_name == 'AS_PATH':
+                self.classify_as_path(m, new_attr, prefix)
+                self.calc_edit_distance(m, new_attr.as_path[0]['val'], current_attr['AS_PATH'].as_path[0]['val'], prefix)
+
+                #Announcement to longer or shorter path?
+                new_path = new_attr.as_path[0]
+                curr_path = current_attr['AS_PATH'].as_path[0]
+                if new_path['len'] > curr_path['len']:
+                    self.ann_to_longer[self.bin] += 1
+                elif new_path['len'] < curr_path['len']:
+                    self.ann_to_shorter[self.bin] += 1
+            #Update with new attr
+            self.prefix_lookup[m.bgp.peer_as][prefix][attr_name] = new_attr
+
+        #Figure it out which attribute counter will be incremented
+        if is_diff_announcement:
+            self.new_ann_after_wd[self.bin] += 1
+            # self.prefix_nada.add(prefix)
+            self.print_classification(m, 'NEW ANN. AFTER WITHDRAW', prefix)
+        else:
+            self.flap_announcements[self.bin] += 1
+            # self.prefix_flap.add(prefix)
+            self.print_classification(m, 'FLAP', prefix)
+
+    def classify_new_ann_after_wd_unknown(self, m, prefix):
+        self.ann_after_wd_unknown[self.bin] += 1
+        for attr in m.bgp.msg.attr:
+            self.prefix_lookup[m.bgp.peer_as][prefix][BGP_ATTR_T[attr.type]] = attr
+            attr_name = BGP_ATTR_T[attr.type]
+
+            if attr_name == 'AS_PATH':
+                self.classify_as_path(m, attr, prefix)
+        self.print_classification(m, 'ANN. AFTER WITHDRAW - UNKNOWN', prefix)
+
     def classify_new_announcement(self, m, prefix):
         if not self.prefix_withdrawals[m.bgp.peer_as][prefix]:
-            self.new_announcements[self.bin] += 1
-            if prefix == self.prefix_found and m.bgp.peer_as == self.peer_found:
-                print self.prefix_lookup
-
-            for attr in m.bgp.msg.attr:
-                self.prefix_lookup[m.bgp.peer_as][prefix][BGP_ATTR_T[attr.type]] = attr
-                #Classify AS PATH
-                if BGP_ATTR_T[attr.type] == 'AS_PATH':
-                    self.classify_as_path(m, attr, prefix)
-
-            self.print_classification(m, 'NEW ANNOUNCEMENT', prefix)
-
+            self.classify_new_ann_simple(m, prefix)
         elif self.prefix_lookup[m.bgp.peer_as][prefix]['ORIGIN'] != []:
-            #Init vars
-            self.prefix_withdrawals[m.bgp.peer_as][prefix] = False
-            current_attr = self.prefix_lookup[m.bgp.peer_as][prefix]
-            self.prefix_lookup[m.bgp.peer_as][prefix] = defaultdict(list)
-
-            is_diff_announcement = False
-            #Traverse attributes
-            for new_attr in m.bgp.msg.attr:
-                attr_name = BGP_ATTR_T[new_attr.type]
-                #Check if there is different attributes
-                if not self.is_equal(new_attr, current_attr):
-                    is_diff_announcement = True
-                #Classify AS PATH
-                if attr_name == 'AS_PATH':
-                    self.classify_as_path(m, new_attr, prefix)
-                    self.calc_edit_distance(m, new_attr.as_path[0]['val'], current_attr['AS_PATH'].as_path[0]['val'], prefix)
-                    #Announcement to longer or shorter path?
-                    new_path = new_attr.as_path[0]
-                    curr_path = current_attr['AS_PATH'].as_path[0]
-                    if new_path['len'] > curr_path['len']:
-                        self.ann_to_longer[self.bin] += 1
-                        # print 'self.ann_to_longer -> ' + str(self.ann_to_longer[self.bin])
-                    elif new_path['len'] < curr_path['len']:
-                        self.ann_to_shorter[self.bin] += 1
-                        # print 'self.ann_to_shorter -> ' + str(self.ann_to_shorter[self.bin])
-
-                self.prefix_lookup[m.bgp.peer_as][prefix][attr_name] = new_attr
-            #Figure it out which attribute counter will be incremented
-            if is_diff_announcement:
-                self.new_ann_after_wd[self.bin] += 1
-                # self.prefix_nada.add(prefix)
-                self.print_classification(m, 'NEW ANN. AFTER WITHDRAW', prefix)
-            else:
-                self.flap_announcements[self.bin] += 1
-                # self.prefix_flap.add(prefix)
-                self.print_classification(m, 'FLAP', prefix)
-            del current_attr
+            self.classify_new_ann_after_wd(m, prefix)
         else:
-            self.ann_after_wd_unknown[self.bin] += 1
-            for attr in m.bgp.msg.attr:
-                self.prefix_lookup[m.bgp.peer_as][prefix][BGP_ATTR_T[attr.type]] = attr
-                attr_name = BGP_ATTR_T[attr.type]
-
-                if attr_name == 'AS_PATH':
-                    self.classify_as_path(m, attr, prefix)
-
-            self.print_classification(m, 'ANN. AFTER WITHDRAW - UNKNOWN', prefix)
+            self.classify_new_ann_after_wd_unknown(m, prefix)
 
     def is_equal(self, new_attr, old_attr):
         if BGP_ATTR_T[new_attr.type] == 'ORIGIN':
             if new_attr.origin <> old_attr['ORIGIN'].origin:
                 self.diff_counter['ORIGIN'] += 1
                 self.count_origin_changes[self.bin] += 1
-                print 'self.count_origin_changes ->' + str(self.count_origin_changes[self.bin])
+                # print 'self.count_origin_changes ->' + str(self.count_origin_changes[self.bin])
             return new_attr.origin == old_attr['ORIGIN'].origin
 
         elif BGP_ATTR_T[new_attr.type] == 'AS_PATH':
@@ -529,14 +587,31 @@ class Metrics(object):
                 self.diff_counter['COMMUNITY'] += 1
             return (old_attr['COMMUNITY'] != []) and (new_attr.comm == old_attr['COMMUNITY'].comm)
 
-    def plot(self):
-        for bin, prefix_count in self.upds_prefixes.iteritems():
-            self.max_prefix[bin] = np.array(self.upds_prefixes[bin].values()).max()
-            self.mean_prefix[bin] = np.array(self.upds_prefixes[bin].values()).mean()
+    def plot_ts(self, dict_ts, name_dict):
+        fig = plt.figure(1)
+        plt.subplot(1,1,1)
+        plt.plot(range(len(dict_ts.keys())), dict_ts.values(), lw=1.15, color = 'black')
+        output = name_dict + str(random.randint(1, 1000)) + '.png'
+        fig.savefig(output, bboxes_inches = '30', dpi = 400)
+        plt.gcf().clear()
+        print output
+        # os.system('xviewer ' + output + ' &')
 
-        self.sort_timeseries()
-        self.fill_blanks_timeseries()
-        self.plot_timeseries()
+
+    def plot(self):
+        features = self.get_features()
+        for feat_name, feat in features.iteritems():
+            print feat_name
+            print feat
+            self.plot_ts(feat, feat_name)
+
+        # for bin, prefix_count in self.upds_prefixes.iteritems():
+        #     self.max_prefix[bin] = np.array(self.upds_prefixes[bin].values()).max()
+        #     self.mean_prefix[bin] = np.array(self.upds_prefixes[bin].values()).mean()
+        #
+        # self.sort_timeseries()
+        # self.fill_blanks_timeseries()
+        # self.plot_timeseries()
         # print self.as_paths_distribution
         # print self.as_path_max_length
         # print self.unique_as_path_max
@@ -643,7 +718,7 @@ class Metrics(object):
         output = str(random.randint(1, 1000)) + '.png'
         fig.savefig(output, bboxes_inches = '30', dpi = 400)
         print output
-        os.system('shotwell ' + output + ' &')
+        os.system('xviewer ' + output + ' &')
 
     def sort_dict(self, unsort_dict):
         return defaultdict(int, dict(sorted(unsort_dict.items(), key = operator.itemgetter(1))))
@@ -666,6 +741,36 @@ class Metrics(object):
         self.implicit_withdrawals_spath = self.sort_dict(self.implicit_withdrawals_spath)
         self.dup_announcements = self.sort_dict(self.dup_announcements)
         self.new_announcements = self.sort_dict(self.new_announcements)
+
+    def get_features(self):
+        self.fill_blanks_timeseries()
+
+        feat = Features()
+        feat.imp_wd_spath = self.implicit_withdrawals_spath
+        feat.imp_wd_dpath = self.implicit_withdrawals_dpath
+        feat.announcements = self.announcements
+        feat.news = self.new_announcements
+        feat.dups = self.dup_announcements
+        feat.nadas = self.new_ann_after_wd
+        feat.flaps = self.flap_announcements
+        feat.origin = self.count_origin
+        feat.origin_changes = self.count_origin_changes
+        feat.as_path_max = self.as_path_max_length
+        feat.as_path_avg = self.as_path_avg_length
+        feat.unique_as_path_max = self.unique_as_path_max
+        feat.unique_as_path_avg = self.unique_as_path_avg
+        feat.rare_ases_max = self.rare_ases_max
+        feat.rare_ases_avg = self.rare_ases_avg
+        feat.number_rare_ases = self.number_rare_ases
+        feat.edit_distance_max = self.edit_distance_max
+        feat.edit_distance_avg = self.edit_distance_avg
+        feat.edit_distance_dict = self.edit_distance_dict
+        feat.edit_distance_unique_dict = self.edit_distance_unique_dict
+        feat.ann_to_shorter = self.ann_to_shorter
+        feat.ann_to_longer = self.ann_to_longer
+
+
+        return feat.features_to_flat_dict()
 
     def fill_blanks_timeseries(self):
         #Filling blanks in the timeseries
@@ -696,8 +801,12 @@ class Metrics(object):
             self.edit_distance_avg[i]
             self.edit_distance_counter[i]
             self.edit_distance_unique_counter[i]
-            self.edit_distance_dict[i]
-            self.edit_distance_unique_dict[i]
+
+            for dist, counter in self.edit_distance_dict.iteritems():
+                counter[i]
+
+            for dist, counter in self.edit_distance_unique_dict.iteritems():
+                counter[i]
 
             self.ann_to_shorter[i]
             self.ann_to_longer[i]
