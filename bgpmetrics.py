@@ -19,6 +19,7 @@ import pdir
 from getsizeoflib import total_size
 # from guppy import hpy
 import gc
+import pandas as pd
 
 os.environ['TZ'] = 'US'
 time.tzset()
@@ -101,39 +102,12 @@ class Features(object):
         self.edit_distance_unique_dict = 0
         self.ann_to_shorter = 0
         self.ann_to_longer = 0
-        pass
+        self.timestamp = 0
 
-    def features_to_dict(self):
+    def to_dict(self):
         features = dict()
 
-        features['imp_wd_spath'] = self.imp_wd_spath
-        features['imp_wd_dpath'] = self.imp_wd_dpath
-        features['announcements'] = self.announcements
-        features['news'] = self.news
-        features['dups'] = self.dups
-        features['nadas'] = self.nadas
-        features['flaps'] = self.flaps
-        # features['origin'] = self.origin
-        features['origin_changes'] = self.origin_changes
-        features['as_path_max'] = self.as_path_max
-        features['as_path_avg'] = self.as_path_avg
-        features['unique_as_path_max'] = self.unique_as_path_max
-        features['unique_as_path_avg'] = self.unique_as_path_avg
-        features['rare_ases_max'] = self.rare_ases_max
-        features['rare_ases_avg'] = self.rare_ases_avg
-        features['number_rare_ases'] = self.number_rare_ases
-        features['edit_distance_max'] = self.edit_distance_max
-        features['edit_distance_avg'] = self.edit_distance_avg
-        # features['edit_distance_dict'] = self.edit_distance_dict
-        # features['edit_distance_unique_dict'] = self.edit_distance_unique_dict
-        features['ann_to_shorter'] = self.ann_to_shorter
-        features['ann_to_longer'] = self.ann_to_longer
-
-        return features
-
-    def features_to_flat_dict(self):
-        features = dict()
-
+        features['timestamp'] = self.timestamp
         features['imp_wd_spath'] = self.imp_wd_spath
         features['imp_wd_dpath'] = self.imp_wd_dpath
         features['announcements'] = self.announcements
@@ -156,14 +130,18 @@ class Features(object):
 
         for k, v in self.origin.iteritems():
             features['origin_' + str(k) + '_'] = v
-
         for k, v in self.edit_distance_dict.iteritems():
             features['edit_distance_dict_' + str(k) + '_'] = v
-
         for k, v in self.edit_distance_dict.iteritems():
             features['edit_distance_unique_dict_' + str(k) + '_'] = v
 
         return features
+
+    def to_csv(self):
+        features = self.to_dict()
+
+    def to_dataframe(self):
+        return pd.DataFrame(self.to_dict())
 
 class Metrics(object):
 
@@ -299,6 +277,7 @@ class Metrics(object):
     def add_updates(self, file):
         d = Reader(file)
         m = d.next()
+        self.count_updates = 0
         if self.first_ts == 0:
             self.first_ts = m.mrt.ts
         while m:
@@ -594,15 +573,18 @@ class Metrics(object):
         output = name_dict + str(random.randint(1, 1000)) + '.png'
         fig.savefig(output, bboxes_inches = '30', dpi = 400)
         plt.gcf().clear()
-        print output
+        # print output
         # os.system('xviewer ' + output + ' &')
-
 
     def plot(self):
         features = self.get_features()
-        for feat_name, feat in features.iteritems():
-            print feat_name
-            print feat
+        features_dict = features.to_dict()
+        df = features.to_dataframe()
+        df.to_csv('features.csv', sep=';', encoding='utf-8')
+        for feat_name, feat in features_dict.iteritems():
+        #     # print feat_name + ' -> ' + str(len(feat))
+            print len(feat)
+        #     # print feat
             self.plot_ts(feat, feat_name)
 
         # for bin, prefix_count in self.upds_prefixes.iteritems():
@@ -667,7 +649,6 @@ class Metrics(object):
 
     def print_classification(self, m, type, prefix):
         # if prefix == self.prefix_found and m.bgp.peer_as == self.peer_found:
-
         if prefix == '2.31.96.0/24':
             if MRT_T[m.type] == 'BGP4MP' or  MRT_T[m.type] == 'BGP4MP_ET':
                 peer = m.bgp.peer_as
@@ -691,7 +672,6 @@ class Metrics(object):
             print 'Timestamp: %s' % (dt.datetime.fromtimestamp(msg.ts))
             print_bgp4mp(msg)
             print '_'*80
-            print ''
             print ''
 
     def print_dicts(self):
@@ -717,8 +697,8 @@ class Metrics(object):
 
         output = str(random.randint(1, 1000)) + '.png'
         fig.savefig(output, bboxes_inches = '30', dpi = 400)
-        print output
-        os.system('xviewer ' + output + ' &')
+        # print output
+        # os.system('xviewer ' + output + ' &')
 
     def sort_dict(self, unsort_dict):
         return defaultdict(int, dict(sorted(unsort_dict.items(), key = operator.itemgetter(1))))
@@ -743,9 +723,8 @@ class Metrics(object):
         self.new_announcements = self.sort_dict(self.new_announcements)
 
     def get_features(self):
-        self.fill_blanks_timeseries()
-
         feat = Features()
+        self.fill_blanks_timeseries()
         feat.imp_wd_spath = self.implicit_withdrawals_spath
         feat.imp_wd_dpath = self.implicit_withdrawals_dpath
         feat.announcements = self.announcements
@@ -768,13 +747,12 @@ class Metrics(object):
         feat.edit_distance_unique_dict = self.edit_distance_unique_dict
         feat.ann_to_shorter = self.ann_to_shorter
         feat.ann_to_longer = self.ann_to_longer
-
-
-        return feat.features_to_flat_dict()
+        feat.timestamp = dict(zip(self.announcements.keys(), [dt.datetime.fromtimestamp(ts*60*5 + self.first_ts) for ts in self.announcements.keys()]))
+        return feat
 
     def fill_blanks_timeseries(self):
         #Filling blanks in the timeseries
-        for i in range(self.updates.keys()[-1]):
+        for i in range(self.updates.keys()[-1] + 1):
             self.updates[i]
             self.announcements[i]
             self.withdrawals[i]
@@ -804,8 +782,9 @@ class Metrics(object):
 
             for dist, counter in self.edit_distance_dict.iteritems():
                 counter[i]
-
             for dist, counter in self.edit_distance_unique_dict.iteritems():
+                counter[i]
+            for origin, counter in self.count_origin.iteritems():
                 counter[i]
 
             self.ann_to_shorter[i]
