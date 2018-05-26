@@ -227,6 +227,7 @@ class Metrics(object):
         self.bin_size = 60*5
         self.window_size = 60
         self.count_ts = defaultdict(int)
+        self.plens = defaultdict(int)
 
         self.volume_attr_init()
         self.as_path_attr_init()
@@ -390,6 +391,7 @@ class Metrics(object):
         for nlri in m.bgp.msg.nlri:
             self.announcements[self.bin] += 1
             prefix = nlri.prefix + '/' + str(nlri.plen)
+            self.plens[nlri.plen] += 1
             self.upds_prefixes[self.bin][prefix] += 1
             self.dbg_prefix(m, prefix)
 

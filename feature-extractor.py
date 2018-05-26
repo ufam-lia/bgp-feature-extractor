@@ -61,21 +61,21 @@ def main():
 
     #Update files
     # update_files = update_files + glob.glob("/home/pc/Downloads/updates.20180515.20*.gz")
-    # update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20180509.1945.gz")
+    update_files = update_files + glob.glob("/home/pc/ripe-ris/updates.20180523.20**.gz")
 
     # update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010713.*.gz")
     # update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010716.010*.gz")
 
 
     # update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010712.*.gz")
-    update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010713.*.gz")
-    update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010714.*.gz")
-    update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010715.*.gz")
-    update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010716.*.gz")
-    update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010717.*.gz")
-    update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010718.*.gz")
-    update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010719.*.gz")
-    update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010720.*.gz")
+    # update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010713.00*.gz")
+    # update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010714.*.gz")
+    # update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010715.*.gz")
+    # update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010716.*.gz")
+    # update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010717.*.gz")
+    # update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010718.*.gz")
+    # update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010719.*.gz")
+    # update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010720.*.gz")
     # update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010721.*.gz")
     # update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010722.*.gz")
     # update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010723.*.gz")
@@ -104,6 +104,7 @@ def main():
         # print np.percentile(np.array(metrics.as_paths_distribution.values()),15)
         # print '*'*50
 
+    print metrics.plens
     metrics.plot()
 
 if __name__ == '__main__':
