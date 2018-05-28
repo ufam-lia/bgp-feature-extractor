@@ -16,6 +16,7 @@ import cPickle as pickle
 import argparse
 import operator
 from bgpmetrics import Metrics
+import pandas as pd
 
 def dd():
     return defaultdict(int)
@@ -61,51 +62,43 @@ def main():
 
     #Update files
     # update_files = update_files + glob.glob("/home/pc/Downloads/updates.20180515.20*.gz")
-    update_files = update_files + glob.glob("/home/pc/ripe-ris/updates.20180523.20**.gz")
+    # update_files = update_files + glob.glob("/home/pc/ripe-ris/updates.20180523.20**.gz")
 
     # update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010713.*.gz")
     # update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010716.010*.gz")
 
+    days = []
+    # days.append(glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010712.*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010713.*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010714.*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010715.*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010716.*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010717.*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010718.*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010719.*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010720.*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010721.*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010722.*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010723.*.gz"))
 
-    # update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010712.*.gz")
-    # update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010713.00*.gz")
-    # update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010714.*.gz")
-    # update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010715.*.gz")
-    # update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010716.*.gz")
-    # update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010717.*.gz")
-    # update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010718.*.gz")
-    # update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010719.*.gz")
-    # update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010720.*.gz")
-    # update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010721.*.gz")
-    # update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010722.*.gz")
-    # update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010723.*.gz")
     update_files = sorted(update_files)
-
-    metrics = Metrics()
     c = 0
 
     # metrics.init_rib(rib_files[0])
+    for update_files in days:
+        metrics = Metrics()
+        update_files = sorted(update_files)
+        for f in update_files:
+            metrics.add_updates(f)
+            print f + ': ' + str(metrics.count_updates)
 
-    for f in update_files:
-        metrics.add_updates(f)
-        print f + ': ' + str(metrics.count_updates)
-        # print 'as_paths_distribution -> ' + str(metrics.as_paths_distribution)
-        # print 'as_path_max_length -> ' + str(metrics.as_path_max_length)
-        # print 'unique_as_path_max_length -> ' + str(metrics.unique_as_path_max_length)
-        # print 'as_path_avg_length -> ' + str(metrics.as_path_avg_length)
-        # print 'unique_as_path_avg_length -> ' + str(metrics.unique_as_path_avg_length)
-        # as_paths_distribution_sorted = sorted(metrics.as_paths_distribution.items(), reverse = True, key = operator.itemgetter(1))
-        # i = 1
-        # for k, v in as_paths_distribution_sorted[-len(as_paths_distribution_sorted)/5:-1]:
-        # for k, v in as_paths_distribution_sorted:
-            # print '#' + str(i) + ' AS:' + str(k) + ' - ' + str(v)
-            # i += 1
-        # print sorted(set(metrics.as_paths_distribution.values()))
-        # print np.percentile(np.array(metrics.as_paths_distribution.values()),15)
-        # print '*'*50
-
-    print metrics.plens
-    metrics.plot()
+        day = update_files[0].split('.')[1]
+        features = metrics.get_features()
+        features_dict = features.to_dict()
+        df = features.to_dataframe()
+        df.to_csv('features-' + day + '.csv', sep=';', encoding='utf-8')
+        print day + ': OK'
+        # metrics.plot()
 
 if __name__ == '__main__':
     main()

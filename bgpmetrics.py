@@ -296,7 +296,11 @@ class Metrics(object):
                     self.classify_announcement(m)
                 self.classify_withdrawal(m)
                 self.count_origin_attr(m)
-            m = next(d, None)
+            try:
+                m = next(d, None)
+            except:
+                m = next(d, None)
+
 
     def classify_as_path(self, m, attr, prefix):
         for as_path in attr.as_path:
@@ -579,13 +583,9 @@ class Metrics(object):
         # os.system('xviewer ' + output + ' &')
 
     def plot(self):
-        features = self.get_features()
-        features_dict = features.to_dict()
-        df = features.to_dataframe()
-        df.to_csv('features.csv', sep=';', encoding='utf-8')
         for feat_name, feat in features_dict.iteritems():
         #     # print feat_name + ' -> ' + str(len(feat))
-            print len(feat)
+        # print len(feat)
         #     # print feat
             self.plot_ts(feat, feat_name)
 
