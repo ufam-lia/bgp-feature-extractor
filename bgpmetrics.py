@@ -103,11 +103,14 @@ class Features(object):
         self.ann_to_shorter = 0
         self.ann_to_longer = 0
         self.timestamp = 0
+        self.timestamp2 = 0
+        self.class_traffic = 0
 
     def to_dict(self):
         features = dict()
 
         features['timestamp'] = self.timestamp
+        features['timestamp2'] = self.timestamp2
         features['imp_wd_spath'] = self.imp_wd_spath
         features['imp_wd_dpath'] = self.imp_wd_dpath
         features['announcements'] = self.announcements
@@ -127,6 +130,7 @@ class Features(object):
         features['edit_distance_avg'] = self.edit_distance_avg
         features['ann_to_shorter'] = self.ann_to_shorter
         features['ann_to_longer'] = self.ann_to_longer
+        features['class'] = self.class_traffic
 
         for k, v in self.origin.iteritems():
             features['origin_' + str(k) + '_'] = v
@@ -232,6 +236,7 @@ class Metrics(object):
         self.volume_attr_init()
         self.as_path_attr_init()
         self.rib_attr_init()
+        self.class_traffic = defaultdict(int)
 
     def init_rib(self, file):
         d = Reader(file)
@@ -750,6 +755,8 @@ class Metrics(object):
         feat.ann_to_shorter = self.ann_to_shorter
         feat.ann_to_longer = self.ann_to_longer
         feat.timestamp = dict(zip(self.announcements.keys(), [dt.datetime.fromtimestamp(ts*60*5 + self.first_ts) for ts in self.announcements.keys()]))
+        feat.timestamp2 = dict(zip(self.announcements.keys(), [(ts*60*5 + self.first_ts) for ts in self.announcements.keys()]))
+        feat.class_traffic = self.class_traffic
         return feat
 
     def fill_blanks_timeseries(self):
@@ -791,3 +798,4 @@ class Metrics(object):
 
             self.ann_to_shorter[i]
             self.ann_to_longer[i]
+            self.class_traffic[i]

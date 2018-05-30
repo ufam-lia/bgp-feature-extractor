@@ -26,7 +26,7 @@ def ddlist():
 
 def ddd():
     return defaultdict(dd)
-
+()
 def dddlist():
     return defaultdict(ddlist)
 
@@ -69,17 +69,20 @@ def main():
 
     days = []
     # days.append(glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010712.*.gz"))
-    days.append(glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010713.*.gz"))
-    days.append(glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010714.*.gz"))
-    days.append(glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010715.*.gz"))
-    days.append(glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010716.*.gz"))
-    days.append(glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010717.*.gz"))
-    days.append(glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010718.*.gz"))
-    days.append(glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010719.*.gz"))
-    days.append(glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010720.*.gz"))
-    days.append(glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010721.*.gz"))
-    days.append(glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010722.*.gz"))
-    days.append(glob.glob("/home/pc/ripe-ris/code-red/rrc00/updates.20010723.*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010913.*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010914.*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010915.*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010916.*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010917.*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010918.*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010919.*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010920.*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010921.*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010922.*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010923.*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010924.*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010925.*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010926.*.gz"))
 
     update_files = sorted(update_files)
     c = 0
@@ -96,7 +99,7 @@ def main():
         features = metrics.get_features()
         features_dict = features.to_dict()
         df = features.to_dataframe()
-        df.to_csv('features-' + day + '.csv', sep=';', encoding='utf-8')
+        df.to_csv('features-nimda-' + day + '.csv', sep=';', encoding='utf-8')
         print day + ': OK'
         # metrics.plot()
 
