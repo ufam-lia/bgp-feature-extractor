@@ -69,9 +69,8 @@ def main():
 
     days = []
     # days.append(glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010712.*.gz"))
-    # days.append(glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010913.*.gz"))
-    # days.append(glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010914.12*.gz"))
-    days.append(glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010914.13*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010913.*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010914.*.gz"))
     days.append(glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010915.*.gz"))
     days.append(glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010916.*.gz"))
     days.append(glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010917.*.gz"))
