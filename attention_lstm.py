@@ -5,6 +5,7 @@ from keras.models import *
 
 from attention_utils import get_activations, get_data_recurrent
 
+
 INPUT_DIM = 2
 TIME_STEPS = 20
 # if True, the attention vector is shared across the input_dimensions where the attention is applied.
@@ -49,7 +50,7 @@ def model_attention_applied_before_lstm():
 
 if __name__ == '__main__':
 
-    N = 300000
+    N = 30000
     # N = 300 -> too few = no training
     inputs_1, outputs = get_data_recurrent(N, TIME_STEPS, INPUT_DIM)
 

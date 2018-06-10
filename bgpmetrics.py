@@ -133,11 +133,16 @@ class Features(object):
         features['class'] = self.class_traffic
 
         for k, v in self.origin.iteritems():
-            features['origin_' + str(k) + '_'] = v
+            if k < 11 :
+                features['origin_' + str(k)] = v
+
         for k, v in self.edit_distance_dict.iteritems():
-            features['edit_distance_dict_' + str(k) + '_'] = v
+            if k < 11 :
+                features['edit_distance_dict_' + str(k)] = v
+
         for k, v in self.edit_distance_dict.iteritems():
-            features['edit_distance_unique_dict_' + str(k) + '_'] = v
+            if k < 11 :
+                features['edit_distance_unique_dict_' + str(k)] = v
 
         return features
 
