@@ -17,6 +17,8 @@ for f in files_train:
         col = 'edit_distance_unique_dict_' + str(i) + '_'
         if col in csv.keys():
             csv.drop(col, 1, inplace = True)
+
+    csv.to_csv(f)
     df_train = df_train.append(csv, sort = True)
 
 df_test = pd.DataFrame()
@@ -29,6 +31,8 @@ for f in files_test:
         col = 'edit_distance_unique_dict_' + str(i) + '_'
         if col in csv.keys():
             csv.drop(col, 1, inplace = True)
+
+    csv.to_csv(f)
     df_test = df_test.append(csv, sort = True)
 
 df_train.reset_index(drop = True, inplace = True)
