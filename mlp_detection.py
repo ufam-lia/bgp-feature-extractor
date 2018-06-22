@@ -83,6 +83,8 @@ y_test = y_test.reshape(-1, 1)
 
 x_train = x_train.astype('float32')
 x_test = x_test.astype('float32')
+y_train = y_train.astype('float32')
+y_test = y_test.astype('float32')
 
 # print x_train
 # x_train -= x_train.mean(axis = 0)
@@ -124,7 +126,7 @@ history = model.fit(x_train, y_train,
                     class_weight=class_weight)
                     # callbacks=[metrics])
 
-y_pred = model.predict(x_test, verbose = 2)
+y_pred = model.predict(x_test, verbose = 2).round()
 tp = 0
 tn = 0
 fp = 0
@@ -135,6 +137,7 @@ pred_pos = 0
 pred_neg = 0
 
 for i in xrange(len(y_pred)):
+    print str(y_pred[i]) + ' == ' + str(y_test[i])
     if y_pred[i] == y_test[i]:
         if y_test[i] == 1:
             tp += 1
@@ -166,16 +169,23 @@ print 'fp->' + str(fp)
 print 'fn->' + str(fn)
 print '--------------'
 
+print type(y_test[0][0])
+print type(y_pred[0][0])
+
 acc = (tp + tn)/(tp + tn + fp + fn)
 print 'acc->' + str(np.round(acc*100, decimals=2)) + '%'
-precision = tp/(tp + fp)
+precision = tp/(tp + fp + epsilon)
 print 'precision->' + str(np.round(precision*100, decimals=2)) + '%'
+print 'precision->' + str(precision_score(y_test, y_pred.round())*100) + '%'
 recall = (tp)/(tp + fn)
 print 'recall->' + str(np.round(recall*100, decimals=2)) + '%'
+print 'recall->' + str(np.round(recall_score(y_test, y_pred.round())*100, decimals=2)) + '%'
 f1 = 2*(precision*recall)/(precision + recall + epsilon)
 print 'f1->' + str(np.round(f1*100, decimals=2)) + '%'
+print 'f1->' + str(np.round(f1_score(y_test, y_pred.round())*100, decimals=2)) + '%'
 
-    # print np.round(y, decimals = 3)
+
+
 
 # score = model.evaluate(x_test, y_test, verbose = 2)
 # print('Test loss:', score[0])
