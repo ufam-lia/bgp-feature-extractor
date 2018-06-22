@@ -1,7 +1,7 @@
+from __future__ import division
 import pandas as pd
 import numpy as np
 import os, glob
-
 import keras
 from keras.models import Sequential
 from keras.layers import Dense, Dropout
@@ -31,30 +31,19 @@ class Metrics(Callback):
         self.val_recalls.append(_val_recall)
         self.val_precisions.append(_val_precision)
         print ' - val_f1: %f - val_precision: %f - val_recall %f' %(_val_f1, _val_precision, _val_recall)
-
         return
 
+
+# Only compute a batch-wise average of recall.
+
 def recall(y_true, y_pred):
-    """Recall metric.
-
-    Only computes a batch-wise average of recall.
-
-    Computes the recall, a metric for multi-label classification of
-    how many relevant items are selected.
-    """
+    print    y_true
     true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
     possible_positives = K.sum(K.round(K.clip(y_true, 0, 1)))
     recall = true_positives / (possible_positives + K.epsilon())
     return recall
 
 def precision(y_true, y_pred):
-    """Precision metric.
-
-    Only computes a batch-wise average of precision.
-
-    Computes the precision, a metric for multi-label classification of
-    how many selected items are relevant.
-    """
     true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
     predicted_positives = K.sum(K.round(K.clip(y_pred, 0, 1)))
     precision = true_positives / (predicted_positives + K.epsilon())
@@ -67,8 +56,10 @@ def f1(y_true, y_pred):
 
 metrics = Metrics()
 
-epochs = 10000
-batch_size = 320000
+epochs = 50
+batch_size = 32
+epsilon = 0.000000000000001
+
 train_file = '/home/pc/bgp-feature-extractor/csv/train.csv'
 test_file = '/home/pc/bgp-feature-extractor/csv/test.csv'
 
@@ -109,9 +100,9 @@ x_test = x_test.astype('float32')
 # print x_test
 
 model = Sequential()
-model.add(Dense(32, activation='relu', input_shape = (x_train[0].shape)))
+model.add(Dense(256, activation='relu', input_shape = (x_train[0].shape)))
 # model.add(Dropout(0.2))
-model.add(Dense(32, activation='relu'))
+model.add(Dense(256, activation='relu'))
 # model.add(Dropout(0.2))
 model.add(Dense(1, activation='sigmoid'))
 
@@ -123,14 +114,69 @@ model.compile(loss='binary_crossentropy',
 
 validation_data = x_test
 validation_target = y_test
+class_weight = {0: 1.,  1: 4.}
 
 history = model.fit(x_train, y_train,
                     batch_size=batch_size,
                     epochs=epochs,
                     verbose=1,
-                    validation_data=(validation_data, validation_target))
+                    # validation_data=(validation_data, validation_target),
+                    class_weight=class_weight)
                     # callbacks=[metrics])
 
-score = model.evaluate(x_test, y_test, verbose=0)
-print('Test loss:', score[0])
-print('Test accuracy:', score[1])
+y_pred = model.predict(x_test, verbose = 2)
+tp = 0
+tn = 0
+fp = 0
+fn = 0
+pos = 0
+neg = 0
+pred_pos = 0
+pred_neg = 0
+
+for i in xrange(len(y_pred)):
+    if y_pred[i] == y_test[i]:
+        if y_test[i] == 1:
+            tp += 1
+            pos += 1
+            pred_pos += 1
+        else:
+            tn += 1
+            neg += 1
+            pred_neg += 1
+    else:
+        if y_test[i] == 1:
+            fn += 1
+            pos += 1
+            pred_neg += 1
+        else:
+            fp += 1
+            neg += 1
+            pred_pos += 1
+
+print '--------------'
+print 'pos->' + str(pos)
+print 'neg->' + str(neg)
+print 'pred_pos->' + str(pred_pos)
+print 'pred_neg->' + str(pred_neg)
+print '--------------'
+print 'tp->' + str(tp)
+print 'tn->' + str(tn)
+print 'fp->' + str(fp)
+print 'fn->' + str(fn)
+print '--------------'
+
+acc = (tp + tn)/(tp + tn + fp + fn)
+print 'acc->' + str(np.round(acc*100, decimals=2)) + '%'
+precision = tp/(tp + fp)
+print 'precision->' + str(np.round(precision*100, decimals=2)) + '%'
+recall = (tp)/(tp + fn)
+print 'recall->' + str(np.round(recall*100, decimals=2)) + '%'
+f1 = 2*(precision*recall)/(precision + recall + epsilon)
+print 'f1->' + str(np.round(f1*100, decimals=2)) + '%'
+
+    # print np.round(y, decimals = 3)
+
+# score = model.evaluate(x_test, y_test, verbose = 2)
+# print('Test loss:', score[0])
+# print('Test accuracy:', score[1])
