@@ -57,32 +57,23 @@ def main():
 
     #RIB files
     rib_files = rib_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/bview*.gz")
-    # rib_files = rib_files + glob.glob("/home/pc/ripe-ris/bview.20180501.0000.gz")
-    # rib_files = rib_files + glob.glob("/home/pc/ripe-ris/bview.20180501.0000.gz")
-
-    #Update files
-    # update_files = update_files + glob.glob("/home/pc/Downloads/updates.20180515.20*.gz")
-    # update_files = update_files + glob.glob("/home/pc/ripe-ris/updates.20180523.20**.gz")
-
-    # update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010713.*.gz")
-    # update_files = update_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010716.010*.gz")
 
     days = []
-    # days.append(glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010712.*.gz"))
-    # days.append(glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010913.15*.gz"))
-    # days.append(glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010914.*.gz"))
-    # days.append(glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010915.*.gz"))
-    # days.append(glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010916.*.gz"))
-    # days.append(glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010917.*.gz"))
-    # days.append(glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010918.*.gz"))
+    #Code Red v2
+    # days.append(glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010717.*.gz"))
+    # days.append(glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010718.*.gz"))
+    # days.append(glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010719.*.gz"))
+    # days.append(glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010720.*.gz"))
+    # days.append(glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010721.*.gz"))
+
+    #Nimda
+    days.append(glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010916.*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010917.*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010918.*.gz"))
     days.append(glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010919.*.gz"))
     days.append(glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010920.*.gz"))
     days.append(glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010921.*.gz"))
     days.append(glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010922.*.gz"))
-    days.append(glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010923.*.gz"))
-    days.append(glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010924.*.gz"))
-    days.append(glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010925.*.gz"))
-    days.append(glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010926.*.gz"))
 
     update_files = sorted(update_files)
     c = 0
@@ -99,7 +90,7 @@ def main():
         features = metrics.get_features()
         features_dict = features.to_dict()
         df = features.to_dataframe()
-        df.to_csv('features-nimda-' + day + '.csv', sep=';', encoding='utf-8')
+        df.to_csv('features-nimda-' + day + '.csv', sep=',', encoding='utf-8')
         print day + ': OK'
         # metrics.plot()
 
