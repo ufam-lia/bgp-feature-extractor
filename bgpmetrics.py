@@ -20,6 +20,7 @@ from getsizeoflib import total_size
 # from guppy import hpy
 import gc
 import pandas as pd
+from operator import add
 
 os.environ['TZ'] = 'US'
 time.tzset()
@@ -80,11 +81,15 @@ def edit_distance(l1, l2):
 
 class Features(object):
     def __init__(self):
+        self.withdrawals = 0
+        self.imp_wd = 0
         self.imp_wd_spath = 0
         self.imp_wd_dpath = 0
         self.announcements = 0
+        self.nlri_ann = 0
         self.news = 0
         self.dups = 0
+        self.wd_dups = 0
         self.nadas = 0
         self.flaps = 0
         self.origin = 0
@@ -111,8 +116,12 @@ class Features(object):
 
         features['timestamp'] = self.timestamp
         features['timestamp2'] = self.timestamp2
+        features['withdrawals'] = self.withdrawals
+        features['imp_wd'] = self.imp_wd
+        features['wd_dups'] = self.wd_dups
         features['imp_wd_spath'] = self.imp_wd_spath
         features['imp_wd_dpath'] = self.imp_wd_dpath
+        features['nlri_ann'] = self.nlri_ann
         features['announcements'] = self.announcements
         features['news'] = self.news
         features['dups'] = self.dups
@@ -147,7 +156,7 @@ class Features(object):
         return features
 
     def to_csv(self):
-        features = self.to_dict()
+        pass
 
     def to_dataframe(self):
         return pd.DataFrame(self.to_dict())
@@ -158,10 +167,13 @@ class Metrics(object):
         #Volume features init
         self.updates = defaultdict(int)
         self.withdrawals = defaultdict(int)
+        self.imp_wd = defaultdict(int) #*feature*
         self.implicit_withdrawals_spath = defaultdict(int) #*feature*
         self.implicit_withdrawals_dpath = defaultdict(int) #*feature*
         self.announcements = defaultdict(int) #*feature*
+        self.nlri_ann = defaultdict(int) #*feature*
         self.new_announcements = defaultdict(int) #*feature*
+        self.wd_dups = defaultdict(int) #*feature*
         self.dup_announcements = defaultdict(int) #*feature*
         self.new_ann_after_wd = defaultdict(int) #*feature*
         self.flap_announcements = defaultdict(int) #*feature*
@@ -177,6 +189,7 @@ class Metrics(object):
         self.diff_counter = defaultdict(int)
         self.error_counter = defaultdict(int)
         self.msg_counter = defaultdict(int)
+        self.nlri_ann = defaultdict(int)
 
     def as_path_attr_init(self):
         #AS path features
@@ -390,10 +403,12 @@ class Metrics(object):
         self.peer_upds[m.bgp.peer_as] += 1
 
         if (m.bgp.msg.wd_len > 0):
-            self.withdrawals[self.bin] += 1
-
             for nlri in m.bgp.msg.withdrawn:
+                self.withdrawals[self.bin] += 1
                 prefix = nlri.prefix + '/' + str(nlri.plen)
+                wd_state = self.prefix_withdrawals[m.bgp.peer_as][prefix]
+                if wd_state != 0 and wd_state == True:
+                    self.wd_dups[self.bin] += 1
                 self.prefix_withdrawals[m.bgp.peer_as][prefix] = True
                 self.print_classification(m, 'WITHDRAW', prefix)
                 # self.prefix_history[m.bgp.peer_as][prefix].append(m)
@@ -407,6 +422,7 @@ class Metrics(object):
             prefix = nlri.prefix + '/' + str(nlri.plen)
             self.plens[nlri.plen] += 1
             self.upds_prefixes[self.bin][prefix] += 1
+            self.nlri_ann[self.bin] = len(self.upds_prefixes[self.bin].keys())
             self.dbg_prefix(m, prefix)
 
             #Store history
@@ -463,6 +479,8 @@ class Metrics(object):
         #Figure it out which counter will be incremented
         if is_implicit_wd:
             # self.prefix_imp.add(prefix)
+            self.imp_wd[self.bin] += 1
+
             if is_implicit_dpath:
                 self.implicit_withdrawals_dpath[self.bin] += 1
                 self.print_classification(m, 'IMPLICIT_DIFF_PATH', prefix)
@@ -737,6 +755,9 @@ class Metrics(object):
     def get_features(self):
         feat = Features()
         self.fill_blanks_timeseries()
+        feat.withdrawals = self.withdrawals
+        feat.wd_dups = self.wd_dups
+        feat.nlri_ann = self.nlri_ann
         feat.imp_wd_spath = self.implicit_withdrawals_spath
         feat.imp_wd_dpath = self.implicit_withdrawals_dpath
         feat.announcements = self.announcements
@@ -759,6 +780,7 @@ class Metrics(object):
         feat.edit_distance_unique_dict = self.edit_distance_unique_dict
         feat.ann_to_shorter = self.ann_to_shorter
         feat.ann_to_longer = self.ann_to_longer
+        feat.imp_wd = self.imp_wd
         feat.timestamp = dict(zip(self.announcements.keys(), [dt.datetime.fromtimestamp(ts*60*5 + self.first_ts) for ts in self.announcements.keys()]))
         feat.timestamp2 = dict(zip(self.announcements.keys(), [(ts*60*5 + self.first_ts) for ts in self.announcements.keys()]))
         feat.class_traffic = self.class_traffic
@@ -783,7 +805,8 @@ class Metrics(object):
             self.as_path_avg_length[i]
             self.unique_as_path_max[i]
             self.unique_as_path_avg[i]
-
+            self.nlri_ann[i]
+            self.wd_dups[i]
             self.rare_ases_max[i]
             self.rare_ases_avg[i]
             self.number_rare_ases[i]
