@@ -322,7 +322,7 @@ class Metrics(object):
             try:
                 m = next(d, None)
             except:
-                m = next(d, None)
+                break
 
 
     def classify_as_path(self, m, attr, prefix):
@@ -403,16 +403,17 @@ class Metrics(object):
         self.peer_upds[m.bgp.peer_as] += 1
 
         if (m.bgp.msg.wd_len > 0):
-            for nlri in m.bgp.msg.withdrawn:
-                self.withdrawals[self.bin] += 1
-                prefix = nlri.prefix + '/' + str(nlri.plen)
-                wd_state = self.prefix_withdrawals[m.bgp.peer_as][prefix]
-                if wd_state != 0 and wd_state == True:
-                    self.wd_dups[self.bin] += 1
-                self.prefix_withdrawals[m.bgp.peer_as][prefix] = True
-                self.print_classification(m, 'WITHDRAW', prefix)
-                # self.prefix_history[m.bgp.peer_as][prefix].append(m)
-                self.msg_counter[m.bgp.peer_as + '@' + prefix] += 1
+            if m.bgp.msg.withdrawn is not None:
+                for nlri in m.bgp.msg.withdrawn:
+                    self.withdrawals[self.bin] += 1
+                    prefix = nlri.prefix + '/' + str(nlri.plen)
+                    wd_state = self.prefix_withdrawals[m.bgp.peer_as][prefix]
+                    if wd_state != 0 and wd_state == True:
+                        self.wd_dups[self.bin] += 1
+                    self.prefix_withdrawals[m.bgp.peer_as][prefix] = True
+                    self.print_classification(m, 'WITHDRAW', prefix)
+                    # self.prefix_history[m.bgp.peer_as][prefix].append(m)
+                    self.msg_counter[m.bgp.peer_as + '@' + prefix] += 1
 
     def classify_announcement(self, m):
         self.peer_upds[m.bgp.peer_as] += 1
