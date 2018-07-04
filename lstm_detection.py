@@ -56,13 +56,13 @@ def f1(y_true, y_pred):
 
 metrics = Metrics()
 
-epochs = 10000
+epochs = int(sys.argv[2])
 batch_size = 32
 epsilon = 0.000000000000001
 
 rrc = sys.argv[1]
 train_file = '/home/pc/bgp-feature-extractor/datasets/top10_train_' + rrc + '.csv'
-test_file = '/home/pc/bgp-feature-extractor/datasets/top10_train_' + rrc + '.csv'
+test_file = '/home/pc/bgp-feature-extractor/datasets/top10_test_' + rrc + '.csv'
 
 
 x_train = pd.read_csv(train_file, index_col = 0, delimiter=',')
@@ -117,9 +117,10 @@ model = Sequential()
 model.add(Dense(256, activation='relu', input_shape = (x_train[0].shape)))
 # # model.add(Dropout(0.2))
 # model.add(Dense(256, activation='relu'))
-# # model.add(Dropout(0.2))
 model.add(LSTM(50, return_sequences = True))
+model.add(Dropout(0.15))
 model.add(LSTM(50, return_sequences = True))
+model.add(Dropout(0.15))
 model.add(LSTM(50, return_sequences = False))
 # model.add(LSTM(100, return_sequences = False))
 model.add(Dense(1, activation='sigmoid'))
