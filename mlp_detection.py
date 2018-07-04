@@ -1,7 +1,7 @@
 from __future__ import division
 import pandas as pd
 import numpy as np
-import os, glob
+import glob
 import keras
 from keras.models import Sequential
 from keras.layers import Dense, Dropout
@@ -9,7 +9,7 @@ from keras.optimizers import RMSprop
 import tensorflow as tf
 from keras import backend as K
 from keras.backend.tensorflow_backend import set_session
-import os
+import os, sys
 from sklearn.preprocessing import MinMaxScaler
 
 from keras.callbacks import Callback
@@ -56,30 +56,36 @@ def f1(y_true, y_pred):
 
 metrics = Metrics()
 
-epochs = 50
+epochs = 250
 batch_size = 32
 epsilon = 0.000000000000001
 
-train_file = '/home/pc/bgp-feature-extractor/csv/volume_train.csv'
-test_file = '/home/pc/bgp-feature-extractor/csv/volume_test.csv'
+rrc = sys.argv[1]
+train_file = '/home/pc/bgp-feature-extractor/datasets/top10_train_' + rrc + '.csv'
+test_file = '/home/pc/bgp-feature-extractor/datasets/top10_train_' + rrc + '.csv'
 
-x_train = pd.read_csv(train_file, index_col = 0)
+
+x_train = pd.read_csv(train_file, index_col = 0, delimiter=',')
 y_train = x_train['class']
-# x_train.drop(['class','timestamp'], 1, inplace = True)
-x_train.drop(['class'], 1, inplace = True)
+x_train.drop(['class', 'timestamp', 'timestamp2'], 1, inplace = True)
 
-x_test = pd.read_csv(test_file, index_col = 0)
+x_test = pd.read_csv(test_file, index_col = 0,delimiter=',')
 y_test = x_test['class']
-# x_test.drop(['class','timestamp','timestamp2'], 1, inplace = True)
-x_test.drop(['class','timestamp2'], 1, inplace = True)
+x_test.drop(['class', 'timestamp', 'timestamp2'], 1, inplace = True)
 
+print x_train.keys()
+print x_test.keys()
 x_train = x_train.values
 y_train = y_train.values
 x_test = x_test.values
 y_test = y_test.values
 
-x_train = x_train.reshape(-1, 13)
-x_test = x_test.reshape(-1, 13)
+print x_train.shape
+print x_test.shape
+
+
+x_train = x_train.reshape(x_train.shape[0], x_train.shape[1])
+x_test = x_test.reshape(x_test.shape[0], x_test.shape[1])
 y_train = y_train.reshape(-1, 1)
 y_test = y_test.reshape(-1, 1)
 
@@ -93,8 +99,8 @@ x_train /= x_train.std(axis = 0)
 x_test -= x_test.mean(axis = 0)
 x_test /= x_test.std(axis = 0)
 
-np.savetxt('oi.csv', x_train, delimiter=';')
-print 'oi.csv'
+# np.savetxt('oi.csv', x_train, delimiter=';')
+# print 'oi.csv'
 # print '*'*100
 # print x_train
 # print np.round(x_train.mean(axis = 0))
