@@ -60,24 +60,26 @@ epochs = 50
 batch_size = 32
 epsilon = 0.000000000000001
 
-train_file = '/home/pc/bgp-feature-extractor/csv/train.csv'
-test_file = '/home/pc/bgp-feature-extractor/csv/test.csv'
+train_file = '/home/pc/bgp-feature-extractor/csv/volume_train.csv'
+test_file = '/home/pc/bgp-feature-extractor/csv/volume_test.csv'
 
 x_train = pd.read_csv(train_file, index_col = 0)
 y_train = x_train['class']
-x_train.drop(['class','timestamp'], 1, inplace = True)
+# x_train.drop(['class','timestamp'], 1, inplace = True)
+x_train.drop(['class'], 1, inplace = True)
 
 x_test = pd.read_csv(test_file, index_col = 0)
 y_test = x_test['class']
-x_test.drop(['class','timestamp','timestamp2'], 1, inplace = True)
+# x_test.drop(['class','timestamp','timestamp2'], 1, inplace = True)
+x_test.drop(['class','timestamp2'], 1, inplace = True)
 
 x_train = x_train.values
 y_train = y_train.values
 x_test = x_test.values
 y_test = y_test.values
 
-x_train = x_train.reshape(-1, 44)
-x_test = x_test.reshape(-1, 44)
+x_train = x_train.reshape(-1, 13)
+x_test = x_test.reshape(-1, 13)
 y_train = y_train.reshape(-1, 1)
 y_test = y_test.reshape(-1, 1)
 
@@ -86,11 +88,13 @@ x_test = x_test.astype('float32')
 y_train = y_train.astype('float32')
 y_test = y_test.astype('float32')
 
-# print x_train
-# x_train -= x_train.mean(axis = 0)
-# x_train /= x_train.std(axis = 0)
-# # x_test -= x_test.mean(axis = 0)
-# x_test /= x_test.std(axis = 0)
+x_train -= x_train.mean(axis = 0)
+x_train /= x_train.std(axis = 0)
+x_test -= x_test.mean(axis = 0)
+x_test /= x_test.std(axis = 0)
+
+np.savetxt('oi.csv', x_train, delimiter=';')
+print 'oi.csv'
 # print '*'*100
 # print x_train
 # print np.round(x_train.mean(axis = 0))
@@ -109,7 +113,6 @@ model.add(Dense(256, activation='relu'))
 model.add(Dense(1, activation='sigmoid'))
 
 model.summary()
-
 model.compile(loss='binary_crossentropy',
               optimizer=RMSprop(lr=0.0000001),
               metrics=['accuracy'])
@@ -137,7 +140,7 @@ pred_pos = 0
 pred_neg = 0
 
 for i in xrange(len(y_pred)):
-    print str(y_pred[i]) + ' == ' + str(y_test[i])
+    # print str(y_pred[i]) + ' == ' + str(y_test[i])
     if y_pred[i] == y_test[i]:
         if y_test[i] == 1:
             tp += 1
@@ -169,23 +172,20 @@ print 'fp->' + str(fp)
 print 'fn->' + str(fn)
 print '--------------'
 
-print type(y_test[0][0])
-print type(y_pred[0][0])
+# print type(y_test[0][0])
+# print type(y_pred[0][0])
 
 acc = (tp + tn)/(tp + tn + fp + fn)
 print 'acc->' + str(np.round(acc*100, decimals=2)) + '%'
 precision = tp/(tp + fp + epsilon)
 print 'precision->' + str(np.round(precision*100, decimals=2)) + '%'
-print 'precision->' + str(precision_score(y_test, y_pred.round())*100) + '%'
+# print 'precision->' + str(precision_score(y_test, y_pred.round())*100) + '%'
 recall = (tp)/(tp + fn)
 print 'recall->' + str(np.round(recall*100, decimals=2)) + '%'
-print 'recall->' + str(np.round(recall_score(y_test, y_pred.round())*100, decimals=2)) + '%'
+# print 'recall->' + str(np.round(recall_score(y_test, y_pred.round())*100, decimals=2)) + '%'
 f1 = 2*(precision*recall)/(precision + recall + epsilon)
 print 'f1->' + str(np.round(f1*100, decimals=2)) + '%'
-print 'f1->' + str(np.round(f1_score(y_test, y_pred.round())*100, decimals=2)) + '%'
-
-
-
+# print 'f1->' + str(np.round(f1_score(y_test, y_pred.round())*100, decimals=2)) + '%'
 
 # score = model.evaluate(x_test, y_test, verbose = 2)
 # print('Test loss:', score[0])

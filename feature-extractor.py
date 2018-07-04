@@ -17,6 +17,7 @@ import argparse
 import operator
 from bgpmetrics import Metrics
 import pandas as pd
+from multiprocessing import Pool
 
 def dd():
     return defaultdict(int)
@@ -45,9 +46,10 @@ def main():
     parser = argparse.ArgumentParser(description='Process BGP timeseries')
     parser.add_argument('--days', type=int)
     parser.add_argument('--start', type=str)
+    parser.add_argument('--rrc', type=str)
 
-    args = parser.parse_args()
-
+    rrc = sys.argv[1]
+    # rrc = args['rrc']
     #Traverse months
     # for i in [6,7,8,9,10,11]
     #Traverse files
@@ -56,24 +58,15 @@ def main():
     rib_files = []
 
     #RIB files
-    rib_files = rib_files + glob.glob("/home/pc/ripe-ris/code-red/rrc03/bview*.gz")
+    rib_files = rib_files + glob.glob("/home/pc/ripe-ris/code-red/" + rrc + "/bview*.gz")
 
-    days = []
     #Code Red v2
-    # days.append(glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010717.*.gz"))
-    # days.append(glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010718.*.gz"))
-    # days.append(glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010719.*.gz"))
-    # days.append(glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010720.*.gz"))
-    # days.append(glob.glob("/home/pc/ripe-ris/code-red/rrc03/updates.20010721.*.gz"))
-
-    #Nimda
-    days.append(glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010916.*.gz"))
-    days.append(glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010917.*.gz"))
-    days.append(glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010918.*.gz"))
-    days.append(glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010919.*.gz"))
-    days.append(glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010920.*.gz"))
-    days.append(glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010921.*.gz"))
-    days.append(glob.glob("/home/pc/ripe-ris/nimda/rrc00/updates.20010922.*.gz"))
+    days = []
+    days.append(glob.glob("/home/pc/ripe-ris/code-red/" + rrc + "/updates.20010717.*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/code-red/" + rrc + "/updates.20010718.*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/code-red/" + rrc + "/updates.20010719.*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/code-red/" + rrc + "/updates.20010720.*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/code-red/" + rrc + "/updates.20010721.*.gz"))
 
     update_files = sorted(update_files)
     c = 0
@@ -82,17 +75,55 @@ def main():
     for update_files in days:
         metrics = Metrics()
         update_files = sorted(update_files)
+        # prefix_episodes = pool.map(metrics.add_updates, update_files)
         for f in update_files:
             metrics.add_updates(f)
+            file = f.split('.')
+            pickle.dump(metrics.prefix_lookup, open(file[0] + file[1] + file[2] + '-lookup.pkl', "wb"))
             print f + ': ' + str(metrics.count_updates)
 
+            # pool.close()
+            # pool.join()
         day = update_files[0].split('.')[1]
         features = metrics.get_features()
         features_dict = features.to_dict()
         df = features.to_dataframe()
-        df.to_csv('features-nimda-' + day + '.csv', sep=',', encoding='utf-8')
+        df.to_csv('features-code-red-' + rrc + '-' + day + '.csv', sep=',', encoding='utf-8')
         print day + ': OK'
         # metrics.plot()
+    #Nimda
+    days = []
+    days.append(glob.glob("/home/pc/ripe-ris/nimda/" + rrc + "/updates.20010916.*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/nimda/" + rrc + "/updates.20010917.*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/nimda/" + rrc + "/updates.20010918.*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/nimda/" + rrc + "/updates.20010919.*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/nimda/" + rrc + "/updates.20010920.*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/nimda/" + rrc + "/updates.20010921.*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/nimda/" + rrc + "/updates.20010922.*.gz"))
+
+    update_files = sorted(update_files)
+    c = 0
+
+    # metrics.init_rib(rib_files[0])
+    for update_files in days:
+        metrics = Metrics()
+        update_files = sorted(update_files)
+        # prefix_episodes = pool.map(metrics.add_updates, update_files)
+        for f in update_files:
+            metrics.add_updates(f)
+            file = f.split('.')
+            pickle.dump(metrics.prefix_lookup, open(file[0] + file[1] + file[2] + '-lookup.pkl', "wb"))
+            print f + ': ' + str(metrics.count_updates)
+
+            # pool.close()
+            # pool.join()
+        day = update_files[0].split('.')[1]
+        features = metrics.get_features()
+        features_dict = features.to_dict()
+        df = features.to_dataframe()
+        df.to_csv('features-nimda-" + rrc + "-' + day + '.csv', sep=',', encoding='utf-8')
+        print day + ': OK'
+
 
 if __name__ == '__main__':
     main()

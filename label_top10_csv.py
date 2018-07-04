@@ -2,11 +2,11 @@ import pandas as pd
 import numpy as np
 import os, glob, sys
 
-features_path = '/home/pc/bgp-feature-extractor/'
+features_path = '/home/pc/bgp-feature-extractor/datasets/'
 LABELS_DROP = ['news','nadas','flaps','origin_changes','as_path_avg','unique_as_path_max',\
                'unique_as_path_avg','rare_ases_max','rare_ases_avg','number_rare_ases','edit_distance_max',\
                'edit_distance_avg','ann_to_shorter','ann_to_longer','class','origin_2','imp_wd_dpath','imp_wd_spath']
-
+rrc = 'rrc00'
 def drop_columns(csv):
     for i in xrange(0, 200):
         col = 'edit_distance_dict_' + str(i) #+ '_'
@@ -23,7 +23,6 @@ def drop_columns(csv):
 
 def add_label(csv, start, end):
     labels = []
-    print csv.keys()
     for ts in csv['timestamp2']:
         if ts >= start and ts <= end:
             labels.append(1)
@@ -36,32 +35,30 @@ def train(train_files):
     df = pd.DataFrame()
     if len(train_files) > 0:
         for f in train_files:
-            print f
             csv = pd.read_csv(f, index_col=0, delimiter = ',', quoting=3)
             csv = drop_columns(csv)
             df = df.append(csv, sort = True)
 
         df.reset_index(drop=True, inplace=True)
-        df.to_csv(features_path + 'top10_train.csv', quoting=3)
+        df.to_csv(features_path + 'top10_train_' + rrc + '.csv', quoting=3)
 
 def test(test_files):
     df = pd.DataFrame()
     if len(test_files) > 0:
         for f in test_files:
-            print f
             csv = pd.read_csv(f, index_col=0, delimiter = ',', quoting=3)
             csv = add_label(csv, 1000818000, 1001030400)
             csv = drop_columns(csv)
-            csv.to_csv(f, quoting=3)
             df = df.append(csv, sort = True)
 
         df.reset_index(drop = True, inplace = True)
-        df.to_csv(features_path + 'top10_test.csv', quoting=3)
+        df.to_csv(features_path + 'top10_test_' + rrc + '.csv', quoting=3)
 
 def main(argv):
-    train_files = sorted(glob.glob(features_path + 'features-2001*'))
-    test_files  = sorted(glob.glob(features_path + 'features-nimda-2001*'))
-
+    global rrc
+    rrc = sys.argv[1]
+    train_files = sorted(glob.glob(features_path + 'features-code-red-' + rrc + '*'))
+    test_files  = sorted(glob.glob(features_path + 'features-nimda-' + rrc + '*'))
     train(train_files)
     test(test_files)
 
