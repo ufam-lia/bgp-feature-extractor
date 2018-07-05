@@ -5,8 +5,9 @@ import os, glob, sys
 features_path = '/home/pc/bgp-feature-extractor/datasets/'
 LABELS_DROP = ['news','nadas','flaps','origin_changes','as_path_avg','unique_as_path_max',\
                'unique_as_path_avg','rare_ases_max','rare_ases_avg','number_rare_ases','edit_distance_max',\
-               'edit_distance_avg','ann_to_shorter','ann_to_longer','class','origin_2','imp_wd_dpath','imp_wd_spath']
+               'edit_distance_avg','ann_to_shorter','ann_to_longer','origin_2','imp_wd_dpath','imp_wd_spath']
 rrc = 'rrc00'
+
 def drop_columns(csv):
     for i in xrange(0, 200):
         col = 'edit_distance_dict_' + str(i) #+ '_'
@@ -36,6 +37,7 @@ def train(train_files):
     if len(train_files) > 0:
         for f in train_files:
             csv = pd.read_csv(f, index_col=0, delimiter = ',', quoting=3)
+            csv = add_label(csv, 995536800, 995572800)
             csv = drop_columns(csv)
             df = df.append(csv, sort = True)
 
