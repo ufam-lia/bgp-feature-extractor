@@ -5,7 +5,7 @@ import glob
 import keras
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, LSTM
-from keras.optimizers import RMSprop
+from keras.optimizers import RMSprop, Adam
 import tensorflow as tf
 from keras import backend as K
 from keras.backend.tensorflow_backend import set_session
@@ -30,7 +30,7 @@ class Metrics(Callback):
         self.val_f1s.append(_val_f1)
         self.val_recalls.append(_val_recall)
         self.val_precisions.append(_val_precision)
-        print ' - val_f1: %f - val_precision: %f - val_recall %f' %(_val_f1, _val_precision, _val_recall)
+        print '-'*70+'> val_f1: %f - val_precision: %f - val_recall %f' %(_val_f1, _val_precision, _val_recall)
         return
 
 
@@ -61,7 +61,7 @@ batch_size = 32
 epsilon = 0.000000000000001
 
 rrc = sys.argv[1]
-train_file = '/home/pc/bgp-feature-extractor/datasets/top10_train_' + rrc + '.csv'
+train_file = '/home/pc/bgp-feature-extractor/datasets/top10_train2_' + rrc + '.csv'
 test_file = '/home/pc/bgp-feature-extractor/datasets/top10_test_' + rrc + '.csv'
 
 
@@ -114,20 +114,20 @@ print 'oi.csv'
 # print x_test
 
 model = Sequential()
-model.add(Dense(256, activation='relu', input_shape = (x_train[0].shape)))
+model.add(Dense(256, activation='relu', input_shape = (x_train[0].shape), batch_size = batch_size))
 # # model.add(Dropout(0.2))
 # model.add(Dense(256, activation='relu'))
-model.add(LSTM(50, return_sequences = True))
-model.add(Dropout(0.15))
-model.add(LSTM(50, return_sequences = True))
-model.add(Dropout(0.15))
-model.add(LSTM(50, return_sequences = False))
+model.add(LSTM(50, return_sequences = True, stateful = True,activation='sigmoid'))
+model.add(Dropout(0.25))
+model.add(LSTM(50, return_sequences = False, stateful = True))
+model.add(Dropout(0.25))
+# model.add(LSTM(50, return_sequences = False, stateful = True))
 # model.add(LSTM(100, return_sequences = False))
 model.add(Dense(1, activation='sigmoid'))
 
 model.summary()
 model.compile(loss='binary_crossentropy',
-              optimizer=RMSprop(lr=0.00001),
+              optimizer=Adam(lr=0.001),
               metrics=['accuracy'])
 
 validation_data = x_test
@@ -138,9 +138,10 @@ history = model.fit(x_train, y_train,
                     batch_size=batch_size,
                     epochs=epochs,
                     verbose=1,
-                    # validation_data=(validation_data, validation_target),
-                    class_weight=class_weight)
-                    # callbacks=[metrics])
+                    shuffle=False,
+                    validation_data=(validation_data, validation_target),
+                    class_weight=class_weight,
+                    callbacks=[metrics])
 
 y_pred = model.predict(x_test, verbose = 2).round()
 tp = 0
