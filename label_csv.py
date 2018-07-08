@@ -7,6 +7,7 @@ LABELS_DROP = ['news','nadas','flaps','origin_changes','as_path_avg','unique_as_
                'unique_as_path_avg','rare_ases_max','rare_ases_avg','number_rare_ases','edit_distance_max',\
                'edit_distance_avg','ann_to_shorter','ann_to_longer','origin_2','imp_wd_dpath','imp_wd_spath']
 rrc = 'rrc00'
+peer = '1'
 
 def drop_columns(csv):
     for i in xrange(0, 200):
@@ -26,7 +27,7 @@ def add_label(csv, start, end):
     labels = []
     for ts in csv['timestamp2']:
         if ts >= start and ts <= end:
-            labels.append(1)
+            labels.append(2500)
         else:
             labels.append(0)
     csv['class'] = pd.Series(labels)
@@ -38,20 +39,25 @@ def preprocessing(files, name='name', start=0, end=0):
         for f in files:
             csv = pd.read_csv(f, index_col=0, delimiter = ',', quoting=3)
             csv = add_label(csv, start, end)
-            csv = drop_columns(csv)
+            # csv = drop_columns(csv)
             df = df.append(csv, sort = True)
 
         df.reset_index(drop=True, inplace=True)
-        df.to_csv(features_path + 'top10_' + name + '_' + rrc + '.csv', quoting=3)
-
+        df.to_csv(features_path + 'dataset_' + name + '_' + rrc + '.csv', quoting=3)
 
 def main(argv):
     global rrc
+    global peer
     rrc = sys.argv[1]
-    slammer_files = sorted(glob.glob(features_path + 'features-slammer-' + rrc + '*'))
-    # test_files  = sorted(glob.glob(features_path + 'features-nimda-' + rrc + '*'))
-    # preprocessing(train_files, name='train', start=995536800, end=995572800)
-    preprocessing(slammer_files, name='slammer', start=1043472660, end=1043524740)
+    peer = sys.argv[2]
+
+    code_red_files  = sorted(glob.glob(features_path + 'features-code-red-' + rrc + '-' + peer + '*'))
+    nimda_files  = sorted(glob.glob(features_path + 'features-nimda-' + rrc + '-' + peer + '*'))
+    slammer_files = sorted(glob.glob(features_path + 'features-slammer-' + rrc + '-' + peer + '-*'))
+
+    preprocessing(code_red_files, name='code-red_'+peer, start=995553071, end=995591487)
+    preprocessing(nimda_files, name='nimda_'+peer, start=1000818222, end=1001030344)
+    preprocessing(slammer_files, name='slammer_'+peer, start=1043472590, end=1043540404)
 
 if __name__ == "__main__":
     main(sys.argv)
