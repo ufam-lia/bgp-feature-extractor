@@ -277,18 +277,8 @@ class Metrics(object):
                 for attr in m.td.attr:
                     self.prefix_lookup[peer][prefix][BGP_ATTR_T[attr.type]] = attr
 
-        rolou = False
-
-        for prefix, peers in prfx_count.iteritems():
-            if peers > 1:
-                rolou = True
-                print prefix
-
         for peer, prefix_count in peer_count.iteritems():
             print str(peer) + '->' + str(prefix_count)
-
-        if not rolou:
-            print 'not rolou'
 
     def increment_update_counters(self, m):
         self.count_updates += 1
@@ -601,83 +591,6 @@ class Metrics(object):
                 self.diff_counter['COMMUNITY'] += 1
             return (old_attr['COMMUNITY'] != []) and (new_attr.comm == old_attr['COMMUNITY'].comm)
 
-    def plot_ts(self, dict_ts, name_dict):
-        fig = plt.figure(1)
-        plt.subplot(1,1,1)
-        plt.plot(range(len(dict_ts.keys())), dict_ts.values(), lw=1.15, color = 'black')
-        output = name_dict + str(random.randint(1, 1000)) + '.png'
-        fig.savefig(output, bboxes_inches = '30', dpi = 400)
-        plt.gcf().clear()
-        # print output
-        # os.system('xviewer ' + output + ' &')
-
-    def plot(self):
-        for feat_name, feat in features_dict.iteritems():
-        #     # print feat_name + ' -> ' + str(len(feat))
-        # print len(feat)
-        #     # print feat
-            self.plot_ts(feat, feat_name)
-
-        # for bin, prefix_count in self.upds_prefixes.iteritems():
-        #     self.max_prefix[bin] = np.array(self.upds_prefixes[bin].values()).max()
-        #     self.mean_prefix[bin] = np.array(self.upds_prefixes[bin].values()).mean()
-        #
-        # self.sort_timeseries()
-        # self.fill_blanks_timeseries()
-        # self.plot_timeseries()
-        # print self.as_paths_distribution
-        # print self.as_path_max_length
-        # print self.unique_as_path_max
-        # print self.as_path_avg_length
-        # print self.unique_as_path_avg
-        # self.print_dicts()
-
-        for prefix in self.prefix_nada:
-             for peer in self.prefix_history.keys():
-                 qtd_bgp_msgs = len(self.prefix_history[peer][prefix])
-                 # if qtd_bgp_msgs > 20:
-                     # print peer + ' @ ' +  prefix + '->' + str(qtd_bgp_msgs)
-                     # self.print_prefix_history(peer, prefix)
-                     # return
-
-        # print self.diff_counter
-        # print self.error_counter
-        # prefix_lookup_size = 0
-        # c = 0
-        # for peers, prefixes in self.prefix_lookup.iteritems():
-        #     prefix_lookup_size += sys.getsizeof(peers)
-        #     prefix_lookup_size += sys.getsizeof(prefixes)
-        #
-        #     for prefix, attrs in prefixes.iteritems():
-        #         prefix_lookup_size += sys.getsizeof(prefix)
-        #         prefix_lookup_size += sys.getsizeof(attrs)
-        #
-        #         for attr_name_, attr_ in attrs.iteritems():
-        #             # print pdir(attr_)
-        #             prefix_lookup_size += sys.getsizeof(attr_)
-        #             prefix_lookup_size += sys.getsizeof(attr_name_)
-        #             c += 1
-        #
-        # print 'self.upds_prefixes ->' + str(total_size(self.upds_prefixes)/1024) + 'KB'
-        # print 'self.prefix_withdrawals ->' + str(total_size(self.prefix_withdrawals)/1024) + 'KB'
-        # print 'self.prefix_lookup ->' + str(total_size(self.prefix_lookup)/1024) + 'KB'
-        # print 'self.prefix_lookup2 ->' + str(prefix_lookup_size/1024) + 'KB'
-        #
-        # print 'self.upds_prefixes ->' + str(len(self.upds_prefixes.keys())) + ' keys'
-        # print 'self.prefix_withdrawals ->' + str(len(self.prefix_withdrawals.keys())) + ' keys'
-        #
-        # prefix_lookup_counter = 0
-        # for peers, prefixes in self.prefix_lookup.iteritems():
-        #     prefix_lookup_counter += len(prefixes.keys())
-        #
-        # print 'self.prefix_lookup ->' + str(prefix_lookup_counter) + ' keys'
-        # print 'TEST ->' + str(total_size(self.prefix_lookup['3549']['65.202.5.0/24']))
-        #
-        # # prefix_heavy_hitters = dict(sorted(self.msg_counter.items(), key = operator.itemgetter(1)))
-        # prefix_heavy_hitters = sorted(self.msg_counter.items(), key = operator.itemgetter(1), reverse = True)
-        # print prefix_heavy_hitters[0:5]
-        # print total_size(self.prefix_lookup[])
-
     def print_classification(self, m, type, prefix):
         # if prefix == self.prefix_found and m.bgp.peer_as == self.peer_found:
         if prefix == '2.31.96.0/24':
@@ -828,3 +741,80 @@ class Metrics(object):
             self.ann_to_shorter[i]
             self.ann_to_longer[i]
             self.class_traffic[i]
+
+    def plot_ts(self, dict_ts, name_dict):
+        fig = plt.figure(1)
+        plt.subplot(1,1,1)
+        plt.plot(range(len(dict_ts.keys())), dict_ts.values(), lw=1.15, color = 'black')
+        output = name_dict + str(random.randint(1, 1000)) + '.png'
+        fig.savefig(output, bboxes_inches = '30', dpi = 400)
+        plt.gcf().clear()
+        # print output
+        # os.system('xviewer ' + output + ' &')
+
+    def plot(self):
+        for feat_name, feat in features_dict.iteritems():
+        #     # print feat_name + ' -> ' + str(len(feat))
+        # print len(feat)
+        #     # print feat
+            self.plot_ts(feat, feat_name)
+
+        # for bin, prefix_count in self.upds_prefixes.iteritems():
+        #     self.max_prefix[bin] = np.array(self.upds_prefixes[bin].values()).max()
+        #     self.mean_prefix[bin] = np.array(self.upds_prefixes[bin].values()).mean()
+        #
+        # self.sort_timeseries()
+        # self.fill_blanks_timeseries()
+        # self.plot_timeseries()
+        # print self.as_paths_distribution
+        # print self.as_path_max_length
+        # print self.unique_as_path_max
+        # print self.as_path_avg_length
+        # print self.unique_as_path_avg
+        # self.print_dicts()
+
+        for prefix in self.prefix_nada:
+             for peer in self.prefix_history.keys():
+                 qtd_bgp_msgs = len(self.prefix_history[peer][prefix])
+                 # if qtd_bgp_msgs > 20:
+                     # print peer + ' @ ' +  prefix + '->' + str(qtd_bgp_msgs)
+                     # self.print_prefix_history(peer, prefix)
+                     # return
+
+        # print self.diff_counter
+        # print self.error_counter
+        # prefix_lookup_size = 0
+        # c = 0
+        # for peers, prefixes in self.prefix_lookup.iteritems():
+        #     prefix_lookup_size += sys.getsizeof(peers)
+        #     prefix_lookup_size += sys.getsizeof(prefixes)
+        #
+        #     for prefix, attrs in prefixes.iteritems():
+        #         prefix_lookup_size += sys.getsizeof(prefix)
+        #         prefix_lookup_size += sys.getsizeof(attrs)
+        #
+        #         for attr_name_, attr_ in attrs.iteritems():
+        #             # print pdir(attr_)
+        #             prefix_lookup_size += sys.getsizeof(attr_)
+        #             prefix_lookup_size += sys.getsizeof(attr_name_)
+        #             c += 1
+        #
+        # print 'self.upds_prefixes ->' + str(total_size(self.upds_prefixes)/1024) + 'KB'
+        # print 'self.prefix_withdrawals ->' + str(total_size(self.prefix_withdrawals)/1024) + 'KB'
+        # print 'self.prefix_lookup ->' + str(total_size(self.prefix_lookup)/1024) + 'KB'
+        # print 'self.prefix_lookup2 ->' + str(prefix_lookup_size/1024) + 'KB'
+        #
+        # print 'self.upds_prefixes ->' + str(len(self.upds_prefixes.keys())) + ' keys'
+        # print 'self.prefix_withdrawals ->' + str(len(self.prefix_withdrawals.keys())) + ' keys'
+        #
+        # prefix_lookup_counter = 0
+        # for peers, prefixes in self.prefix_lookup.iteritems():
+        #     prefix_lookup_counter += len(prefixes.keys())
+        #
+        # print 'self.prefix_lookup ->' + str(prefix_lookup_counter) + ' keys'
+        # print 'TEST ->' + str(total_size(self.prefix_lookup['3549']['65.202.5.0/24']))
+        #
+        # # prefix_heavy_hitters = dict(sorted(self.msg_counter.items(), key = operator.itemgetter(1)))
+        # prefix_heavy_hitters = sorted(self.msg_counter.items(), key = operator.itemgetter(1), reverse = True)
+        # print prefix_heavy_hitters[0:5]
+        # print total_size(self.prefix_lookup[])
