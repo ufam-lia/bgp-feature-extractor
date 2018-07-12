@@ -54,55 +54,88 @@ def f1(y_true, y_pred):
     recall = recall(y_true, y_pred)
     return 2*((precision*recall)/(precision+recall+K.epsilon()))
 
-metrics = Metrics()
+def csv_to_xy(val_file):
+    x_val = pd.read_csv(val_file, index_col = 0, delimiter=',')
+    y_val = x_val['class']
+    x_val.drop(['class', 'timestamp', 'timestamp2'], 1, inplace = True)
+    x_val = x_val.values
+    y_val = y_val.values
+    print x_val.shape
 
+    x_val = x_val.reshape(x_val.shape[0], 1, x_val.shape[1])
+    y_val = y_val.reshape(-1, 1)
+
+    x_val = x_val.astype('float32')
+    y_val = y_val.astype('float32')
+
+    x_val -= x_val.mean(axis = 0)
+    x_val /= x_val.std(axis = 0)
+
+    return (x_val, y_val)
+
+metrics = Metrics()
 epochs = int(sys.argv[2])
 batch_size = 32
 epsilon = 0.000000000000001
 
 rrc = sys.argv[1]
-train_file = '/home/pc/bgp-feature-extractor/datasets/top10_train2_' + rrc + '.csv'
-test_file = '/home/pc/bgp-feature-extractor/datasets/top10_test_' + rrc + '.csv'
+train_files = []
+train_files.append('/home/pc/bgp-feature-extractor/datasets/dataset_moscow_blackout_1853_rrc05.csv')
+train_files.append('/home/pc/bgp-feature-extractor/datasets/dataset_moscow_blackout_12793_rrc05.csv')
+train_files.append('/home/pc/bgp-feature-extractor/datasets/dataset_moscow_blackout_13237_rrc05.csv')
+train_files.append('/home/pc/bgp-feature-extractor/datasets/dataset_nimda_513_rrc04.csv')
+train_files.append('/home/pc/bgp-feature-extractor/datasets/dataset_nimda_559_rrc04.csv')
+train_files.append('/home/pc/bgp-feature-extractor/datasets/dataset_nimda_6893_rrc04.csv')
+train_files.append('/home/pc/bgp-feature-extractor/datasets/dataset_code-red_513_rrc04.csv')
+train_files.append('/home/pc/bgp-feature-extractor/datasets/dataset_code-red_559_rrc04.csv')
+train_files.append('/home/pc/bgp-feature-extractor/datasets/dataset_code-red_6893_rrc04.csv')
 
+# test_file = '/home/pc/bgp-feature-extractor/datasets/dataset_nimda_513_rrc04.csv'
+test_file = '/home/pc/bgp-feature-extractor/datasets/dataset_slammer_513_rrc04.csv'
 
-x_train = pd.read_csv(train_file, index_col = 0, delimiter=',')
-y_train = x_train['class']
-x_train.drop(['class', 'timestamp', 'timestamp2'], 1, inplace = True)
+# x_train = pd.read_csv(train_file, index_col = 0, delimiter=',')
+# y_train = x_train['class']
+# x_train.drop(['class', 'timestamp', 'timestamp2'], 1, inplace = True)
+#
+# x_test = pd.read_csv(test_file, index_col = 0,delimiter=',')
+# y_test = x_test['class']
+# x_test.drop(['class', 'timestamp', 'timestamp2'], 1, inplace = True)
+#
+# print x_train.keys()
+# print x_test.keys()
+# x_train = x_train.values
+# y_train = y_train.values
+# x_test = x_test.values
+# y_test = y_test.values
+#
+# print x_train.shape
+# print x_test.shape
+#
+# x_train = x_train.reshape(x_train.shape[0], 1, x_train.shape[1])
+# x_test = x_test.reshape(x_test.shape[0], 1, x_test.shape[1])
+#
+# y_train = y_train.reshape(-1, 1)
+# y_test = y_test.reshape(-1, 1)
+#
+# x_train = x_train.astype('float32')
+# x_test = x_test.astype('float32')
+# y_train = y_train.astype('float32')
+# y_test = y_test.astype('float32')
+#
+# x_train -= x_train.mean(axis = 0)
+# x_train /= x_train.std(axis = 0)
+# x_test -= x_test.mean(axis = 0)
+# x_test /= x_test.std(axis = 0)
 
-x_test = pd.read_csv(test_file, index_col = 0,delimiter=',')
-y_test = x_test['class']
-x_test.drop(['class', 'timestamp', 'timestamp2'], 1, inplace = True)
+train_vals = []
 
-print x_train.keys()
-print x_test.keys()
-x_train = x_train.values
-y_train = y_train.values
-x_test = x_test.values
-y_test = y_test.values
+for file in train_files:
+    train_vals.append(csv_to_xy(file))
 
-print x_train.shape
-print x_test.shape
-
-x_train = x_train.reshape(x_train.shape[0], 1, x_train.shape[1])
-x_test = x_test.reshape(x_test.shape[0], 1, x_test.shape[1])
-
-# x_train = x_train.reshape(-1, 9)
-# x_test = x_test.reshape(-1, 9)
-y_train = y_train.reshape(-1, 1)
-y_test = y_test.reshape(-1, 1)
-
-x_train = x_train.astype('float32')
-x_test = x_test.astype('float32')
-y_train = y_train.astype('float32')
-y_test = y_test.astype('float32')
-
-x_train -= x_train.mean(axis = 0)
-x_train /= x_train.std(axis = 0)
-x_test -= x_test.mean(axis = 0)
-x_test /= x_test.std(axis = 0)
-
+test_val = csv_to_xy(test_file)
+x_test = test_val[0]
+y_test = test_val[1]
 # np.savetxt('oi.csv', x_train, delimiter=';')
-print 'oi.csv'
 # print '*'*100
 # print x_train
 # print np.round(x_train.mean(axis = 0))
@@ -113,43 +146,50 @@ print 'oi.csv'
 # x_test = scaler.fit_transform(x_test)
 # print x_test
 
+validation_data = x_test
+validation_target = y_test
+
 model = Sequential()
-model.add(Dense(256, activation='relu', input_shape = (x_train[0].shape), batch_size = batch_size))
+model.add(Dense(100, activation='sigmoid', input_shape = (x_test[0].shape), batch_size = batch_size))
 # # model.add(Dropout(0.2))
 # model.add(Dense(256, activation='relu'))
-model.add(LSTM(50, return_sequences = True, stateful = True, activation='sigmoid'))
-model.add(Dropout(0.2))
-model.add(LSTM(50, return_sequences = True, stateful = True, activation='sigmoid'))
-model.add(Dropout(0.2))
-model.add(LSTM(50, return_sequences = True, stateful = True, activation='sigmoid'))
-model.add(Dropout(0.2))
-model.add(LSTM(50, return_sequences = True, stateful = True, activation='sigmoid'))
-model.add(Dropout(0.2))
-model.add(LSTM(50, return_sequences = False, stateful = True, activation='sigmoid'))
-model.add(Dropout(0.2))
+model.add(LSTM(150, return_sequences = True, stateful = True, activation='sigmoid'))
+model.add(Dropout(0.25))
+model.add(LSTM(150, return_sequences = False, stateful = True, activation='sigmoid'))
+model.add(Dropout(0.25))
+# model.add(LSTM(50, return_sequences = True, stateful = True, activation='sigmoid'))
+# model.add(Dropout(0.2))
+# model.add(LSTM(50, return_sequences = True, stateful = True, activation='sigmoid'))
+# model.add(Dropout(0.2))
+# model.add(LSTM(50, return_sequences = False, stateful = True, activation='sigmoid'))
+# model.add(Dropout(0.2))
 # model.add(LSTM(50, return_sequences = False, stateful = True))
 # model.add(LSTM(100, return_sequences = False))
 model.add(Dense(1, activation='sigmoid'))
 
 model.summary()
 model.compile(loss='binary_crossentropy',
-              optimizer=Adam(lr=0.001),
+              optimizer=Adam(lr=0.0001),
               metrics=['accuracy'])
-
-validation_data = x_test
-validation_target = y_test
-class_weight = {0: 1.,  1: 6.}
-
-history = model.fit(x_train, y_train,
-                    batch_size=batch_size,
-                    epochs=epochs,
-                    verbose=1,
-                    shuffle=False,
-                    validation_data=(validation_data, validation_target),
-                    class_weight=class_weight,
-                    callbacks=[metrics])
+i = 0
+for sequence in train_vals:
+    x_train = sequence[0]
+    y_train = sequence[1]
+    print '*******Training with file: ' + train_files[i] + '***************'
+    i += 1
+    class_weight = {0: 1., 1: 4}
+    history = model.fit(x_train, y_train,
+                        # batch_size=batch_size,
+                        epochs=epochs,
+                        verbose=1,
+                        shuffle=False,
+                        validation_data=(validation_data, validation_target),
+                        class_weight=class_weight,
+                        callbacks=[metrics])
+    model.reset_states()
 
 y_pred = model.predict(x_test, verbose = 2).round()
+
 tp = 0
 tn = 0
 fp = 0
