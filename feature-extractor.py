@@ -64,13 +64,23 @@ def main():
 
     #Code Red v2
     days = []
+    # days.append(glob.glob("/home/pc/ripe-ris/moscow-blackout/" + rrc + "/updates.20010919.*.gz"))
+    # days.append(glob.glob("/home/pc/ripe-ris/moscow-blackout/" + rrc + "/updates.20010920.*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/moscow-blackout/" + rrc + "/updates.20050523.*.gz"))
     days.append(glob.glob("/home/pc/ripe-ris/moscow-blackout/" + rrc + "/updates.20050524.*.gz"))
     days.append(glob.glob("/home/pc/ripe-ris/moscow-blackout/" + rrc + "/updates.20050525.*.gz"))
     days.append(glob.glob("/home/pc/ripe-ris/moscow-blackout/" + rrc + "/updates.20050526.*.gz"))
-    # days.append(glob.glob("/home/pc/ripe-ris/moscow-blackout/" + rrc + "/updates.20010919.*.gz"))
-    # days.append(glob.glob("/home/pc/ripe-ris/moscow-blackout/" + rrc + "/updates.20010920.*.gz"))
-    # days.append(glob.glob("/home/pc/ripe-ris/moscow-blackout/" + rrc + "/updates.20010921.*.gz"))
-    # days.append(glob.glob("/home/pc/ripe-ris/moscow-blackout/" + rrc + "/updates.20010922.*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/moscow-blackout/" + rrc + "/updates.20050527.*.gz"))
+
+    #Nimda
+    # days = []
+    # days.append(glob.glob("/home/pc/ripe-ris/nimda/" + rrc + "/updates.20010916.*.gz"))
+    # days.append(glob.glob("/home/pc/ripe-ris/nimda/" + rrc + "/updates.20010917.*.gz"))
+    # days.append(glob.glob("/home/pc/ripe-ris/nimda/" + rrc + "/updates.20010918.*.gz"))
+    # days.append(glob.glob("/home/pc/ripe-ris/nimda/" + rrc + "/updates.20010919.*.gz"))
+    # days.append(glob.glob("/home/pc/ripe-ris/nimda/" + rrc + "/updates.20010920.*.gz"))
+    # days.append(glob.glob("/home/pc/ripe-ris/nimda/" + rrc + "/updates.20010921.*.gz"))
+    # days.append(glob.glob("/home/pc/ripe-ris/nimda/" + rrc + "/updates.20010922.*.gz"))
 
     update_files = sorted(update_files)
     anomaly = days[0][0].split('/')[4]
@@ -93,42 +103,9 @@ def main():
         features = metrics.get_features()
         features_dict = features.to_dict()
         df = features.to_dataframe()
-        df.to_csv('features-'+ anomaly +'-' + rrc + '-'+peer+'-' + day + '.csv', sep=',', encoding='utf-8')
+        df.to_csv('features-'+ anomaly +'-'+ rrc +'-'+ peer +'-'+ day +'-'+ metrics.minutes_window +'.csv', sep=',', encoding='utf-8')
         print day + ': OK'
         # metrics.plot()
-    #Nimda
-    # days = []
-    # days.append(glob.glob("/home/pc/ripe-ris/nimda/" + rrc + "/updates.20010916.*.gz"))
-    # days.append(glob.glob("/home/pc/ripe-ris/nimda/" + rrc + "/updates.20010917.*.gz"))
-    # days.append(glob.glob("/home/pc/ripe-ris/nimda/" + rrc + "/updates.20010918.*.gz"))
-    # days.append(glob.glob("/home/pc/ripe-ris/nimda/" + rrc + "/updates.20010919.*.gz"))
-    # days.append(glob.glob("/home/pc/ripe-ris/nimda/" + rrc + "/updates.20010920.*.gz"))
-    # days.append(glob.glob("/home/pc/ripe-ris/nimda/" + rrc + "/updates.20010921.*.gz"))
-    # days.append(glob.glob("/home/pc/ripe-ris/nimda/" + rrc + "/updates.20010922.*.gz"))
-    #
-    # update_files = sorted(update_files)
-    # c = 0
-    #
-    # # metrics.init_rib(rib_files[0])
-    # for update_files in days:
-    #     metrics = Metrics()
-    #     update_files = sorted(update_files)
-    #     # prefix_episodes = pool.map(metrics.add_updates, update_files)
-    #     for f in update_files:
-    #         metrics.add_updates(f)
-    #         file = f.split('.')
-    #         pickle.dump(metrics.prefix_lookup, open(file[0] + file[1] + file[2] + '-lookup.pkl', "wb"))
-    #         print f + ': ' + str(metrics.count_updates)
-    #
-    #         # pool.close()
-    #         # pool.join()
-    #     day = update_files[0].split('.')[1]
-    #     features = metrics.get_features()
-    #     features_dict = features.to_dict()
-    #     df = features.to_dataframe()
-    #     df.to_csv('features-nimda-" + rrc + "-' + day + '.csv', sep=',', encoding='utf-8')
-    #     print day + ': OK'
-    #
 
 if __name__ == '__main__':
     main()

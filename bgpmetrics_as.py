@@ -245,7 +245,11 @@ class Metrics(object):
 
     def __init__(self):
         super(Metrics, self).__init__()
-
+        if len(sys.argv) > 3:
+            self.minutes_window = sys.argv[3]
+        else:
+            print './feature_extractor -rrc -peer -time_bin'
+            sys.exit()
         self.bin_size = 60*5
         self.window_size = 60
         self.count_ts = defaultdict(int)
