@@ -250,7 +250,7 @@ class Metrics(object):
         else:
             print './feature_extractor -rrc -peer -time_bin'
             sys.exit()
-        self.bin_size = 60*5
+        self.bin_size = 60*self.minutes_window
         self.window_size = 60
         self.count_ts = defaultdict(int)
         self.plens = defaultdict(int)
