@@ -250,7 +250,7 @@ class Metrics(object):
         else:
             print './feature_extractor -rrc -peer -time_bin'
             sys.exit()
-        self.bin_size = 60*5
+        self.bin_size = 60*int(self.minutes_window)
         self.window_size = 60
         self.count_ts = defaultdict(int)
         self.plens = defaultdict(int)
@@ -700,8 +700,10 @@ class Metrics(object):
         feat.ann_to_shorter = self.ann_to_shorter
         feat.ann_to_longer = self.ann_to_longer
         feat.imp_wd = self.imp_wd
-        feat.timestamp = dict(zip(self.announcements.keys(), [dt.datetime.fromtimestamp(ts*60*5 + self.first_ts) for ts in self.announcements.keys()]))
-        feat.timestamp2 = dict(zip(self.announcements.keys(), [(ts*60*5 + self.first_ts) for ts in self.announcements.keys()]))
+        feat.timestamp = dict(zip(self.announcements.keys(), [dt.datetime.fromtimestamp(ts*self.bin_size + self.first_ts) for ts in self.announcements.keys()]))
+        for k,ts in feat.timestamp.iteritems():
+            print ts
+        feat.timestamp2 = dict(zip(self.announcements.keys(), [(ts*self.bin_size + self.first_ts) for ts in self.announcements.keys()]))
         feat.class_traffic = self.class_traffic
         return feat
 
