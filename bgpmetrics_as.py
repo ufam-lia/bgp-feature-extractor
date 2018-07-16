@@ -246,7 +246,7 @@ class Metrics(object):
     def __init__(self):
         super(Metrics, self).__init__()
         if len(sys.argv) > 3:
-            self.minutes_window = sys.argv[3]
+            self.minutes_window = sys.argv[4]
         else:
             print './feature_extractor -rrc -peer -time_bin'
             sys.exit()
@@ -701,8 +701,6 @@ class Metrics(object):
         feat.ann_to_longer = self.ann_to_longer
         feat.imp_wd = self.imp_wd
         feat.timestamp = dict(zip(self.announcements.keys(), [dt.datetime.fromtimestamp(ts*self.bin_size + self.first_ts) for ts in self.announcements.keys()]))
-        for k,ts in feat.timestamp.iteritems():
-            print ts
         feat.timestamp2 = dict(zip(self.announcements.keys(), [(ts*self.bin_size + self.first_ts) for ts in self.announcements.keys()]))
         feat.class_traffic = self.class_traffic
         return feat

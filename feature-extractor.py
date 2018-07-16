@@ -18,7 +18,7 @@ import operator
 from bgpmetrics_as import Metrics
 import pandas as pd
 from multiprocessing import Pool
-
+from bgpanomalies import BGPAnomaly
 def dd():
     return defaultdict(int)
 
@@ -38,8 +38,8 @@ timestamps = OrderedDict()
 os.environ['TZ'] = 'US'
 time.tzset()
 
-BGPMessageST = [BGP4MP_ST['BGP4MP_MESSAGE'],BGP4MP_ST['BGP4MP_MESSAGE_AS4'],BGP4MP_ST['BGP4MP_MESSAGE_LOCAL'],BGP4MP_ST['BGP4MP_MESSAGE_AS4_LOCAL'],BGP4MP_ST['BGP4MP_MESSAGE_ADDPATH'],BGP4MP_ST['BGP4MP_MESSAGE_AS4_ADDPATH'],BGP4MP_ST['BGP4MP_MESSAGE_LOCAL_ADDPATH'],BGP4MP_ST['BGP4MP_MESSAGE_AS4_LOCAL_ADDPATH']]
-BGPStateChangeST = [ BGP4MP_ST['BGP4MP_STATE_CHANGE'], BGP4MP_ST['BGP4MP_STATE_CHANGE_AS4']]
+# BGPMessageST = [BGP4MP_ST['BGP4MP_MESSAGE'],BGP4MP_ST['BGP4MP_MESSAGE_AS4'],BGP4MP_ST['BGP4MP_MESSAGE_LOCAL'],BGP4MP_ST['BGP4MP_MESSAGE_AS4_LOCAL'],BGP4MP_ST['BGP4MP_MESSAGE_ADDPATH'],BGP4MP_ST['BGP4MP_MESSAGE_AS4_ADDPATH'],BGP4MP_ST['BGP4MP_MESSAGE_LOCAL_ADDPATH'],BGP4MP_ST['BGP4MP_MESSAGE_AS4_LOCAL_ADDPATH']]
+# BGPStateChangeST = [ BGP4MP_ST['BGP4MP_STATE_CHANGE'], BGP4MP_ST['BGP4MP_STATE_CHANGE_AS4']]
 
 
 def main():
@@ -51,43 +51,12 @@ def main():
 
     rrc = sys.argv[1]
     peer = sys.argv[2]
-    # rrc = args['rrc']
-    #Traverse months
-    # for i in [6,7,8,9,10,11]
-    #Traverse files
-
-    update_files = []
-    rib_files = []
-
-    #RIB files
-    rib_files = rib_files + glob.glob("/home/pc/ripe-ris/code-red/" + rrc + "/bview*.gz")
-
-    #Code Red v2
-    days = []
-    # days.append(glob.glob("/home/pc/ripe-ris/moscow-blackout/" + rrc + "/updates.20010919.*.gz"))
-    # days.append(glob.glob("/home/pc/ripe-ris/moscow-blackout/" + rrc + "/updates.20010920.*.gz"))
-    # days.append (glob.glob("/home/pc/ripe-ris/moscow-blackout/" + rrc + "/updates.20050523.00*.gz"))
-    # days[0] += glob.glob("/home/pc/ripe-ris/moscow-blackout/" + rrc + "/updates.20050523.01*.gz")
-    # days.append(glob.glob("/home/pc/ripe-ris/moscow-blackout/" + rrc + "/updates.20050524.*.gz"))
-    # days.append(glob.glob("/home/pc/ripe-ris/moscow-blackout/" + rrc + "/updates.20050525.*.gz"))
-    # days.append(glob.glob("/home/pc/ripe-ris/moscow-blackout/" + rrc + "/updates.20050526.*.gz"))
-    # days.append(glob.glob("/home/pc/ripe-ris/moscow-blackout/" + rrc + "/updates.20050527.*.gz"))
-
-    #Nimda
-    # days = []
-    days.append(glob.glob("/home/pc/ripe-ris/nimda/" + rrc + "/updates.20010916.*.gz"))
-    days.append(glob.glob("/home/pc/ripe-ris/nimda/" + rrc + "/updates.20010917.*.gz"))
-    days.append(glob.glob("/home/pc/ripe-ris/nimda/" + rrc + "/updates.20010918.*.gz"))
-    days.append(glob.glob("/home/pc/ripe-ris/nimda/" + rrc + "/updates.20010919.*.gz"))
-    days.append(glob.glob("/home/pc/ripe-ris/nimda/" + rrc + "/updates.20010920.*.gz"))
-    days.append(glob.glob("/home/pc/ripe-ris/nimda/" + rrc + "/updates.20010921.*.gz"))
-    days.append(glob.glob("/home/pc/ripe-ris/nimda/" + rrc + "/updates.20010922.*.gz"))
-
-    update_files = sorted(update_files)
-    anomaly = days[0][0].split('/')[4]
+    anomaly = sys.argv[3]
     c = 0
 
-    # metrics.init_rib(rib_files[0])
+    anomaly = BGPAnomaly(anomaly, rrc)
+    days = anomaly.get_files()
+
     for update_files in days:
         metrics = Metrics()
         update_files = sorted(update_files)
@@ -104,8 +73,9 @@ def main():
         features = metrics.get_features()
         features_dict = features.to_dict()
         df = features.to_dataframe()
-        df.to_csv('features-'+ anomaly +'-'+ rrc +'-'+ peer +'-'+ day +'-'+ metrics.minutes_window +'.csv', sep=',', encoding='utf-8')
-        print day + ': OK'
+        output_filename = 'features-'+ anomaly +'-'+ rrc +'-'+ peer +'-'+ day +'-'+ metrics.minutes_window +'.csv'
+        df.to_csv(output_filename, sep=',', encoding='utf-8')
+        print output_filename + ': OK'
         # metrics.plot()
 
 if __name__ == '__main__':
