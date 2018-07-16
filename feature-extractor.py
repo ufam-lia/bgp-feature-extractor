@@ -66,21 +66,22 @@ def main():
     days = []
     # days.append(glob.glob("/home/pc/ripe-ris/moscow-blackout/" + rrc + "/updates.20010919.*.gz"))
     # days.append(glob.glob("/home/pc/ripe-ris/moscow-blackout/" + rrc + "/updates.20010920.*.gz"))
-    days.append(glob.glob("/home/pc/ripe-ris/moscow-blackout/" + rrc + "/updates.20050523.*.gz"))
-    days.append(glob.glob("/home/pc/ripe-ris/moscow-blackout/" + rrc + "/updates.20050524.*.gz"))
-    days.append(glob.glob("/home/pc/ripe-ris/moscow-blackout/" + rrc + "/updates.20050525.*.gz"))
-    days.append(glob.glob("/home/pc/ripe-ris/moscow-blackout/" + rrc + "/updates.20050526.*.gz"))
-    days.append(glob.glob("/home/pc/ripe-ris/moscow-blackout/" + rrc + "/updates.20050527.*.gz"))
+    # days.append (glob.glob("/home/pc/ripe-ris/moscow-blackout/" + rrc + "/updates.20050523.00*.gz"))
+    # days[0] += glob.glob("/home/pc/ripe-ris/moscow-blackout/" + rrc + "/updates.20050523.01*.gz")
+    # days.append(glob.glob("/home/pc/ripe-ris/moscow-blackout/" + rrc + "/updates.20050524.*.gz"))
+    # days.append(glob.glob("/home/pc/ripe-ris/moscow-blackout/" + rrc + "/updates.20050525.*.gz"))
+    # days.append(glob.glob("/home/pc/ripe-ris/moscow-blackout/" + rrc + "/updates.20050526.*.gz"))
+    # days.append(glob.glob("/home/pc/ripe-ris/moscow-blackout/" + rrc + "/updates.20050527.*.gz"))
 
     #Nimda
     # days = []
-    # days.append(glob.glob("/home/pc/ripe-ris/nimda/" + rrc + "/updates.20010916.*.gz"))
-    # days.append(glob.glob("/home/pc/ripe-ris/nimda/" + rrc + "/updates.20010917.*.gz"))
-    # days.append(glob.glob("/home/pc/ripe-ris/nimda/" + rrc + "/updates.20010918.*.gz"))
-    # days.append(glob.glob("/home/pc/ripe-ris/nimda/" + rrc + "/updates.20010919.*.gz"))
-    # days.append(glob.glob("/home/pc/ripe-ris/nimda/" + rrc + "/updates.20010920.*.gz"))
-    # days.append(glob.glob("/home/pc/ripe-ris/nimda/" + rrc + "/updates.20010921.*.gz"))
-    # days.append(glob.glob("/home/pc/ripe-ris/nimda/" + rrc + "/updates.20010922.*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/nimda/" + rrc + "/updates.20010916.*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/nimda/" + rrc + "/updates.20010917.*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/nimda/" + rrc + "/updates.20010918.*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/nimda/" + rrc + "/updates.20010919.*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/nimda/" + rrc + "/updates.20010920.*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/nimda/" + rrc + "/updates.20010921.*.gz"))
+    days.append(glob.glob("/home/pc/ripe-ris/nimda/" + rrc + "/updates.20010922.*.gz"))
 
     update_files = sorted(update_files)
     anomaly = days[0][0].split('/')[4]
