@@ -1,45 +1,16 @@
 import sys
 import os, time
-import os.path
-from os.path import isfile
-from optparse import OptionParser
-import datetime as dt
-from datetime import datetime
-from mrtparse import *
-from collections import defaultdict, OrderedDict
-from mrtprint import *
-import matplotlib.pyplot as plt
-import numpy as np
+import argparse
 import glob
-import random
 import cPickle as pickle
 import argparse
-import operator
 from bgpmetrics_as import Metrics
 import pandas as pd
 from multiprocessing import Pool
 from bgpanomalies import BGPAnomaly
-def dd():
-    return defaultdict(int)
 
-def ddlist():
-    return defaultdict(list)
-
-def ddd():
-    return defaultdict(dd)
-()
-def dddlist():
-    return defaultdict(ddlist)
-
-count_prefixes_ts = defaultdict(dd)
-count_prefixes_upds = defaultdict(int)
-
-timestamps = OrderedDict()
 os.environ['TZ'] = 'US'
 time.tzset()
-
-# BGPMessageST = [BGP4MP_ST['BGP4MP_MESSAGE'],BGP4MP_ST['BGP4MP_MESSAGE_AS4'],BGP4MP_ST['BGP4MP_MESSAGE_LOCAL'],BGP4MP_ST['BGP4MP_MESSAGE_AS4_LOCAL'],BGP4MP_ST['BGP4MP_MESSAGE_ADDPATH'],BGP4MP_ST['BGP4MP_MESSAGE_AS4_ADDPATH'],BGP4MP_ST['BGP4MP_MESSAGE_LOCAL_ADDPATH'],BGP4MP_ST['BGP4MP_MESSAGE_AS4_LOCAL_ADDPATH']]
-# BGPStateChangeST = [ BGP4MP_ST['BGP4MP_STATE_CHANGE'], BGP4MP_ST['BGP4MP_STATE_CHANGE_AS4']]
 
 
 def main():

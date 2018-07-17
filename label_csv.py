@@ -36,7 +36,6 @@ def add_label(csv, start, end):
 def adjust_to_batch_size(csv, batch_size):
     diff = (32 - csv.shape[0] % batch_size) if (csv.shape[0] % batch_size) != 0 else 0
     last_line = pd.DataFrame(csv.tail(1), columns=csv.columns)
-    print diff
     for i in range(0, diff):
         csv = csv.append(last_line, sort=True)
     return csv
@@ -59,19 +58,20 @@ def main(argv):
     global peer
     rrc = sys.argv[1]
     peer = sys.argv[2]
+    timescales = ['1', '5', '15', '60', '120']
+    for ts in timescales:
+        nimda_files  = sorted(glob.glob(features_path + 'features-nimda-' + rrc + '-' + peer +  '-*-' + ts + '.csv'))
+        slammer_files = sorted(glob.glob(features_path + 'features-slammer-' + rrc + '-' + peer +  '-*-' + ts + '.csv'))
+        code_red_files  = sorted(glob.glob(features_path + 'features-code-red-' + rrc + '-' + peer +  '-*-' + ts + '.csv'))
+        moscow_files = sorted(glob.glob(features_path + 'features-moscow-blackout-' + rrc + '-' + peer +  '-*-' + ts + '.csv'))
 
-    code_red_files  = sorted(glob.glob(features_path + 'features-code-red-' + rrc + '-' + peer + '*'))
-    nimda_files  = sorted(glob.glob(features_path + 'features-nimda-' + rrc + '-' + peer + '*'))
-    slammer_files = sorted(glob.glob(features_path + 'features-slammer-' + rrc + '-' + peer + '-*'))
-    moscow_files = sorted(glob.glob(features_path + 'features-moscow-blackout-' + rrc + '-' + peer + '-*'))
-
-    preprocessing(code_red_files, name='code-red_'+peer, start=995553071, end=995591487)
-    preprocessing(nimda_files, name='nimda_'+peer, start=1000818222, end=1001030344)
-    preprocessing(slammer_files, name='slammer_'+peer, start=1043472590, end=1043540404)
-    # AS13237
-    preprocessing(moscow_files, name='moscow_blackout_'+peer, start=1116996909, end=1117017309)
-    #Other ASes
-    # preprocessing(moscow_files, name='moscow_blackout_'+peer, start=1116996009, end=1117006209)
+        preprocessing(code_red_files, name='code-red_'+peer+'_'+ts, start=995553071, end=995591487)
+        preprocessing(nimda_files, name='nimda_'+peer+'_'+ts, start=1000818222, end=1001030344)
+        preprocessing(slammer_files, name='slammer_'+peer+'_'+ts, start=1043472590, end=1043540404)
+        if peer == '13237':
+            preprocessing(moscow_files, name='moscow_blackout_'+peer, start=1116996909, end=1117017309)
+        else:
+            preprocessing(moscow_files, name='moscow_blackout_'+peer+'_'+ts, start=1116996009, end=1117006209)
 
 if __name__ == "__main__":
     main(sys.argv)
