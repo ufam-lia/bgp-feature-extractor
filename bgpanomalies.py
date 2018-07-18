@@ -12,7 +12,7 @@ import operator
 import pandas as pd
 from operator import add
 
-base_path = '/home/pc/ripe-ris/'
+
 anomalies = dict()
 anomalies['code-red'] = ['20010717','20010718','20010719', '20010720', '20010721']
 anomalies['nimda'] = ['20010916', '20010917', '20010918', '20010919', '20010920', '20010921', '20010922']
@@ -21,6 +21,7 @@ anomalies['moscow-blackout'] = ['20050523', '20050524', '20050525', '20050526', 
 
 class BGPAnomaly(object):
     def __init__(self, event_name, rrc):
+        self.base_path = '/home/pc/ripe-ris/'
         self.event = event_name
         self.rrc = rrc
         self.start = 0
@@ -48,10 +49,30 @@ class BGPAnomaly(object):
     def get_files(self):
         days = []
         for day in anomalies[self.event]:
-            files_retrieved = sorted(glob.glob(base_path + self.event + '/' + self.rrc + '/updates.'+ day + '.*.gz'))
+            files_retrieved = sorted(glob.glob(self.base_path + self.event + '/' + self.rrc + '/updates.'+ day + '.*.gz'))
             if len(files_retrieved) > 0:
                 days.append(files_retrieved)
             else:
                 print '#####day ' + self.event + '/' + self.rrc + '/updates.'+ day  + ' not found'
 
         return days
+
+class BGPDataset(object):
+    def __init__(self, event_name):
+        self.event = event_name
+        self.start = 0
+        self.end = 0
+        self.dataset_path = '/home/pc/bgp-feature-extractor/datasets/'
+        # self.set_files()
+
+    def get_files(self, timebin = 0, peer = '*'):
+        if type(timebin) == list:
+            files = []
+            for bin in timebin:
+                bin = str(bin)
+                files += glob.glob(self.dataset_path + '/dataset_'+ self.event + '_'+ peer +'_'+ bin +'_*.csv')
+        else:
+            timebin = str(timebin)
+            files = glob.glob(self.dataset_path + '/dataset_'+ self.event + '_'+ peer +'_'+ timebin +'_*.csv')
+
+        return sorted(files)
