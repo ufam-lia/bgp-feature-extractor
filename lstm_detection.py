@@ -3,17 +3,21 @@ import pandas as pd
 import numpy as np
 import glob
 import keras
+import os, sys
+# from time import time
+import time
+import tensorflow as tf
+from bgpanomalies import *
+from keras import backend as K
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, LSTM
 from keras.optimizers import RMSprop, Adam
-import tensorflow as tf
-from keras import backend as K
 from keras.backend.tensorflow_backend import set_session
-import os, sys
 from sklearn.preprocessing import MinMaxScaler
 
 from keras.callbacks import Callback
 from sklearn.metrics import confusion_matrix, f1_score, precision_score, recall_score
+from keras.callbacks import TensorBoard
 
 class Metrics(Callback):
     def on_train_begin(self, logs={}):
@@ -32,7 +36,7 @@ class Metrics(Callback):
         self.val_f1s.append(_val_f1)
         self.val_recalls.append(_val_recall)
         self.val_precisions.append(_val_precision)
-        print '-'*70+'> val_f1: %f - val_precision: %f - val_recall %f' %(_val_f1, _val_precision, _val_recall)
+        print '--> val_f1: %f \n--> val_precision: %f \n--> val_recall %f' %(_val_f1, _val_precision, _val_recall)
         return
 
 
@@ -75,43 +79,70 @@ def csv_to_xy(val_file):
 
     return (x_val, y_val)
 
+def confusion_matr(y_pred, y_test):
+    tp = 0
+    tn = 0
+    fp = 0
+    fn = 0
+    pos = 0
+    neg = 0
+    pred_pos = 0
+    pred_neg = 0
+
+    for i in xrange(len(y_pred)):
+        print str(y_pred[i]) + ' == ' + str(y_test[i])
+        if y_pred[i] == y_test[i]:
+            if y_test[i] == 1:
+                tp += 1
+                pos += 1
+                pred_pos += 1
+            else:
+                tn += 1
+                neg += 1
+                pred_neg += 1
+        else:
+            if y_test[i] == 1:
+                fn += 1
+                pos += 1
+                pred_neg += 1
+            else:
+                fp += 1
+                neg += 1
+                pred_pos += 1
+    confusion = dict()
+    confusion['tp'] = tp
+    confusion['tn'] = tn
+    confusion['fp'] = fp
+    confusion['fn'] = fn
+
+    return confusion
+
+    print '--------------'
+    print 'pos->' + str(pos)
+    print 'neg->' + str(neg)
+    print 'pred_pos->' + str(pred_pos)
+    print 'pred_neg->' + str(pred_neg)
+    print '--------------'
+    print 'tp->' + str(tp)
+    print 'tn->' + str(tn)
+    print 'fp->' + str(fp)
+    print 'fn->' + str(fn)
+    print '--------------'
+
 metrics = Metrics()
-epochs = int(sys.argv[2])
+epochs = int(sys.argv[1])
 batch_size = 32
 epsilon = 0.000000000000001
 
-rrc = sys.argv[1]
 train_files = []
-# train_files.append('/home/pc/bgp-feature-extractor/datasets/dataset_moscow_blackout_1853_5_rrc05.csv')
-# train_files.append('/home/pc/bgp-feature-extractor/datasets/dataset_moscow_blackout_12793_5_rrc05.csv')
-# # train_files.append('/home/pc/bgp-feature-extractor/datasets/dataset_moscow_blackout_13237_5_rrc05.csv')
-# train_files.append('/home/pc/bgp-feature-extractor/datasets/dataset_nimda_513_1_rrc04.csv')
-# train_files.append('/home/pc/bgp-feature-extractor/datasets/dataset_nimda_559_1_rrc04.csv')
-# train_files.append('/home/pc/bgp-feature-extractor/datasets/dataset_nimda_6893_1_rrc04.csv')
-# train_files.append('/home/pc/bgp-feature-extractor/datasets/dataset_code-red_513_1_rrc04.csv')
-# train_files.append('/home/pc/bgp-feature-extractor/datasets/dataset_code-red_559_1_rrc04.csv')
-# train_files.append('/home/pc/bgp-feature-extractor/datasets/dataset_code-red_6893_1_rrc04.csv')
-# train_files.append('/home/pc/bgp-feature-extractor/datasets/dataset_nimda_513_5_rrc04.csv')
-# train_files.append('/home/pc/bgp-feature-extractor/datasets/dataset_nimda_559_5_rrc04.csv')
-# train_files.append('/home/pc/bgp-feature-extractor/datasets/dataset_nimda_6893_5_rrc04.csv')
-train_files.append('/home/pc/bgp-feature-extractor/datasets/dataset_code-red_513_5_rrc04.csv')
-train_files.append('/home/pc/bgp-feature-extractor/datasets/dataset_code-red_559_5_rrc04.csv')
-train_files.append('/home/pc/bgp-feature-extractor/datasets/dataset_code-red_6893_5_rrc04.csv')
-# train_files.append('/home/pc/bgp-feature-extractor/datasets/dataset_nimda_513_15_rrc04.csv')
-# train_files.append('/home/pc/bgp-feature-extractor/datasets/dataset_nimda_559_15_rrc04.csv')
-# train_files.append('/home/pc/bgp-feature-extractor/datasets/dataset_nimda_6893_15_rrc04.csv')
-train_files.append('/home/pc/bgp-feature-extractor/datasets/dataset_code-red_513_15_rrc04.csv')
-train_files.append('/home/pc/bgp-feature-extractor/datasets/dataset_code-red_559_15_rrc04.csv')
-train_files.append('/home/pc/bgp-feature-extractor/datasets/dataset_code-red_6893_15_rrc04.csv')
-# train_files.append('/home/pc/bgp-feature-extractor/datasets/dataset_nimda_513_60_rrc04.csv')
-# train_files.append('/home/pc/bgp-feature-extractor/datasets/dataset_nimda_559_60_rrc04.csv')
-# train_files.append('/home/pc/bgp-feature-extractor/datasets/dataset_nimda_6893_60_rrc04.csv')
-train_files.append('/home/pc/bgp-feature-extractor/datasets/dataset_code-red_513_60_rrc04.csv')
-train_files.append('/home/pc/bgp-feature-extractor/datasets/dataset_code-red_559_60_rrc04.csv')
-train_files.append('/home/pc/bgp-feature-extractor/datasets/dataset_code-red_6893_60_rrc04.csv')
+nimda_dataset = BGPDataset('nimda')
+code_red_dataset = BGPDataset('code-red')
+slammer_dataset = BGPDataset('slammer')
+moscow_dataset = BGPDataset('moscow_blackout')
 
-test_file = '/home/pc/bgp-feature-extractor/datasets/dataset_nimda_513_5_rrc04.csv'
-# test_file = '/home/pc/bgp-feature-extractor/datasets/dataset_moscow_blackout_13237_5_rrc05.csv'
+train_files += moscow_dataset.get_files(timebin = 5)
+# train_files += code_red_dataset.get_files(timebin = 5)
+test_file = slammer_dataset.get_files(5, peer='513')[0]
 
 train_vals = []
 
@@ -153,85 +184,45 @@ model.summary()
 model.compile(loss='binary_crossentropy',
               optimizer=Adam(lr=0.0001),
               metrics=['accuracy'])
+
+# tensorboard = TensorBoard(log_dir="logs/{}".format(time.time()))
+tensorboard = TensorBoard(log_dir="logs/lstm")
 for epoch in range(epochs):
     i = 0
     for sequence in train_vals:
         x_train = sequence[0]
         y_train = sequence[1]
-        # validation_data = x_train
-        # validation_target = y_train
+        validation_data = x_train
+        validation_target = y_train
         print '*******Training with file: ' + train_files[i] + '***************'
         i += 1
         class_weight = {0: 1., 1: 4}
-        history = model.fit(x_train, y_train,
+        hist = model.fit(x_train, y_train,
                             # batch_size=batch_size,
-                            epochs=1,
+                            epochs=200,
                             verbose=1,
                             shuffle=False,
                             validation_data=(validation_data, validation_target),
                             class_weight=class_weight,
-                            callbacks=[metrics])
+                            callbacks=[metrics, tensorboard])
         model.reset_states()
 
 y_pred = model.predict(x_test, verbose = 2).round()
 
-tp = 0
-tn = 0
-fp = 0
-fn = 0
-pos = 0
-neg = 0
-pred_pos = 0
-pred_neg = 0
-
-for i in xrange(len(y_pred)):
-    print str(y_pred[i]) + ' == ' + str(y_test[i])
-    if y_pred[i] == y_test[i]:
-        if y_test[i] == 1:
-            tp += 1
-            pos += 1
-            pred_pos += 1
-        else:
-            tn += 1
-            neg += 1
-            pred_neg += 1
-    else:
-        if y_test[i] == 1:
-            fn += 1
-            pos += 1
-            pred_neg += 1
-        else:
-            fp += 1
-            neg += 1
-            pred_pos += 1
-
-print '--------------'
-print 'pos->' + str(pos)
-print 'neg->' + str(neg)
-print 'pred_pos->' + str(pred_pos)
-print 'pred_neg->' + str(pred_neg)
-print '--------------'
-print 'tp->' + str(tp)
-print 'tn->' + str(tn)
-print 'fp->' + str(fp)
-print 'fn->' + str(fn)
-print '--------------'
-
-# print type(y_test[0][0])
-# print type(y_pred[0][0])
+confusion = confusion_matr(y_pred, y_test)
+tp = confusion['tp']
+tn = confusion['tn']
+fp = confusion['fp']
+fn = confusion['fn']
 
 acc = (tp + tn)/(tp + tn + fp + fn)
 print 'acc->' + str(np.round(acc*100, decimals=2)) + '%'
 precision = tp/(tp + fp + epsilon)
 print 'precision->' + str(np.round(precision*100, decimals=2)) + '%'
-# print 'precision->' + str(precision_score(y_test, y_pred.round())*100) + '%'
 recall = (tp)/(tp + fn)
 print 'recall->' + str(np.round(recall*100, decimals=2)) + '%'
-# print 'recall->' + str(np.round(recall_score(y_test, y_pred.round())*100, decimals=2)) + '%'
 f1 = 2*(precision*recall)/(precision + recall + epsilon)
 print 'f1->' + str(np.round(f1*100, decimals=2)) + '%'
-# print 'f1->' + str(np.round(f1_score(y_test, y_pred.round())*100, decimals=2)) + '%'
-
 # score = model.evaluate(x_test, y_test, verbose = 2)
 # print('Test loss:', score[0])
 # print('Test accuracy:', score[1])

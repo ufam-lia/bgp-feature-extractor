@@ -1,5 +1,6 @@
 import sys
-import os, time
+# import os, time
+from time import time, tzset
 import argparse
 import glob
 import cPickle as pickle
@@ -10,8 +11,7 @@ from multiprocessing import Pool
 from bgpanomalies import BGPAnomaly
 
 os.environ['TZ'] = 'US'
-time.tzset()
-
+tzset()
 
 def main():
     parser = argparse.ArgumentParser(description='Process BGP timeseries')
