@@ -20,16 +20,15 @@ from sklearn.metrics import confusion_matrix, f1_score, precision_score, recall_
 from keras.callbacks import TensorBoard
 
 def print_header(file):
-    print '*'*123
-    print '*'*123
-    print '*'*123
-    print '*'*123
+    # print '*'*123
+    # print '*'*123
+    # print '*'*123
+    # print '*'*123
     print '*******Training with file: ' + file + '***************'
-    print '*'*123
-    print '*'*123
-    print '*'*123
-    print '*'*123
-
+    # print '*'*123
+    # print '*'*123
+    # print '*'*123
+    # print '*'*123
 
 def confusion_matr(y_pred, y_test):
     tp = 0
@@ -106,11 +105,11 @@ class F1EarlyStop(Callback):
         epoch_metrics['recall'] = _val_recall
         epoch_metrics['epoch'] = epoch
 
-        self.f1f1_history.append(epoch_metrics)
+        self.f1_history.append(epoch_metrics)
         self.val_f1s.append(_val_f1)
         self.val_recalls.append(_val_recall)
         self.val_precisions.append(_val_precision)
-        print '--> val_f1: %f \n--> val_precision: %f \n--> val_recall %f' %(_val_f1, _val_precision, _val_recall)
+        # print '--> val_f1: %f \n--> val_precision: %f \n--> val_recall %f' %(_val_f1, _val_precision, _val_recall)
 
         getting_better = True
         for i in range(self.patience):
@@ -118,12 +117,12 @@ class F1EarlyStop(Callback):
                 last_index = -(i + 1)
                 if self.val_f1s[last_index] >= self.val_f1s[last_index - 1]:
                     getting_better = True
-                    print 'break ' + str(i)
+                    # print 'break ' + str(i)
                     break
                 else:
-                    print 'self.val_f1s[last_index]  -> '+str(self.val_f1s[last_index] )
-                    print 'self.val_f1s[last_index - 1] -> '+str(self.val_f1s[last_index - 1])
-                    print i
+                    # print 'self.val_f1s[last_index]  -> '+str(self.val_f1s[last_index] )
+                    # print 'self.val_f1s[last_index - 1] -> '+str(self.val_f1s[last_index - 1])
+                    # print i
                     getting_better = False
 
         if not getting_better:
@@ -149,12 +148,16 @@ def csv_to_xy(val_file):
     x_val /= x_val.std(axis = 0)
 
     return (x_val, y_val)
-def find_best_model(epoch_metrics):
-    for
+
+def find_best_model(f1_history):
+    l = sorted(f1_history, key=itemgetter('f1'), reverse = True)
+    best_model = l[0]
+    print 'Best model find @ epoch ' + str(best_model['epoch'])
+    print 'F1 ->  ' + str(best_model['f1'])
+    print 'Precision ->  ' + str(best_model['precision'])
+    print 'Recall ->  ' + str(best_model['recall'])
 
 def main():
-    f1early = F1EarlyStop()
-
     epochs = int(sys.argv[1])
     batch_size = 32
     epsilon = 0.000000000000001
@@ -205,7 +208,7 @@ def main():
 
     # tensorboard = TensorBoard(log_dir="logs/{}".format(time.time()))
     tensorboard = TensorBoard(log_dir="logs/lstm")
-    early = keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0, patience=5, verbose=0, mode='auto')
+    f1early = F1EarlyStop(patience = 10)
 
     for epoch in range(epochs):
         i = 0
@@ -221,12 +224,13 @@ def main():
             class_weight = {0: 1., 1: 4}
             hist = model.fit(x_train, y_train,
                                 # batch_size=batch_size,
-                                epochs=20,
-                                verbose=2,
+                                epochs=500,
+                                verbose=0,
                                 shuffle=False,
                                 validation_data=(validation_data, validation_target),
                                 class_weight=class_weight,
                                 callbacks=[f1early, tensorboard])
+            find_best_model(f1early.f1_history)
             model.reset_states()
 
     y_pred = model.predict(x_test, verbose = 2).round()
