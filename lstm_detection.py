@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import glob
 import keras
-import os, sys
+import os, sys, csv
 import time
 from operator import itemgetter
 
@@ -149,13 +149,27 @@ def csv_to_xy(val_file):
 
     return (x_val, y_val)
 
-def find_best_model(f1_history):
+def find_best_model(dataset, f1_history):
     l = sorted(f1_history, key=itemgetter('f1'), reverse = True)
     best_model = l[0]
+    best_model['f1'] = np.round(best_model['f1'],3)
+    best_model['precision'] = np.round(best_model['precision'],3)
+    best_model['recall'] = np.round(best_model['recall'],3)
+
     print 'Best model find @ epoch ' + str(best_model['epoch'])
     print 'F1 ->  ' + str(best_model['f1'])
     print 'Precision ->  ' + str(best_model['precision'])
     print 'Recall ->  ' + str(best_model['recall'])
+    best_model['dataset'] = dataset
+    return best_model
+
+def dicts_to_csv(dicts):
+    fieldnames = ['dataset', 'epoch', 'f1', 'precision', 'recall']
+    keys = dicts[0].keys()
+    with open('best_metrics.csv', 'wb') as output_file:
+        dict_writer = csv.DictWriter(output_file, fieldnames=fieldnames)
+        dict_writer.writeheader()
+        dict_writer.writerows(dicts)
 
 def main():
     epochs = int(sys.argv[1])
@@ -209,7 +223,7 @@ def main():
     # tensorboard = TensorBoard(log_dir="logs/{}".format(time.time()))
     tensorboard = TensorBoard(log_dir="logs/lstm")
     f1early = F1EarlyStop(patience = 10)
-
+    best_models = []
     for epoch in range(epochs):
         i = 0
         print '###### ROUND %d' % (i+1)
@@ -220,19 +234,21 @@ def main():
             validation_target = y_train
             print_header(train_files[i])
 
-            i += 1
             class_weight = {0: 1., 1: 4}
             hist = model.fit(x_train, y_train,
                                 # batch_size=batch_size,
-                                epochs=500,
+                                epochs=2,
                                 verbose=0,
                                 shuffle=False,
                                 validation_data=(validation_data, validation_target),
                                 class_weight=class_weight,
                                 callbacks=[f1early, tensorboard])
-            find_best_model(f1early.f1_history)
+            best_model = find_best_model(train_files[i], f1early.f1_history)
+            best_models.append(best_model)
             model.reset_states()
+            i += 1
 
+    dicts_to_csv(best_models)
     y_pred = model.predict(x_test, verbose = 2).round()
 
     confusion = confusion_matr(y_pred, y_test)
