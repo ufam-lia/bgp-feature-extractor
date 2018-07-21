@@ -730,7 +730,8 @@ class Metrics(object):
             self.rare_ases_avg[i]
             self.number_rare_ases[i]
             self.rare_ases_counter[i]
-
+            self.imp_wd[i]
+            
             self.edit_distance_max[i]
             self.edit_distance_avg[i]
             self.edit_distance_counter[i]
