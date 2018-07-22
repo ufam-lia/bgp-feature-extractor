@@ -156,7 +156,7 @@ def find_best_model(dataset, f1_history):
     best_model['precision'] = np.round(best_model['precision'],3)
     best_model['recall'] = np.round(best_model['recall'],3)
 
-    print 'Best model find @ epoch ' + str(best_model['epoch'])
+    print 'Best model found @ epoch ' + str(best_model['epoch'])
     print 'F1 ->  ' + str(best_model['f1'])
     print 'Precision ->  ' + str(best_model['precision'])
     print 'Recall ->  ' + str(best_model['recall'])
@@ -171,6 +171,33 @@ def dicts_to_csv(dicts):
         dict_writer.writeheader()
         dict_writer.writerows(dicts)
 
+def get_optimal_datasets(exclude_dataset):
+    nimda_dataset = BGPDataset('nimda')
+    code_red_dataset = BGPDataset('code-red')
+    slammer_dataset = BGPDataset('slammer')
+    moscow_dataset = BGPDataset('moscow_blackout')
+
+    train_files = []
+    if exclude_dataset != 'code-red':
+        train_files += code_red_dataset.get_files(timebin = [1, 5, 15], peer ='513')
+        train_files += code_red_dataset.get_files(timebin = [1, 5, 15], peer ='6893')
+
+    if exclude_dataset != 'nimda':
+        train_files += nimda_dataset.get_files(timebin = [1, 5], peer ='513')
+        train_files += nimda_dataset.get_files(timebin = [1, 5], peer ='559')
+        train_files += nimda_dataset.get_files(timebin = [1, 5, 15], peer ='6893')
+
+    if exclude_dataset != 'slammer':
+        train_files += slammer_dataset.get_files(timebin = [1, 5, 15], peer ='513')
+        train_files += slammer_dataset.get_files(timebin = [1, 5, 15], peer ='559')
+        train_files += slammer_dataset.get_files(timebin = [1, 5, 15], peer ='6893')
+
+    if exclude_dataset != 'moscow':
+        train_files += moscow_dataset.get_files(timebin = [1, 5], peer ='1853')
+        train_files += moscow_dataset.get_files(timebin = [1, 5], peer ='12793')
+
+    return train_files
+
 def main():
     epochs = int(sys.argv[1])
     batch_size = 32
@@ -180,13 +207,9 @@ def main():
     code_red_dataset = BGPDataset('code-red')
     slammer_dataset = BGPDataset('slammer')
     moscow_dataset = BGPDataset('moscow_blackout')
-    all_datasets = BGPDataset('*')
 
-    train_files = []
-    train_files += all_datasets.get_files(timebin = 5)
-    # train_files += slammer_dataset.get_files(timebin = 5, peer ='559')
-    # train_files += code_red_dataset.get_files(timebin = 5)
-    test_file = slammer_dataset.get_files(5, peer='513')[0]
+    train_files = get_optimal_datasets('slammer')
+    test_file = code_red_dataset.get_files(5, peer='513')[0]
 
     train_vals = []
     for file in train_files:
@@ -210,7 +233,7 @@ def main():
     # model.add(LSTM(100, return_sequences = True, stateful = True, activation='sigmoid'))
     # model.add(Dropout(0.2))
     # model.add(LSTM(100, return_sequences = True, stateful = True, activation='sigmoid'))
-    model.add(Dropout(0.2))
+    # model.add(Dropout(0.2))
     model.add(LSTM(100, return_sequences = False, stateful = True, activation='sigmoid'))
     model.add(Dropout(0.2))
     model.add(Dense(1, activation='sigmoid'))
@@ -237,7 +260,7 @@ def main():
             class_weight = {0: 1., 1: 4}
             hist = model.fit(x_train, y_train,
                                 # batch_size=batch_size,
-                                epochs=2,
+                                epochs=int(sys.argv[2]),
                                 verbose=0,
                                 shuffle=False,
                                 validation_data=(validation_data, validation_target),
