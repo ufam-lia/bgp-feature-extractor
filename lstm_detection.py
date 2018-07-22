@@ -6,6 +6,7 @@ import keras
 import os, sys, csv
 import time
 from operator import itemgetter
+from collections import defaultdict
 
 import tensorflow as tf
 from bgpanomalies import *
@@ -30,7 +31,8 @@ def print_header(file):
     # print '*'*123
     # print '*'*123
 
-def confusion_matr(y_pred, y_test):
+def calc_metrics(y_pred, y_test, print_metrics = True):
+    epsilon = 0.000000000000001
     tp = 0
     tn = 0
     fp = 0
@@ -41,7 +43,7 @@ def confusion_matr(y_pred, y_test):
     pred_neg = 0
 
     for i in xrange(len(y_pred)):
-        # print str(y_pred[i]) + ' == ' + str(y_test[i])
+        print str(y_pred[i]) + ' == ' + str(y_test[i])
         if y_pred[i] == y_test[i]:
             if y_test[i] == 1:
                 tp += 1
@@ -60,23 +62,34 @@ def confusion_matr(y_pred, y_test):
                 fp += 1
                 neg += 1
                 pred_pos += 1
+
+    acc = (tp + tn)/(tp + tn + fp + fn)
+    precision = tp/(tp + fp + epsilon)
+    recall = (tp)/(tp + fn)
+    f1 = 2*(precision*recall)/(precision + recall + epsilon)
+
+    if print_metrics:
+        print '--------------'
+        print 'pos->' + str(pos)
+        print 'neg->' + str(neg)
+        print 'pred_pos->' + str(pred_pos)
+        print 'pred_neg->' + str(pred_neg)
+        print '--------------'
+        print 'tp->' + str(tp)
+        print 'tn->' + str(tn)
+        print 'fp->' + str(fp)
+        print 'fn->' + str(fn)
+        print '--------------'
+
     confusion = dict()
     confusion['tp'] = tp
     confusion['tn'] = tn
     confusion['fp'] = fp
     confusion['fn'] = fn
-
-    print '--------------'
-    print 'pos->' + str(pos)
-    print 'neg->' + str(neg)
-    print 'pred_pos->' + str(pred_pos)
-    print 'pred_neg->' + str(pred_neg)
-    print '--------------'
-    print 'tp->' + str(tp)
-    print 'tn->' + str(tn)
-    print 'fp->' + str(fp)
-    print 'fn->' + str(fn)
-    print '--------------'
+    confusion['acc'] = acc
+    confusion['precision'] = precision
+    confusion['recall'] = recall
+    confusion['f1'] = f1
 
     return confusion
 
@@ -136,7 +149,7 @@ def csv_to_xy(val_file):
     x_val.drop(['class', 'timestamp', 'timestamp2'], 1, inplace = True)
     x_val = x_val.values
     y_val = y_val.values
-    print x_val.shape
+    # print x_val.shape
 
     x_val = x_val.reshape(x_val.shape[0], 1, x_val.shape[1])
     y_val = y_val.reshape(-1, 1)
@@ -163,13 +176,17 @@ def find_best_model(dataset, f1_history):
     best_model['dataset'] = dataset
     return best_model
 
-def dicts_to_csv(dicts):
-    fieldnames = ['dataset', 'epoch', 'f1', 'precision', 'recall']
-    keys = dicts[0].keys()
-    with open('best_metrics.csv', 'wb') as output_file:
+def dicts_to_csv(dicts, fieldnames, filename):
+    with open(filename + '.csv', 'wb') as output_file:
         dict_writer = csv.DictWriter(output_file, fieldnames=fieldnames)
         dict_writer.writeheader()
         dict_writer.writerows(dicts)
+
+def lists_to_csv(dicts, fieldnames, filename):
+    with open(filename + '.csv', 'wb') as output_file:
+        writer = csv.writer(output_file)
+        writer.writerow(dicts.keys())
+        writer.writerows(zip(*dicts.values()))
 
 def get_optimal_datasets(exclude_dataset):
     nimda_dataset = BGPDataset('nimda')
@@ -209,7 +226,7 @@ def main():
     moscow_dataset = BGPDataset('moscow_blackout')
 
     train_files = get_optimal_datasets('slammer')
-    test_file = code_red_dataset.get_files(5, peer='513')[0]
+    test_file = slammer_dataset.get_files(5, peer='513')[0]
 
     train_vals = []
     for file in train_files:
@@ -228,17 +245,11 @@ def main():
     # model.add(Dense(256, activation='relu'))
     model.add(LSTM(100, return_sequences = True, stateful = True, activation='sigmoid'))
     model.add(Dropout(0.2))
-    # model.add(LSTM(100, return_sequences = True, stateful = True, activation='sigmoid'))
-    # model.add(Dropout(0.2))
-    # model.add(LSTM(100, return_sequences = True, stateful = True, activation='sigmoid'))
-    # model.add(Dropout(0.2))
-    # model.add(LSTM(100, return_sequences = True, stateful = True, activation='sigmoid'))
-    # model.add(Dropout(0.2))
     model.add(LSTM(100, return_sequences = False, stateful = True, activation='sigmoid'))
     model.add(Dropout(0.2))
     model.add(Dense(1, activation='sigmoid'))
 
-    model.summary()
+    # model.summary()
     model.compile(loss='binary_crossentropy',
                   optimizer=Adam(lr=0.0001),
                   metrics=['accuracy'])
@@ -247,9 +258,14 @@ def main():
     tensorboard = TensorBoard(log_dir="logs/lstm")
     f1early = F1EarlyStop(patience = 10)
     best_models = []
+    model_history = defaultdict(list)
+    model_history_all = defaultdict(list)
+
+    round = 0
     for epoch in range(epochs):
+        print '\n\n###### ROUND %d \n' % (round+1)
+        round += 1
         i = 0
-        print '###### ROUND %d' % (i+1)
         for sequence in train_vals:
             x_train = sequence[0]
             y_train = sequence[1]
@@ -266,29 +282,50 @@ def main():
                                 validation_data=(validation_data, validation_target),
                                 class_weight=class_weight,
                                 callbacks=[f1early, tensorboard])
+            #Evaluate after each sequence processed
+            y_pred = model.predict(x_test, verbose = 2).round()
+            confusion = calc_metrics(y_pred, y_test, print_metrics = False)
+
+            train_name = train_files[i].split('/')[5]
+            test_name = test_file.split('/')[5]
+            f1_history = {k: [dic[k] for dic in f1early.f1_history] for k in f1early.f1_history[0]}
+
+            model_history[train_name + '_f1'] += f1_history['f1']
+            model_history[train_name + '_precision'] += f1_history['precision']
+            model_history[train_name + '_recall'] += f1_history['recall']
+
+            model_history_all[test_name + '_f1'] += [f1_history['f1']]
+            model_history_all[test_name + '_precision'] += [f1_history['precision']]
+            model_history_all[test_name + '_recall'] += [f1_history['recall']]
+
+            model_history_all['all_files_f1'] += [confusion['f1']]
+            model_history_all['all_files_precision'] += [confusion['precision']]
+            model_history_all['all_files_recall'] += [confusion['recall']]
+
             best_model = find_best_model(train_files[i], f1early.f1_history)
             best_models.append(best_model)
             model.reset_states()
             i += 1
 
-    dicts_to_csv(best_models)
-    y_pred = model.predict(x_test, verbose = 2).round()
+    fieldnames = ['dataset', 'epoch', 'f1', 'precision', 'recall']
+    dicts_to_csv(best_models, fieldnames, 'best_models_'+ str(epochs) +'x'+sys.argv[2])
+    lists_to_csv(model_history, ['dataset'], 'models_history_'+ str(epochs) +'x'+sys.argv[2])
+    lists_to_csv(model_history_all, ['dataset'], 'models_history_all_'+ str(epochs) +'x'+sys.argv[2])
 
-    confusion = confusion_matr(y_pred, y_test)
+    y_pred = model.predict(x_test, verbose = 2).round()
+    confusion = calc_metrics(y_pred, y_test)
     tp = confusion['tp']
     tn = confusion['tn']
     fp = confusion['fp']
     fn = confusion['fn']
 
-    acc = (tp + tn)/(tp + tn + fp + fn)
-    print 'acc->' + str(np.round(acc*100, decimals=2)) + '%'
-    precision = tp/(tp + fp + epsilon)
-    print 'precision->' + str(np.round(precision*100, decimals=2)) + '%'
-    recall = (tp)/(tp + fn)
-    print 'recall->' + str(np.round(recall*100, decimals=2)) + '%'
-    f1 = 2*(precision*recall)/(precision + recall + epsilon)
-    print 'f1->' + str(np.round(f1*100, decimals=2)) + '%'
+    print 'acc->' + str(np.round(confusion['acc']*100, decimals=2)) + '%'
+    print 'precision->' + str(np.round(confusion['precision']*100, decimals=2)) + '%'
+    print 'recall->' + str(np.round(confusion['recall']*100, decimals=2)) + '%'
+    print 'f1->' + str(np.round(confusion['f1']*100, decimals=2)) + '%'
 
+    model_name = 'test_' + test_name + '_' + str(epochs) + 'x' + sys.argv[2]
+    model.save(model_name + '.h5')
     # score = model.evaluate(x_test, y_test, verbose = 2)
     # print('Training loss:', score[0])
     # print('Training accuracy:', score[1])
