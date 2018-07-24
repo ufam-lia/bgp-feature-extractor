@@ -100,7 +100,7 @@ def experiment(repeats, series, timesteps):
 	# transform the scale of the data
 	scaler, train_scaled, test_scaled = scale(train, test)
 
-	# run experiment
+	#run experiment
 	error_scores = list()
 	for r in range(repeats):
 		# fit the base model

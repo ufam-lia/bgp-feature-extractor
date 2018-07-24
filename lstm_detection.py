@@ -43,7 +43,7 @@ def calc_metrics(y_pred, y_test, print_metrics = True):
     pred_neg = 0
 
     for i in xrange(len(y_pred)):
-        print str(y_pred[i]) + ' == ' + str(y_test[i])
+        # print str(y_pred[i]) + ' == ' + str(y_test[i])
         if y_pred[i] == y_test[i]:
             if y_test[i] == 1:
                 tp += 1
@@ -151,15 +151,14 @@ def csv_to_xy(val_file):
     y_val = y_val.values
     # print x_val.shape
 
-    x_val = x_val.reshape(x_val.shape[0], 1, x_val.shape[1])
-    y_val = y_val.reshape(-1, 1)
+    # x_val = x_val.reshape(x_val.shape[0], 1, x_val.shape[1])
+    # y_val = y_val.reshape(-1, 1)
 
     x_val = x_val.astype('float32')
     y_val = y_val.astype('float32')
 
     x_val -= x_val.mean(axis = 0)
     x_val /= x_val.std(axis = 0)
-
     return (x_val, y_val)
 
 def find_best_model(dataset, f1_history):
@@ -215,10 +214,19 @@ def get_optimal_datasets(exclude_dataset):
 
     return train_files
 
+def add_lag(data, lag=1):
+    df = pd.DataFrame(data)
+    columns = [df.shift(i) for i in range(0, lag+1)]
+    df = pd.concat(columns, axis=1)
+    df = df.fillna(0)
+    df = df.values
+    return df
+
 def main():
     epochs = int(sys.argv[1])
     batch_size = 32
     epsilon = 0.000000000000001
+    lag = 1
 
     nimda_dataset = BGPDataset('nimda')
     code_red_dataset = BGPDataset('code-red')
@@ -233,8 +241,17 @@ def main():
         train_vals.append(csv_to_xy(file))
 
     test_val = csv_to_xy(test_file)
-    x_test = test_val[0]
     y_test = test_val[1]
+    x_test = test_val[0]
+
+    x_test = add_lag(x_test, lag=lag)
+    print x_test.shape
+    print x_test.shape[0]
+    print x_test.shape[1]
+    print lag+1
+    print x_test.shape[1]//(lag+1)
+    x_test = x_test.reshape(x_test.shape[0], lag+1, x_test.shape[1]//(lag+1))
+    y_test = y_test.reshape(-1, 1)
 
     validation_data = x_test
     validation_target = y_test
@@ -269,6 +286,9 @@ def main():
         for sequence in train_vals:
             x_train = sequence[0]
             y_train = sequence[1]
+            x_train = add_lag(x_train, lag=lag)
+            x_train = x_train.reshape(x_train.shape[0], lag+1, x_train.shape[1]//(lag+1))
+            y_train = y_train.reshape(-1, 1)
             validation_data = x_train
             validation_target = y_train
             print_header(train_files[i])
