@@ -7,6 +7,7 @@ import os, sys, csv
 import time
 from operator import itemgetter
 from collections import defaultdict
+import random
 
 import tensorflow as tf
 from bgpanomalies import *
@@ -227,7 +228,7 @@ def main():
     epochs = int(sys.argv[1])
     batch_size = 32
     epsilon = 0.000000000000001
-    lag = sys.argv[3]
+    lag = int(sys.argv[3])
 
     nimda_dataset = BGPDataset('nimda')
     code_red_dataset = BGPDataset('code-red')
@@ -253,12 +254,12 @@ def main():
     validation_target = y_test
 
     model = Sequential()
-    model.add(Dense(100, activation='sigmoid', input_shape = (x_test[0].shape), batch_size = batch_size))
+    # model.add(Dense(100, activation='sigmoid', input_shape = (x_test[0].shape), batch_size = batch_size))
     # # model.add(Dropout(0.2))
     # model.add(Dense(256, activation='relu'))
-    model.add(LSTM(100, return_sequences = True, stateful = True, activation='sigmoid'))
+    model.add(LSTM(100, return_sequences=True, batch_input_shape=(batch_size,x_test.shape[1], x_test.shape[2]), stateful=True, activation='sigmoid'))
     model.add(Dropout(0.2))
-    model.add(LSTM(100, return_sequences = False, stateful = True, activation='sigmoid'))
+    model.add(LSTM(100, return_sequences=False, stateful = True, activation='sigmoid'))
     model.add(Dropout(0.2))
     model.add(Dense(1, activation='sigmoid'))
 
@@ -279,6 +280,8 @@ def main():
         print '\n\n###### ROUND %d \n' % (round+1)
         round += 1
         i = 0
+
+        random.shuffle(train_vals)
         for sequence in train_vals:
             x_train = sequence[0]
             y_train = sequence[1]
