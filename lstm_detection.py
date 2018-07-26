@@ -20,8 +20,7 @@ from keras.callbacks import Callback
 from sklearn.metrics import confusion_matrix, f1_score, precision_score, recall_score
 from keras.callbacks import TensorBoard
 
-number_of_cpus = 8
-K.set_session(K.tf.Session(config=K.tf.ConfigProto(inter_op_parallelism_threads=number_of_cpus, intra_op_parallelism_threads=number_of_cpus)))
+K.set_session(K.tf.Session(config=K.tf.ConfigProto(inter_op_parallelism_threads=1,intra_op_parallelism_threads=1)))
 def print_header(file):
     # print '*'*123
     # print '*'*123
@@ -228,15 +227,15 @@ def main():
     epochs = int(sys.argv[1])
     batch_size = 32
     epsilon = 0.000000000000001
-    lag = int(sys.argv[3])
+    lag = sys.argv[3]
 
     nimda_dataset = BGPDataset('nimda')
     code_red_dataset = BGPDataset('code-red')
     slammer_dataset = BGPDataset('slammer')
     moscow_dataset = BGPDataset('moscow_blackout')
 
-    train_files = get_optimal_datasets('slammer')
-    test_file = slammer_dataset.get_files(5, peer='513')[0]
+    train_files = get_optimal_datasets('nimda')
+    test_file = nimda_dataset.get_files(5, peer='513')[0]
 
     train_vals = []
     for file in train_files:
@@ -247,7 +246,6 @@ def main():
     x_test = test_val[0]
 
     x_test = add_lag(x_test, lag=lag)
-
     x_test = x_test.reshape(x_test.shape[0], lag+1, x_test.shape[1]//(lag+1))
     y_test = y_test.reshape(-1, 1)
 
@@ -302,6 +300,7 @@ def main():
                                 callbacks=[f1early, tensorboard])
             #Evaluate after each sequence processed
             y_pred = model.predict(x_test, verbose = 2).round()
+            print '####TRAINING'
             confusion = calc_metrics(y_pred, y_test, print_metrics = False)
 
             train_name = train_files[i].split('/')[5]
@@ -331,6 +330,7 @@ def main():
     lists_to_csv(model_history_all, ['dataset'], 'models_history_all_'+ str(epochs) +'x'+sys.argv[2])
 
     y_pred = model.predict(x_test, verbose = 2).round()
+    print '####VALIDATION'
     confusion = calc_metrics(y_pred, y_test)
     tp = confusion['tp']
     tn = confusion['tn']
