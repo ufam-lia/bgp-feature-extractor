@@ -20,7 +20,8 @@ from keras.callbacks import Callback
 from sklearn.metrics import confusion_matrix, f1_score, precision_score, recall_score
 from keras.callbacks import TensorBoard
 
-K.set_session(K.tf.Session(config=K.tf.ConfigProto(inter_op_parallelism_threads=1,intra_op_parallelism_threads=1)))
+number_of_cpus = 8
+K.set_session(K.tf.Session(config=K.tf.ConfigProto(inter_op_parallelism_threads=number_of_cpus, intra_op_parallelism_threads=number_of_cpus)))
 def print_header(file):
     # print '*'*123
     # print '*'*123
@@ -44,7 +45,7 @@ def calc_metrics(y_pred, y_test, print_metrics = True):
     pred_neg = 0
 
     for i in xrange(len(y_pred)):
-        # print str(y_pred[i]) + ' == ' + str(y_test[i])
+        print str(y_pred[i]) + ' == ' + str(y_test[i])
         if y_pred[i] == y_test[i]:
             if y_test[i] == 1:
                 tp += 1
@@ -227,7 +228,7 @@ def main():
     epochs = int(sys.argv[1])
     batch_size = 32
     epsilon = 0.000000000000001
-    lag = 1
+    lag = int(sys.argv[3])
 
     nimda_dataset = BGPDataset('nimda')
     code_red_dataset = BGPDataset('code-red')
@@ -246,11 +247,7 @@ def main():
     x_test = test_val[0]
 
     x_test = add_lag(x_test, lag=lag)
-    print x_test.shape
-    print x_test.shape[0]
-    print x_test.shape[1]
-    print lag+1
-    print x_test.shape[1]//(lag+1)
+
     x_test = x_test.reshape(x_test.shape[0], lag+1, x_test.shape[1]//(lag+1))
     y_test = y_test.reshape(-1, 1)
 
