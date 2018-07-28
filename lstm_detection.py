@@ -21,7 +21,7 @@ from keras.callbacks import Callback
 from sklearn.metrics import confusion_matrix, f1_score, precision_score, recall_score
 from keras.callbacks import TensorBoard
 
-K.set_session(K.tf.Session(config=K.tf.ConfigProto(inter_op_parallelism_threads=1,intra_op_parallelism_threads=1)))
+# K.set_session(K.tf.Session(config=K.tf.ConfigProto(inter_op_parallelism_threads=1,intra_op_parallelism_threads=1)))
 def print_header(file):
     # print '*'*123
     # print '*'*123
@@ -226,17 +226,18 @@ def add_lag(data, lag=1):
 
 def main():
     epochs = int(sys.argv[1])
+    inner_epochs = int(sys.argv[2])
+    lag = int(sys.argv[3])
     batch_size = 32
     epsilon = 0.000000000000001
-    lag = int(sys.argv[3])
 
     nimda_dataset = BGPDataset('nimda')
     code_red_dataset = BGPDataset('code-red')
     slammer_dataset = BGPDataset('slammer')
     moscow_dataset = BGPDataset('moscow_blackout')
 
-    train_files = get_optimal_datasets('nimda')
-    test_file = nimda_dataset.get_files(5, peer='513')[0]
+    train_files = get_optimal_datasets('code-red')
+    test_file = code_red_dataset.get_files(5, peer='513')[0]
 
     train_vals = []
     for file in train_files:
@@ -295,7 +296,7 @@ def main():
             class_weight = {0: 1., 1: 4}
             hist = model.fit(x_train, y_train,
                                 # batch_size=batch_size,
-                                epochs=int(sys.argv[2]),
+                                epochs=int(inner_epochs),
                                 verbose=0,
                                 shuffle=False,
                                 validation_data=(validation_data, validation_target),
@@ -314,9 +315,9 @@ def main():
             model_history[train_name + '_precision'] += f1_history['precision']
             model_history[train_name + '_recall'] += f1_history['recall']
 
-            model_history_all[test_name + '_f1'] += [f1_history['f1']]
-            model_history_all[test_name + '_precision'] += [f1_history['precision']]
-            model_history_all[test_name + '_recall'] += [f1_history['recall']]
+            model_history_all[test_name + '_f1'] += f1_history['f1']
+            model_history_all[test_name + '_precision'] += f1_history['precision']
+            model_history_all[test_name + '_recall'] += f1_history['recall']
 
             model_history_all['all_files_f1'] += [confusion['f1']]
             model_history_all['all_files_precision'] += [confusion['precision']]
@@ -328,9 +329,9 @@ def main():
             i += 1
 
     fieldnames = ['dataset', 'epoch', 'f1', 'precision', 'recall']
-    dicts_to_csv(best_models, fieldnames, 'best_models_'+ str(epochs) +'x'+sys.argv[2])
-    lists_to_csv(model_history, ['dataset'], 'models_history_'+ str(epochs) +'x'+sys.argv[2])
-    lists_to_csv(model_history_all, ['dataset'], 'models_history_all_'+ str(epochs) +'x'+sys.argv[2])
+    dicts_to_csv(best_models, fieldnames, 'best_models_'+ str(epochs) +'x'+str(inner_epochs)+'x'+str(lag))
+    lists_to_csv(model_history, ['dataset'], 'models_history_'+ str(epochs) +'x'+str(inner_epochs)+'x'+str(lag))
+    lists_to_csv(model_history_all, ['dataset'], 'models_history_all_'+ str(epochs) +'x'+str(inner_epochs)+'x'+str(lag))
 
     y_pred = model.predict(x_test, verbose = 2).round()
     print '####VALIDATION'
@@ -345,12 +346,11 @@ def main():
     print 'recall->' + str(np.round(confusion['recall']*100, decimals=2)) + '%'
     print 'f1->' + str(np.round(confusion['f1']*100, decimals=2)) + '%'
 
-    model_name = 'test_' + test_name + '_' + str(epochs) + 'x' + sys.argv[2]
+    model_name = 'test_' + test_name + '_' + str(epochs) + 'x' + str(inner_epochs)+'x'+str(lag)
     model.save(model_name + '.h5')
     # score = model.evaluate(x_test, y_test, verbose = 2)
     # print('Training loss:', score[0])
     # print('Training accuracy:', score[1])
-
 
 if __name__ == "__main__":
     main()
