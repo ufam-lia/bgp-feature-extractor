@@ -261,7 +261,7 @@ class Metrics(object):
         self.class_traffic = defaultdict(int)
 
     def init_rib(self, file):
-        if isfile():
+        if isfile(file + '-lookup.pkl'):
             self.prefix_lookup = pickle.load(open(file + '-lookup.pkl', "rb"))
         else:
             d = Reader(file)
