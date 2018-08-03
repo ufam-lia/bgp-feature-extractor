@@ -1,5 +1,5 @@
 import sys
-# import os, time
+import os, time
 from time import time, tzset
 import argparse
 import glob
@@ -25,21 +25,22 @@ def main():
     anomaly = sys.argv[3]
     c = 0
 
+    metrics = Metrics()
     anomaly = BGPAnomaly(anomaly, rrc)
     days = anomaly.get_files()
+    if anomaly.get_rib() is not None:
+        metrics.init_rib(anomaly.get_rib())
 
     for update_files in days:
-        metrics = Metrics()
         update_files = sorted(update_files)
-        # prefix_episodes = pool.map(metrics.add_updates, update_files)
+
         for f in update_files:
             metrics.add_updates(f, peer)
-            file = f.split('.')
-            # pickle.dump(metrics.prefix_lookup, open(file[0] + file[1] + file[2] + '-lookup.pkl', "wb"))
             print f + ': ' + str(metrics.count_updates)
 
-            # pool.close()
-            # pool.join()
+        file = f.split('.')
+        pickle.dump(metrics.prefix_lookup, open(file[0] + file[1] + file[2] + '-lookup.pkl', "wb"))
+
         day = update_files[0].split('.')[1]
         features = metrics.get_features()
         features_dict = features.to_dict()

@@ -261,28 +261,33 @@ class Metrics(object):
         self.class_traffic = defaultdict(int)
 
     def init_rib(self, file):
-        d = Reader(file)
+        if isfile():
+            self.prefix_lookup = pickle.load(open(file + '-lookup.pkl', "rb"))
+        else:
+            d = Reader(file)
 
-        prfx_count = defaultdict(int)
-        peer_count = defaultdict(int)
+            prfx_count = defaultdict(int)
+            peer_count = defaultdict(int)
+            print file
+            for m in d:
+                m = m.mrt
+                if m.err == MRT_ERR_C['MRT Header Error']:
+                    continue
 
-        for m in d:
-            m = m.mrt
-            if m.err == MRT_ERR_C['MRT Header Error']:
-                continue
+                if is_table_dump(m):
+                    peer = m.td.peer_as
+                    prefix = str(m.td.prefix) + '/' + str(m.td.plen)
 
-            if is_table_dump(m):
-                peer = m.td.peer_as
-                prefix = str(m.td.prefix) + '/' + str(m.td.plen)
+                    self.print_classification(m, 'RIB', prefix)
+                    self.prfx_set[peer][prefix] += 1
 
-                self.print_classification(m, 'RIB', prefix)
-                self.prfx_set[peer][prefix] += 1
+                    for attr in m.td.attr:
+                        self.prefix_lookup[peer][prefix][BGP_ATTR_T[attr.type]] = attr
 
-                for attr in m.td.attr:
-                    self.prefix_lookup[peer][prefix][BGP_ATTR_T[attr.type]] = attr
+            for peer, prefix_count in peer_count.iteritems():
+                print str(peer) + '->' + str(prefix_count)
 
-        for peer, prefix_count in peer_count.iteritems():
-            print str(peer) + '->' + str(prefix_count)
+            pickle.dump(self.prefix_lookup, open(file + '-lookup.pkl', "wb"))
 
     def increment_update_counters(self, m):
         self.count_updates += 1
