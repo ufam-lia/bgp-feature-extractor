@@ -1,0 +1,17 @@
+dataset,epoch,f1,precision,recall
+/home/pc/bgp-feature-extractor/datasets/dataset_nimda_513_1_rrc04.csv,0,0.518,0.35,1.0
+/home/pc/bgp-feature-extractor/datasets/dataset_nimda_513_5_rrc04.csv,0,0.514,0.346,1.0
+/home/pc/bgp-feature-extractor/datasets/dataset_nimda_559_1_rrc04.csv,9,0.736,0.678,0.805
+/home/pc/bgp-feature-extractor/datasets/dataset_nimda_559_5_rrc04.csv,8,0.706,0.555,0.972
+/home/pc/bgp-feature-extractor/datasets/dataset_nimda_6893_15_rrc04.csv,9,0.708,0.571,0.933
+/home/pc/bgp-feature-extractor/datasets/dataset_nimda_6893_1_rrc04.csv,9,0.824,0.865,0.786
+/home/pc/bgp-feature-extractor/datasets/dataset_nimda_6893_5_rrc04.csv,9,0.817,0.707,0.968
+/home/pc/bgp-feature-extractor/datasets/dataset_slammer_513_15_rrc04.csv,1,0.849,0.76,0.961
+/home/pc/bgp-feature-extractor/datasets/dataset_slammer_513_1_rrc04.csv,9,0.929,0.899,0.961
+/home/pc/bgp-feature-extractor/datasets/dataset_slammer_513_5_rrc04.csv,9,0.913,0.841,1.0
+/home/pc/bgp-feature-extractor/datasets/dataset_slammer_559_15_rrc04.csv,3,0.862,0.791,0.947
+/home/pc/bgp-feature-extractor/datasets/dataset_slammer_559_1_rrc04.csv,9,0.92,0.877,0.966
+/home/pc/bgp-feature-extractor/datasets/dataset_slammer_559_5_rrc04.csv,9,0.905,0.838,0.982
+/home/pc/bgp-feature-extractor/datasets/dataset_slammer_6893_15_rrc04.csv,0,0.913,0.869,0.961
+/home/pc/bgp-feature-extractor/datasets/dataset_slammer_6893_1_rrc04.csv,9,0.959,0.957,0.961
+/home/pc/bgp-feature-extractor/datasets/dataset_slammer_6893_5_rrc04.csv,0,0.95,0.936,0.965
