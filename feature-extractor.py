@@ -42,13 +42,14 @@ def main():
         pickle.dump(metrics.prefix_lookup, open(file[0] + file[1] + file[2] + '-lookup.pkl', "wb"))
 
         day = update_files[0].split('.')[1]
-        features = metrics.get_features()
-        features_dict = features.to_dict()
-        df = features.to_dataframe()
-        output_filename = 'features-'+ anomaly.event +'-'+ rrc +'-'+ peer +'-'+ day +'-'+ metrics.minutes_window +'.csv'
-        df.to_csv(output_filename, sep=',', encoding='utf-8')
-        print output_filename + ': OK'
-        # metrics.plot()
+    features = metrics.get_features()
+    features_dict = features.to_dict()
+    df = features.to_dataframe()
+    # output_filename = 'features-'+ anomaly.event +'-'+ rrc +'-'+ peer +'-'+ day +'-'+ metrics.minutes_window +'.csv'
+    output_filename = 'features-'+ anomaly.event +'-'+ rrc +'-'+ peer +'-'+ metrics.minutes_window +'.csv'
+    df.to_csv(output_filename, sep=',', encoding='utf-8')
+    print output_filename + ': OK'
+    # metrics.plot()
 
 if __name__ == '__main__':
     main()
