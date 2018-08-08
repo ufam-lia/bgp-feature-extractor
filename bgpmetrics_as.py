@@ -262,6 +262,7 @@ class Metrics(object):
 
     def init_rib(self, file):
         if isfile(file + '-lookup.pkl'):
+	    print 'Loading ' + file + '-lookup.pkl'	
             self.prefix_lookup = pickle.load(open(file + '-lookup.pkl', "rb"))
         else:
             d = Reader(file)
