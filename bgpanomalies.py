@@ -19,7 +19,7 @@ anomalies['nimda'] = ['20010915', '20010916', '20010917', '20010918', '20010919'
 anomalies['slammer'] = ['20030123', '20030124', '20030125', '20030126', '20030127']
 anomalies['moscow-blackout'] = ['20050523', '20050524', '20050525', '20050526', '20050527']
 anomalies['as9121'] = ['20041222', '20041223', '20041224', '20041225', '20041226']
-anomalies['as-depeering'] = ['20030123', '20030124', '20030125', '20030126', '20030127']
+anomalies['as-depeering'] = ['20051005', '20051006', '20051007', '20051008', '20051009', '20051010']
 anomalies['malaysian-telecom'] = ['20150612', '20150612', '20150612', '20150612', '20150612']
 
 class BGPAnomaly(object):
@@ -66,6 +66,7 @@ class BGPAnomaly(object):
             if len(files_retrieved) > 0:
                 days.append(files_retrieved)
             else:
+                print self.base_path + self.event + '/' + self.rrc + '/updates.'+ day + '.*.gz'
                 print '#####day ' + self.event + '/' + self.rrc + '/updates.'+ day  + ' not found'
 
         return days

@@ -262,7 +262,7 @@ class Metrics(object):
 
     def init_rib(self, file):
         if isfile(file + '-lookup.pkl'):
-	    print 'Loading ' + file + '-lookup.pkl'	
+	    print 'Loading ' + file + '-lookup.pkl'
             self.prefix_lookup = pickle.load(open(file + '-lookup.pkl', "rb"))
         else:
             d = Reader(file)
@@ -311,7 +311,7 @@ class Metrics(object):
                 continue
 
             if is_bgp_update(m):
-                if m.bgp.peer_as == peer:
+                if m.bgp.peer_as == peer or peer == '0':
                     self.update_time_bin(m)
                     #Total number of annoucements/withdrawals/updates
                     self.increment_update_counters(m)
@@ -325,8 +325,6 @@ class Metrics(object):
                 break
 
     def classify_announcement(self, m):
-        self.peer_upds[m.bgp.peer_as] += 1
-
         for nlri in m.bgp.msg.nlri:
             self.announcements[self.bin] += 1
             prefix = nlri.prefix + '/' + str(nlri.plen)
@@ -345,8 +343,6 @@ class Metrics(object):
                 self.classify_new_announcement(m, prefix)
 
     def classify_withdrawal(self, m):
-        self.peer_upds[m.bgp.peer_as] += 1
-
         if (m.bgp.msg.wd_len > 0):
             if m.bgp.msg.withdrawn is not None:
                 for nlri in m.bgp.msg.withdrawn:
@@ -628,6 +624,9 @@ class Metrics(object):
             print_bgp4mp(msg)
             print '_'*80
             print ''
+
+    def print_peers(self):
+        print self.prefix_lookup.keys()
 
     def print_dicts(self):
         self.print_dict('updates', self.updates)
