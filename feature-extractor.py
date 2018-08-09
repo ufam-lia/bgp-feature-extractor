@@ -30,6 +30,7 @@ def main():
     days = anomaly.get_files()
     if anomaly.get_rib() is not None:
         metrics.init_rib(anomaly.get_rib())
+        pass
 
     for update_files in days:
         update_files = sorted(update_files)
@@ -41,7 +42,11 @@ def main():
         file = f.split('.')
         pickle.dump(metrics.prefix_lookup, open(file[0] + file[1] + file[2] + '-lookup.pkl', "wb"))
 
+        for k, v in metrics.peer_upds.iteritems():
+            print str(k) + ' -> ' + str(v)
+
         day = update_files[0].split('.')[1]
+
     features = metrics.get_features()
     features_dict = features.to_dict()
     df = features.to_dataframe()
