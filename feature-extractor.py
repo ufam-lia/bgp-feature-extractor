@@ -9,7 +9,8 @@ from bgpmetrics_as import Metrics
 import pandas as pd
 from multiprocessing import Pool
 from bgpanomalies import BGPAnomaly
-
+from collections import OrderedDict
+import operator
 os.environ['TZ'] = 'US'
 tzset()
 
@@ -38,12 +39,15 @@ def main():
         for f in update_files:
             metrics.add_updates(f, peer)
             print f + ': ' + str(metrics.count_updates)
+            peer_upds = OrderedDict(sorted((metrics.peer_upds).items(), key = operator.itemgetter(1), reverse = True))
+            # for k, v in metrics.peer_upds.iteritems():
+            for k, v in peer_upds.iteritems():
+                print str(k) + ' -> ' + str(v)
+            print '*************'
 
         file = f.split('.')
-        pickle.dump(metrics.prefix_lookup, open(file[0] + file[1] + file[2] + '-lookup.pkl', "wb"))
+        # pickle.dump(metrics.prefix_lookup, open(file[0] + file[1] + file[2] + '-lookup.pkl', "wb"))
 
-        for k, v in metrics.peer_upds.iteritems():
-            print str(k) + ' -> ' + str(v)
 
         day = update_files[0].split('.')[1]
 
