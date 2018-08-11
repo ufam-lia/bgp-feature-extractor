@@ -12,7 +12,6 @@ import operator
 import pandas as pd
 from operator import add
 
-
 anomalies = dict()
 anomalies['code-red'] = ['20010717','20010718','20010719', '20010720', '20010721']
 anomalies['nimda'] = ['20010915', '20010916', '20010917', '20010918', '20010919', '20010920', '20010921', '20010922']
