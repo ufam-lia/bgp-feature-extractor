@@ -46,10 +46,13 @@ def is_bgp_update(m):
             and m.bgp.msg is not None \
             # and m.bgp.msg.type == BGP_MSG_T['UPDATE']
 
-def is_table_dump(m):
-    return (m.type == MRT_T['TABLE_DUMP'] \
-            or m.type == MRT_T['TABLE_DUMP_V2']) \
-            and m.td is not None
+def is_table_dump_v1(m):
+    return m.type == MRT_T['TABLE_DUMP'] and m.td is not None
+
+def is_table_dump_v2(m):
+    return m.type == MRT_T['TABLE_DUMP_V2'] and\
+          (m.peer is not None or\
+           m.rib is not None)
 
 def is_bgp_open(m):
     return (m.type == MRT_T['BGP4MP'] \
@@ -275,7 +278,7 @@ class Metrics(object):
                 if m.err == MRT_ERR_C['MRT Header Error']:
                     continue
 
-                if is_table_dump(m):
+                if is_table_dump_v1(m):
                     peer = m.td.peer_as
                     prefix = str(m.td.prefix) + '/' + str(m.td.plen)
 
@@ -284,9 +287,19 @@ class Metrics(object):
 
                     for attr in m.td.attr:
                         self.prefix_lookup[peer][prefix][BGP_ATTR_T[attr.type]] = attr
-
-            for peer, prefix_count in peer_count.iteritems():
-                print str(peer) + '->' + str(prefix_count)
+                elif is_table_dump_v2(m):
+                    if m.peer is not None:
+                        peer_index = dict()
+                        i = 0
+                        for p in m.peer.entry:
+                            peer_index[i] = p.asn
+                            i += 1
+                    elif m.rib is not None:
+                        prefix = str(m.rib.prefix) + '/' + str(m.rib.plen)
+                        for e in m.rib.entry:
+                            peer = peer_index[e.peer_index]
+                            for attr in e.attr:
+                                self.prefix_lookup[peer][prefix][BGP_ATTR_T[attr.type]] = attr
 
             pickle.dump(self.prefix_lookup, open(file + '-lookup.pkl', "wb"))
 
