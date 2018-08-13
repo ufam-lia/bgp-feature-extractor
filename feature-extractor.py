@@ -32,7 +32,7 @@ def main():
     anomaly = BGPAnomaly(anomaly, rrc)
     days = anomaly.get_files()
     if anomaly.get_rib() is not None:
-        # metrics.init_rib(anomaly.get_rib())
+        metrics.init_rib(anomaly.get_rib(), peer)
         pass
 
     for update_files in days:

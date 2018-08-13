@@ -263,10 +263,10 @@ class Metrics(object):
         self.rib_attr_init()
         self.class_traffic = defaultdict(int)
 
-    def init_rib(self, file):
-        if isfile(file + '-lookup.pkl'):
+    def init_rib(self, file, peer_arg):
+        if isfile(file + '-' + peer_arg + '-lookup.pkl'):
 	    print 'Loading ' + file + '-lookup.pkl'
-            self.prefix_lookup = pickle.load(open(file + '-lookup.pkl', "rb"))
+            self.prefix_lookup = pickle.load(open(file + '-' + peer_arg +'-lookup.pkl', "rb"))
         else:
             d = Reader(file)
 
@@ -298,10 +298,11 @@ class Metrics(object):
                         prefix = str(m.rib.prefix) + '/' + str(m.rib.plen)
                         for e in m.rib.entry:
                             peer = peer_index[e.peer_index]
-                            for attr in e.attr:
-                                self.prefix_lookup[peer][prefix][BGP_ATTR_T[attr.type]] = attr
+                            if peer == peer_arg:
+                                for attr in e.attr:
+                                    self.prefix_lookup[peer][prefix][BGP_ATTR_T[attr.type]] = attr
 
-            pickle.dump(self.prefix_lookup, open(file + '-lookup.pkl', "wb"))
+            pickle.dump(self.prefix_lookup, open(file + '-' + peer_arg + '-lookup.pkl', "wb"))
 
     def increment_update_counters(self, m):
         self.count_updates += 1
