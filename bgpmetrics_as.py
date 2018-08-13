@@ -590,7 +590,7 @@ class Metrics(object):
             return new_attr.next_hop == old_attr['NEXT_HOP'].next_hop
 
         elif BGP_ATTR_T[new_attr.type] == 'MULTI_EXIT_DISC':
-            if old_attr['AGGREGATOR'] != [] and new_attr.med <> old_attr['MULTI_EXIT_DISC'].med:
+            if old_attr['MULTI_EXIT_DISC'] != [] and new_attr.med <> old_attr['MULTI_EXIT_DISC'].med:
                 self.diff_counter['MULTI_EXIT_DISC'] += 1
             return (old_attr['MULTI_EXIT_DISC'] != []) and (new_attr.med == old_attr['MULTI_EXIT_DISC'].med)
 
