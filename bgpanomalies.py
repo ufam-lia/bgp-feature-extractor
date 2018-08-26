@@ -26,10 +26,11 @@ anomalies['aws-leak'] = ['20160420', '20160421', '20160422', '20160423', '201604
 # anomalies['aws-leak'] = ['20160422.16','20160422.17','20160422.18','20160422.19','20160422.20','20160422.21','20160422.22', '20160423', '20160424']
 
 class BGPAnomaly(object):
-    def __init__(self, event_name, rrc):
+    def __init__(self, event_name, rrc, peer):
         self.base_path = '/home/pc/ripe-ris/'
         self.event = event_name
         self.rrc = rrc
+        self.peer = peer
         self.start = 0
         self.end = 0
         self.set_period()
@@ -48,9 +49,9 @@ class BGPAnomaly(object):
         elif self.event == 'moscow':
             self.start = 1116996009
             self.end = 1117006209
-            #AS13237
-            # self.start = 1116996009
-            # self.end = 1117006209
+            if self.peer == '13237':
+                self.start = 1116996009
+                self.end = 1117006209
         elif self.event == 'as9121':
             self.start = 1103916000
             self.end = 1103918580
@@ -60,7 +61,6 @@ class BGPAnomaly(object):
         elif self.event == 'as-depeering':
             self.start = 1128715200
             self.end = 1128729660
-
 
     def get_files(self):
         days = []

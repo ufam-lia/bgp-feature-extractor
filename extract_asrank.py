@@ -46,7 +46,7 @@ edge_col = ['red' if rels[e] < 0 else 'blue' for e in g.edges()]
 pos = nx.get_node_attributes(g,'pos')
 # pos = nx.shell_layout(G)
 # pos = nx.spring_layout(G)
-# pos = nx.spectral_layout(G)
+# pos = nx.spectral_layout(G)   
 # pos = nx.random_layout(G)
 print type(pos)
 print len(list(g))
