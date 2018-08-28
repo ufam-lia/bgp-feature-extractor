@@ -187,6 +187,9 @@ def get_optimal_datasets(exclude_dataset):
     code_red_dataset = BGPDataset('code-red')
     slammer_dataset = BGPDataset('slammer')
     moscow_dataset = BGPDataset('moscow_blackout')
+    as9121_dataset = BGPDataset('as9121')
+    aws_leak_dataset = BGPDataset('aws-leak')
+    as_3561_filtering_dataset = BGPDataset('as-3561-filtering')
 
     train_files = []
     if exclude_dataset != 'code-red':
@@ -207,6 +210,21 @@ def get_optimal_datasets(exclude_dataset):
         train_files += moscow_dataset.get_files(timebin = [1, 5], peer ='1853')
         train_files += moscow_dataset.get_files(timebin = [1, 5], peer ='12793')
 
+    if exclude_dataset != 'aws-leak':
+        train_files += aws_leak_dataset.get_files(timebin = [1, 5], peer ='15547')
+        train_files += aws_leak_dataset.get_files(timebin = [1, 5], peer ='25091')
+        train_files += aws_leak_dataset.get_files(timebin = [1, 5], peer ='34781')
+
+    if exclude_dataset != 'as9121':
+        train_files += as9121_dataset.get_files(timebin = [1, 5], peer ='1853')
+        train_files += as9121_dataset.get_files(timebin = [1, 5], peer ='12793')
+        train_files += as9121_dataset.get_files(timebin = [1, 5], peer ='13237')
+
+    if exclude_dataset != 'as-3561-filtering':
+        train_files += as_3561_filtering_dataset.get_files(timebin = [1, 5], peer ='1286')
+        train_files += as_3561_filtering_dataset.get_files(timebin = [1, 5], peer ='3257')
+        train_files += as_3561_filtering_dataset.get_files(timebin = [1, 5], peer ='3333')
+
     return train_files
 
 def add_lag(data, lag=1):
@@ -224,13 +242,8 @@ def main():
     batch_size = 32
     epsilon = 0.000000000000001
 
-    nimda_dataset = BGPDataset('nimda')
-    code_red_dataset = BGPDataset('code-red')
-    slammer_dataset = BGPDataset('slammer')
-    moscow_dataset = BGPDataset('moscow_blackout')
-
     train_files = get_optimal_datasets('code-red')
-    test_file = code_red_dataset.get_files(5, peer='513')[0]
+    test_file = BGPDataset('code-red').get_files(5, peer='513')[0]
 
     train_vals = []
     for file in train_files:
