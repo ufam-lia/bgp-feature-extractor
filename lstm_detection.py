@@ -38,7 +38,7 @@ def calc_metrics(y_pred, y_test, print_metrics = True):
     pred_neg = 0
 
     for i in xrange(len(y_pred)):
-        print str(y_pred[i]) + ' == ' + str(y_test[i])
+        # print str(y_pred[i]) + ' == ' + str(y_test[i])
         if y_pred[i] == y_test[i]:
             if y_test[i] == 1:
                 tp += 1
@@ -247,7 +247,7 @@ def main():
 
     train_vals = []
     for file in train_files:
-        train_vals.append(csv_to_xy(file))
+        train_vals.append((csv_to_xy(file), file))
 
     test_val = csv_to_xy(test_file)
     y_test = test_val[1]
@@ -289,7 +289,9 @@ def main():
         i = 0
 
         random.shuffle(train_vals)
-        for sequence in train_vals:
+        for sequence_tuple in train_vals:
+            filename = sequence_tuple[1]
+            sequence = sequence_tuple[0]
             x_train = sequence[0]
             y_train = sequence[1]
             x_train = add_lag(x_train, lag=lag)
@@ -297,13 +299,13 @@ def main():
             y_train = y_train.reshape(-1, 1)
             validation_data = x_train
             validation_target = y_train
-            print_header(train_files[i])
+            print_header(filename)
 
             class_weight = {0: 1., 1: 4}
             hist = model.fit(x_train, y_train,
                                 # batch_size=batch_size,
                                 epochs=int(inner_epochs),
-                                verbose=0,
+                                verbose=1,
                                 shuffle=False,
                                 validation_data=(validation_data, validation_target),
                                 class_weight=class_weight,
