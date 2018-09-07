@@ -16,6 +16,17 @@ import operator
 os.environ['TZ'] = 'US'
 tzset()
 
+def split_ticks(x, bins):
+ c = 0
+ l1 = []
+ l2 = []
+ for x1 in x:
+  if c % bins == 0:
+   l1.append(x1)
+   l2.append(c)
+  c += 1
+ return l1, l2
+
 def main():
     parser = argparse.ArgumentParser(description='Process BGP timeseries')
     parser.add_argument('--days', type=int)
@@ -29,7 +40,7 @@ def main():
     c = 0
 
     metrics = Metrics()
-    anomaly = BGPAnomaly(anomaly, rrc)
+    anomaly = BGPAnomaly(anomaly, rrc, '*')
     days = anomaly.get_files()
     if anomaly.get_rib() is not None:
         metrics.init_rib(anomaly.get_rib(), peer)

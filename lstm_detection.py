@@ -22,16 +22,9 @@ from sklearn.metrics import confusion_matrix, f1_score, precision_score, recall_
 from keras.callbacks import TensorBoard
 
 # K.set_session(K.tf.Session(config=K.tf.ConfigProto(inter_op_parallelism_threads=1,intra_op_parallelism_threads=1)))
+
 def print_header(file):
-    # print '*'*123
-    # print '*'*123
-    # print '*'*123
-    # print '*'*123
     print '*******Training with file: ' + file + '***************'
-    # print '*'*123
-    # print '*'*123
-    # print '*'*123
-    # print '*'*123
 
 def calc_metrics(y_pred, y_test, print_metrics = True):
     epsilon = 0.000000000000001
