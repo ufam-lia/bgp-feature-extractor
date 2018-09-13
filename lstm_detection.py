@@ -20,11 +20,11 @@ from sklearn.preprocessing import MinMaxScaler
 from keras.callbacks import Callback
 from sklearn.metrics import confusion_matrix, f1_score, precision_score, recall_score
 from keras.callbacks import TensorBoard
-
+from keras.utils import plot_model
 # K.set_session(K.tf.Session(config=K.tf.ConfigProto(inter_op_parallelism_threads=1,intra_op_parallelism_threads=1)))
 
 def print_header(file):
-    print '*******Training with file: ' + file + '***************'
+    print( '*******Training with file: ' + file + '***************')
 
 def calc_metrics(y_pred, y_test, print_metrics = True):
     epsilon = 0.000000000000001
@@ -38,7 +38,7 @@ def calc_metrics(y_pred, y_test, print_metrics = True):
     pred_neg = 0
 
     for i in xrange(len(y_pred)):
-        # print str(y_pred[i]) + ' == ' + str(y_test[i])
+        # print( str(y_pred[i]) + ' == ' + str(y_test[i]))
         if y_pred[i] == y_test[i]:
             if y_test[i] == 1:
                 tp += 1
@@ -64,17 +64,17 @@ def calc_metrics(y_pred, y_test, print_metrics = True):
     f1 = 2*(precision*recall)/(precision + recall + epsilon)
 
     if print_metrics:
-        print '--------------'
-        print 'pos->' + str(pos)
-        print 'neg->' + str(neg)
-        print 'pred_pos->' + str(pred_pos)
-        print 'pred_neg->' + str(pred_neg)
-        print '--------------'
-        print 'tp->' + str(tp)
-        print 'tn->' + str(tn)
-        print 'fp->' + str(fp)
-        print 'fn->' + str(fn)
-        print '--------------'
+        print( '--------------')
+        print( 'pos->' + str(pos))
+        print( 'neg->' + str(neg))
+        print( 'pred_pos->' + str(pred_pos))
+        print( 'pred_neg->' + str(pred_neg))
+        print( '--------------')
+        print( 'tp->' + str(tp))
+        print( 'tn->' + str(tn))
+        print( 'fp->' + str(fp))
+        print( 'fn->' + str(fn))
+        print( '--------------')
 
     confusion = dict()
     confusion['tp'] = tp
@@ -101,9 +101,9 @@ class F1EarlyStop(Callback):
 
     def on_epoch_end(self, epoch, logs={}):
         val_predict = (np.asarray(self.model.predict(self.validation_data[0]))).round()
-        # print val_predict
+        # print( val_predict)
         val_targ = self.validation_data[1]
-        # print val_targ
+        # print( val_targ)
         _val_f1 = f1_score(val_targ, val_predict)
         _val_recall = recall_score(val_targ, val_predict)
         _val_precision = precision_score(val_targ, val_predict)
@@ -117,7 +117,7 @@ class F1EarlyStop(Callback):
         self.val_f1s.append(_val_f1)
         self.val_recalls.append(_val_recall)
         self.val_precisions.append(_val_precision)
-        # print '--> val_f1: %f \n--> val_precision: %f \n--> val_recall %f' %(_val_f1, _val_precision, _val_recall)
+        # print( '--> val_f1: %f \n--> val_precision: %f \n--> val_recall %f' %(_val_f1, _val_precision, _val_recall))
 
         getting_better = True
         for i in range(self.patience):
@@ -125,12 +125,12 @@ class F1EarlyStop(Callback):
                 last_index = -(i + 1)
                 if self.val_f1s[last_index] >= self.val_f1s[last_index - 1]:
                     getting_better = True
-                    # print 'break ' + str(i)
+                    # print( 'break ' + str(i))
                     break
                 else:
-                    # print 'self.val_f1s[last_index]  -> '+str(self.val_f1s[last_index] )
-                    # print 'self.val_f1s[last_index - 1] -> '+str(self.val_f1s[last_index - 1])
-                    # print i
+                    # print( 'self.val_f1s[last_index]  -> '+str(self.val_f1s[last_index] ))
+                    # print( 'self.val_f1s[last_index - 1] -> '+str(self.val_f1s[last_index - 1]))
+                    # print( i)
                     getting_better = False
 
         if not getting_better:
@@ -144,7 +144,7 @@ def csv_to_xy(val_file):
     x_val.drop(['class', 'timestamp', 'timestamp2'], 1, inplace = True)
     x_val = x_val.values
     y_val = y_val.values
-    # print x_val.shape
+    # print( x_val.shape)
 
     # x_val = x_val.reshape(x_val.shape[0], 1, x_val.shape[1])
     # y_val = y_val.reshape(-1, 1)
@@ -163,10 +163,10 @@ def find_best_model(dataset, f1_history):
     best_model['precision'] = np.round(best_model['precision'],3)
     best_model['recall'] = np.round(best_model['recall'],3)
 
-    print 'Best model found @ epoch ' + str(best_model['epoch'])
-    print 'F1 ->  ' + str(best_model['f1'])
-    print 'Precision ->  ' + str(best_model['precision'])
-    print 'Recall ->  ' + str(best_model['recall'])
+    print( 'Best model found @ epoch ' + str(best_model['epoch']))
+    print( 'F1 ->  ' + str(best_model['f1']))
+    print( 'Precision ->  ' + str(best_model['precision']))
+    print( 'Recall ->  ' + str(best_model['recall']))
     best_model['dataset'] = dataset
     return best_model
 
@@ -261,10 +261,12 @@ def main():
     validation_target = y_test
 
     model = Sequential()
-    # model.add(Dense(100, activation='sigmoid', input_shape = (x_test[0].shape), batch_size = batch_size))
+    # model.add(Dense(10, activation='sigmoid', input_shape = (x_test[0].shape), batch_size = batch_size))
     # # model.add(Dropout(0.2))
     # model.add(Dense(256, activation='relu'))
     model.add(LSTM(100, return_sequences=True, batch_input_shape=(batch_size,x_test.shape[1], x_test.shape[2]), stateful=True, activation='sigmoid'))
+    model.add(Dropout(0.2))
+    model.add(LSTM(100, return_sequences=True, stateful = True, activation='sigmoid'))
     model.add(Dropout(0.2))
     model.add(LSTM(100, return_sequences=False, stateful = True, activation='sigmoid'))
     model.add(Dropout(0.2))
@@ -276,6 +278,10 @@ def main():
                   metrics=['accuracy'])
 
     # tensorboard = TensorBoard(log_dir="logs/{}".format(time.time()))
+    # ann_viz(model, view=True, filename="network.gv", title="nn-arch")
+    plot_model(model, show_shapes=True, to_file='network.png')
+    print( 'Fig saved')
+
     tensorboard = TensorBoard(log_dir="logs/lstm")
     f1early = F1EarlyStop(patience = 10)
     best_models = []
@@ -284,7 +290,7 @@ def main():
 
     round = 0
     for epoch in range(epochs):
-        print '\n\n###### ROUND %d \n' % (round+1)
+        print( '\n\n###### ROUND %d \n' % (round+1))
         round += 1
         i = 0
 
@@ -312,7 +318,7 @@ def main():
                                 callbacks=[f1early, tensorboard])
             #Evaluate after each sequence processed
             y_pred = model.predict(x_test, verbose = 2).round()
-            print '####TRAINING'
+            print( '####TRAINING')
             confusion = calc_metrics(y_pred, y_test, print_metrics = False)
 
             train_name = train_files[i].split('/')[5]
@@ -342,17 +348,17 @@ def main():
     lists_to_csv(model_history_all, ['dataset'], 'models_history_all_'+ str(epochs) +'x'+str(inner_epochs)+'x'+str(lag))
 
     y_pred = model.predict(x_test, verbose = 2).round()
-    print '####VALIDATION'
+    print( '####VALIDATION')
     confusion = calc_metrics(y_pred, y_test)
     tp = confusion['tp']
     tn = confusion['tn']
     fp = confusion['fp']
     fn = confusion['fn']
 
-    print 'acc->' + str(np.round(confusion['acc']*100, decimals=2)) + '%'
-    print 'precision->' + str(np.round(confusion['precision']*100, decimals=2)) + '%'
-    print 'recall->' + str(np.round(confusion['recall']*100, decimals=2)) + '%'
-    print 'f1->' + str(np.round(confusion['f1']*100, decimals=2)) + '%'
+    print( 'acc->' + str(np.round(confusion['acc']*100, decimals=2)) + '%')
+    print( 'precision->' + str(np.round(confusion['precision']*100, decimals=2)) + '%')
+    print( 'recall->' + str(np.round(confusion['recall']*100, decimals=2)) + '%')
+    print( 'f1->' + str(np.round(confusion['f1']*100, decimals=2)) + '%')
 
     model_name = 'test_' + test_name + '_' + str(epochs) + 'x' + str(inner_epochs)+'x'+str(lag)
     model.save(model_name + '.h5')

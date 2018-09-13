@@ -69,7 +69,7 @@ def main(argv):
     global peer
     rrc = sys.argv[1]
     peer = sys.argv[2]
-    timescales = ['1', '5', '15', '60', '120']
+    timescales = ['1', '5', '10', '15', '60', '120']
     for ts in timescales:
         nimda_files  = sorted(glob.glob(features_path + 'features-nimda-' + rrc + '-' + peer +  '-' + ts + '.csv'))
         slammer_files = sorted(glob.glob(features_path + 'features-slammer-' + rrc + '-' + peer +  '-' + ts + '.csv'))
@@ -80,6 +80,7 @@ def main(argv):
         as_path_error_files = sorted(glob.glob(features_path + 'features-as-path-error-' + rrc + '-' + peer + '-' + ts + '.csv'))
         as_3561_filtering_files = sorted(glob.glob(features_path + 'features-as-3561-filtering-' + rrc + '-' + peer + '-' + ts + '.csv'))
         as9121_files = sorted(glob.glob(features_path + 'features-as9121-' + rrc + '-' + peer + '-' + ts + '.csv'))
+        japan_files = sorted(glob.glob(features_path + 'features-japan-earthquake-' + rrc + '-' + peer + '-' + ts + '.csv'))
 
         preprocessing(code_red_files, name='code-red_'+peer+'_'+ts, start=995553071, end=995591487, label=1000)
         preprocessing(nimda_files, name='nimda_'+peer+'_'+ts, start=1000818222, end=1001030344, label=1)
@@ -87,6 +88,7 @@ def main(argv):
         preprocessing(aws_leak_files, name='aws-leak_'+peer+'_'+ts, start=1461345001,end=1461349210, label=2)
         preprocessing(as_3561_filtering_files, name='as-3561-filtering_'+peer+'_'+ts, start=986578087,end=986579527, label=2)
         preprocessing(as9121_files, name='as9121_'+peer+'_'+ts, start=1103916000, end=1103918580, label=2)
+        preprocessing(japan_files, name='japan-earthquake_'+peer+'_'+ts, start=1299834783, end=1299857943, label=3)
 
         if peer == '3257':
             preprocessing(as_path_error_files, name='as-path-error_'+peer+'_'+ts, start=1002484580,end=1002504620, label=2)
