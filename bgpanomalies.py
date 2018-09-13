@@ -70,8 +70,8 @@ class BGPAnomaly(object):
             if len(files_retrieved) > 0:
                 days.append(files_retrieved)
             else:
-                print self.base_path + self.event + '/' + self.rrc + '/updates.'+ day + '.*.gz'
-                print '#####day ' + self.event + '/' + self.rrc + '/updates.'+ day  + ' not found'
+                print (self.base_path + self.event + '/' + self.rrc + '/updates.'+ day + '.*.gz')
+                print ('#####day ' + self.event + '/' + self.rrc + '/updates.'+ day  + ' not found')
 
         return days
 
@@ -80,7 +80,7 @@ class BGPAnomaly(object):
         if len(rib) > 0:
             return rib[0]
         else:
-            print '#####rib ' + self.event + '/' + self.rrc + '/bview.* not found'
+            print ('#####rib ' + self.event + '/' + self.rrc + '/bview.* not found')
             return None
 
 class BGPDataset(object):
