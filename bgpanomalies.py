@@ -68,6 +68,7 @@ class BGPAnomaly(object):
         days = []
         for day in anomalies[self.event]:
             files_retrieved = sorted(glob.glob(self.base_path + self.event + '/' + self.rrc + '/updates.'+ day + '.*.gz'))
+            files_retrieved = files_retrieved + sorted(glob.glob(self.base_path + self.event + '/' + self.rrc + '/updates.'+ day + '.*.bz2'))
             if len(files_retrieved) > 0:
                 days.append(files_retrieved)
             else:
@@ -78,6 +79,7 @@ class BGPAnomaly(object):
 
     def get_rib(self):
         rib = sorted(glob.glob(self.base_path + self.event + '/' + self.rrc + '/bview.*.gz'))
+        rib = rib + sorted(glob.glob(self.base_path + self.event + '/' + self.rrc + '/rib.*.bz2'))
         if len(rib) > 0:
             return rib[0]
         else:
