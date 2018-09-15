@@ -285,8 +285,9 @@ class Metrics(object):
                     self.print_classification(m, 'RIB', prefix)
                     self.prfx_set[peer][prefix] += 1
 
-                    for attr in m.td.attr:
-                        self.prefix_lookup[peer][prefix][BGP_ATTR_T[attr.type]] = attr
+                    if peer == peer_arg:
+                        for attr in m.td.attr:
+                            self.prefix_lookup[peer][prefix][BGP_ATTR_T[attr.type]] = attr
                 elif is_table_dump_v2(m):
                     if m.peer is not None:
                         peer_index = dict()
