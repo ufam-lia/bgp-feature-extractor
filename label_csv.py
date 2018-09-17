@@ -15,6 +15,7 @@ def drop_columns(csv):
         # print col
         if col in csv.keys():
             csv.drop(col, 1, inplace = True)
+
         col = 'edit_distance_unique_dict_' + str(i) #+ '_'
         if col in csv.keys():
             csv.drop(col, 1, inplace = True)
@@ -55,6 +56,9 @@ def preprocessing(files, name='name', start=0, end=0, label=1):
             df = df.append(csv, sort = True)
             df2 = df2.append(csv2, sort = True)
 
+            df = df.fillna(0)
+            df2 = df2.fillna(0)
+
         df = adjust_to_batch_size(df, 32)
         df2 = adjust_to_batch_size(df2, 32)
 
@@ -71,16 +75,16 @@ def main(argv):
     peer = sys.argv[2]
     timescales = ['1', '5', '10', '15', '60', '120']
     for ts in timescales:
-        nimda_files  = sorted(glob.glob(features_path + 'features-nimda-' + rrc + '-' + peer +  '-' + ts + '.csv'))
-        slammer_files = sorted(glob.glob(features_path + 'features-slammer-' + rrc + '-' + peer +  '-' + ts + '.csv'))
-        code_red_files  = sorted(glob.glob(features_path + 'features-code-red-' + rrc + '-' + peer +  '-' + ts + '.csv'))
-        moscow_files = sorted(glob.glob(features_path + 'features-moscow-blackout-' + rrc + '-' + peer +  '-' + ts + '.csv'))
-        malaysian_telecom_files = sorted(glob.glob(features_path + 'features-malaysian-telecom-' + rrc + '-' + peer + '-' + ts + '.csv'))
-        aws_leak_files = sorted(glob.glob(features_path + 'features-aws-leak-' + rrc + '-' + peer + '-' + ts + '.csv'))
-        as_path_error_files = sorted(glob.glob(features_path + 'features-as-path-error-' + rrc + '-' + peer + '-' + ts + '.csv'))
-        as_3561_filtering_files = sorted(glob.glob(features_path + 'features-as-3561-filtering-' + rrc + '-' + peer + '-' + ts + '.csv'))
-        as9121_files = sorted(glob.glob(features_path + 'features-as9121-' + rrc + '-' + peer + '-' + ts + '.csv'))
-        japan_files = sorted(glob.glob(features_path + 'features-japan-earthquake-' + rrc + '-' + peer + '-' + ts + '.csv'))
+        nimda_files              = sorted(glob.glob(features_path + 'features-nimda-' + rrc + '-' + peer +  '-' + ts + '.csv'))
+        slammer_files            = sorted(glob.glob(features_path + 'features-slammer-' + rrc + '-' + peer +  '-' + ts + '.csv'))
+        code_red_files           = sorted(glob.glob(features_path + 'features-code-red-' + rrc + '-' + peer +  '-' + ts + '.csv'))
+        moscow_files             = sorted(glob.glob(features_path + 'features-moscow-blackout-' + rrc + '-' + peer +  '-' + ts + '.csv'))
+        malaysian_telecom_files  = sorted(glob.glob(features_path + 'features-malaysian-telecom-' + rrc + '-' + peer + '-' + ts + '.csv'))
+        aws_leak_files           = sorted(glob.glob(features_path + 'features-aws-leak-' + rrc + '-' + peer + '-' + ts + '.csv'))
+        as_path_error_files      = sorted(glob.glob(features_path + 'features-as-path-error-' + rrc + '-' + peer + '-' + ts + '.csv'))
+        as_3561_filtering_files  = sorted(glob.glob(features_path + 'features-as-3561-filtering-' + rrc + '-' + peer + '-' + ts + '.csv'))
+        as9121_files             = sorted(glob.glob(features_path + 'features-as9121-' + rrc + '-' + peer + '-' + ts + '.csv'))
+        japan_files              = sorted(glob.glob(features_path + 'features-japan-earthquake-' + rrc + '-' + peer + '-' + ts + '.csv'))
 
         preprocessing(code_red_files, name='code-red_'+peer+'_'+ts, start=995553071, end=995591487, label=1000)
         preprocessing(nimda_files, name='nimda_'+peer+'_'+ts, start=1000818222, end=1001030344, label=1)

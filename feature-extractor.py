@@ -72,6 +72,7 @@ def main():
     df = features.to_dataframe()
     # output_filename = 'features-'+ anomaly.event +'-'+ rrc +'-'+ peer +'-'+ day +'-'+ metrics.minutes_window +'.csv'
     output_filename = 'features-'+ anomaly.event +'-'+ rrc +'-'+ peer +'-'+ metrics.minutes_window +'.csv'
+    df = df.fillna(0)
     df.to_csv(output_filename, sep=',', encoding='utf-8')
     print output_filename + ': OK'
     # metrics.plot()

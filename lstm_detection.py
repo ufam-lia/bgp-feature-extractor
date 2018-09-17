@@ -235,6 +235,19 @@ def add_lag(data, lag=1):
     df = df.values
     return df
 
+def eval_single_file(model, test_file, lag):
+    test_val = csv_to_xy(test_file)
+    y_test = test_val[1]
+    x_test = test_val[0]
+    x_test = add_lag(x_test, lag=lag)
+    x_test = x_test.reshape(x_test.shape[0], lag+1, x_test.shape[1]//(lag+1))
+    y_test = y_test.reshape(-1, 1)
+    y_pred = model.predict(x_test, verbose=2).round()
+    dataset = test_file.split('dataset_')[1].split('.csv')[0]
+    filename = 'y_pred_' + dataset + '_' + str(random.randint(0, 1000)) + '.csv'
+    np.savetxt(filename, y_pred, delimiter=',')
+    print filename
+
 def main():
     epochs = int(sys.argv[1])
     inner_epochs = int(sys.argv[2])
@@ -262,8 +275,6 @@ def main():
 
     model = Sequential()
     # model.add(Dense(10, activation='sigmoid', input_shape = (x_test[0].shape), batch_size = batch_size))
-    # # model.add(Dropout(0.2))
-    # model.add(Dense(256, activation='relu'))
     model.add(LSTM(100, return_sequences=True, batch_input_shape=(batch_size,x_test.shape[1], x_test.shape[2]), stateful=True, activation='sigmoid'))
     model.add(Dropout(0.2))
     model.add(LSTM(100, return_sequences=True, stateful = True, activation='sigmoid'))
