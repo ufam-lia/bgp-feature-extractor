@@ -270,7 +270,7 @@ def main():
     epsilon = 0.000000000000001
 
     train_files = get_optimal_datasets(['japan-earthquake', 'aws-leak', 'as-path-error'])
-    test_file = BGPDataset('code-red').get_files(5, peer='513')[0]
+    test_file = BGPDataset('japan-earthquake').get_files(5, peer='2497')[0]
 
     for f in train_files:
         print f
@@ -322,7 +322,7 @@ def main():
         i = 0
 
         random.shuffle(train_vals)
-        for sequence_tuple in train_vals:
+        for sequence_tuple in train_vals[1:2]:
             filename = sequence_tuple[1]
             sequence = sequence_tuple[0]
             x_train = sequence[0]
@@ -344,28 +344,30 @@ def main():
                                 class_weight=class_weight,
                                 callbacks=[f1early, tensorboard])
             #Evaluate after each sequence processed
-            y_pred = model.predict(x_test, verbose = 2).round()
-            print( '####TRAINING')
-            confusion = calc_metrics(y_pred, y_test, print_metrics = False)
+            if True:
+                y_pred = model.predict(x_test, verbose = 2).round()
+                print( '####TRAINING')
+                confusion = calc_metrics(y_pred, y_test, print_metrics = False)
 
-            train_name = train_files[i].split('/')[5]
-            test_name = test_file.split('/')[5]
-            f1_history = {k: [dic[k] for dic in f1early.f1_history] for k in f1early.f1_history[0]}
+                train_name = filename.split('/')[5]
+                test_name = test_file.split('/')[5]
+                f1_history = {k: [dic[k] for dic in f1early.f1_history] for k in f1early.f1_history[0]}
 
-            model_history[train_name + '_f1'] += f1_history['f1']
-            model_history[train_name + '_precision'] += f1_history['precision']
-            model_history[train_name + '_recall'] += f1_history['recall']
+                model_history[train_name + '_f1'] += f1_history['f1']
+                model_history[train_name + '_precision'] += f1_history['precision']
+                model_history[train_name + '_recall'] += f1_history['recall']
 
-            model_history_all[test_name + '_f1'] += f1_history['f1']
-            model_history_all[test_name + '_precision'] += f1_history['precision']
-            model_history_all[test_name + '_recall'] += f1_history['recall']
+                model_history_all[test_name + '_f1'] += f1_history['f1']
+                model_history_all[test_name + '_precision'] += f1_history['precision']
+                model_history_all[test_name + '_recall'] += f1_history['recall']
 
-            model_history_all['all_files_f1'] += [confusion['f1']]
-            model_history_all['all_files_precision'] += [confusion['precision']]
-            model_history_all['all_files_recall'] += [confusion['recall']]
+                model_history_all['all_files_f1'] += [confusion['f1']]
+                model_history_all['all_files_precision'] += [confusion['precision']]
+                model_history_all['all_files_recall'] += [confusion['recall']]
 
-            best_model = find_best_model(train_files[i], f1early.f1_history)
-            best_models.append(best_model)
+                best_model = find_best_model(filename, f1early.f1_history)
+                best_models.append(best_model)
+
             model.reset_states()
             i += 1
 
@@ -388,10 +390,15 @@ def main():
     print( 'f1->' + str(np.round(confusion['f1']*100, decimals=2)) + '%')
 
     model_name = 'test_' + test_name + '_' + str(epochs) + 'x' + str(inner_epochs)+'x'+str(lag)
+    print type(y_pred)
+    y_csv = pd.DataFrame()
+    print y_pred
+    y_pred_list = map(lambda x: x[0], y_pred)
+    y_test_list = map(lambda x: x[0], y_test)
+    y_csv['y_pred'] = pd.Series(list(y_pred_list))
+    y_csv['y_test'] = pd.Series(list(y_test_list))
+    y_csv.to_csv('y_pred_' + model_name + '.csv', quoting=3)
     model.save(model_name + '.h5')
-    # score = model.evaluate(x_test, y_test, verbose = 2)
-    # print('Training loss:', score[0])
-    # print('Training accuracy:', score[1])
 
 if __name__ == "__main__":
     main()
