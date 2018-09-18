@@ -144,10 +144,6 @@ def csv_to_xy(val_file):
     x_val.drop(['class', 'timestamp', 'timestamp2'], 1, inplace = True)
     x_val = x_val.values
     y_val = y_val.values
-    # print( x_val.shape)
-
-    # x_val = x_val.reshape(x_val.shape[0], 1, x_val.shape[1])
-    # y_val = y_val.reshape(-1, 1)
 
     x_val = x_val.astype('float32')
     y_val = y_val.astype('float32')
@@ -183,47 +179,65 @@ def lists_to_csv(dicts, fieldnames, filename):
         writer.writerows(zip(*dicts.values()))
 
 def get_optimal_datasets(exclude_dataset):
-    nimda_dataset = BGPDataset('nimda')
-    code_red_dataset = BGPDataset('code-red')
-    slammer_dataset = BGPDataset('slammer')
-    moscow_dataset = BGPDataset('moscow_blackout')
-    as9121_dataset = BGPDataset('as9121')
-    aws_leak_dataset = BGPDataset('aws-leak')
+    nimda_dataset             = BGPDataset('nimda')
+    code_red_dataset          = BGPDataset('code-red')
+    slammer_dataset           = BGPDataset('slammer')
+    moscow_dataset            = BGPDataset('moscow_blackout')
+    as9121_dataset            = BGPDataset('as9121')
+    aws_leak_dataset          = BGPDataset('aws-leak')
     as_3561_filtering_dataset = BGPDataset('as-3561-filtering')
+    as_path_error_dataset     = BGPDataset('as-path-error')
+    malaysian_dataset         = BGPDataset('malaysian-telecom')
+    japan_dataset             = BGPDataset('japan-earthquake')
 
     train_files = []
-    if exclude_dataset != 'code-red':
+
+    if 'code-red' not in exclude_dataset:
         train_files += code_red_dataset.get_files(timebin = [1, 5, 15], peer ='513')
         train_files += code_red_dataset.get_files(timebin = [1, 5, 15], peer ='6893')
 
-    if exclude_dataset != 'nimda':
+    if 'nimda' not in exclude_dataset:
         train_files += nimda_dataset.get_files(timebin = [1, 5], peer ='513')
         train_files += nimda_dataset.get_files(timebin = [1, 5], peer ='559')
         train_files += nimda_dataset.get_files(timebin = [1, 5, 15], peer ='6893')
 
-    if exclude_dataset != 'slammer':
+    if 'slammer' not in exclude_dataset:
         train_files += slammer_dataset.get_files(timebin = [1, 5, 15], peer ='513')
         train_files += slammer_dataset.get_files(timebin = [1, 5, 15], peer ='559')
         train_files += slammer_dataset.get_files(timebin = [1, 5, 15], peer ='6893')
 
-    if exclude_dataset != 'moscow':
+    if 'moscow' not in exclude_dataset:
         train_files += moscow_dataset.get_files(timebin = [1, 5], peer ='1853')
         train_files += moscow_dataset.get_files(timebin = [1, 5], peer ='12793')
 
-    if exclude_dataset != 'aws-leak':
+    if 'aws-leak' not in exclude_dataset:
         train_files += aws_leak_dataset.get_files(timebin = [1, 5], peer ='15547')
         train_files += aws_leak_dataset.get_files(timebin = [1, 5], peer ='25091')
         train_files += aws_leak_dataset.get_files(timebin = [1, 5], peer ='34781')
 
-    if exclude_dataset != 'as9121':
+    if 'as9121' not in exclude_dataset:
         train_files += as9121_dataset.get_files(timebin = [1, 5], peer ='1853')
         train_files += as9121_dataset.get_files(timebin = [1, 5], peer ='12793')
         train_files += as9121_dataset.get_files(timebin = [1, 5], peer ='13237')
 
-    if exclude_dataset != 'as-3561-filtering':
+    if 'as-3561-filtering' not in exclude_dataset:
         train_files += as_3561_filtering_dataset.get_files(timebin = [1, 5], peer ='1286')
         train_files += as_3561_filtering_dataset.get_files(timebin = [1, 5], peer ='3257')
         train_files += as_3561_filtering_dataset.get_files(timebin = [1, 5], peer ='3333')
+
+    if 'as-path-error' not in exclude_dataset:
+        train_files += as_path_error_dataset.get_files(timebin = [1, 5], peer = '3257')
+        train_files += as_path_error_dataset.get_files(timebin = [1, 5], peer = '3333')
+        train_files += as_path_error_dataset.get_files(timebin = [1, 5], peer = '9057')
+
+    if 'malaysian-telecom' not in exclude_dataset:
+        train_files += malaysian_dataset.get_files(timebin = [1, 5], peer = '513')
+        train_files += malaysian_dataset.get_files(timebin = [1, 5], peer = '20932')
+        train_files += malaysian_dataset.get_files(timebin = [1, 5], peer = '25091')
+        train_files += malaysian_dataset.get_files(timebin = [1, 5], peer = '34781')
+
+    if 'japan-earthquake' not in exclude_dataset:
+        train_files += japan_dataset.get_files(timebin = [1,5], peer = '2497')
 
     return train_files
 
@@ -255,9 +269,11 @@ def main():
     batch_size = 32
     epsilon = 0.000000000000001
 
-    train_files = get_optimal_datasets('code-red')
+    train_files = get_optimal_datasets(['japan-earthquake', 'aws-leak', 'as-path-error'])
     test_file = BGPDataset('code-red').get_files(5, peer='513')[0]
 
+    for f in train_files:
+        print f
     train_vals = []
     for file in train_files:
         train_vals.append((csv_to_xy(file), file))

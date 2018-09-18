@@ -1,3 +1,4 @@
+
 import sys
 import os, time
 import os.path
@@ -74,7 +75,6 @@ class BGPAnomaly(object):
             else:
                 print (self.base_path + self.event + '/' + self.rrc + '/updates.'+ day + '.*.gz')
                 print ('#####day ' + self.event + '/' + self.rrc + '/updates.'+ day  + ' not found')
-
         return days
 
     def get_rib(self):
@@ -89,8 +89,6 @@ class BGPAnomaly(object):
 class BGPDataset(object):
     def __init__(self, event_name):
         self.event = event_name
-        self.start = 0
-        self.end = 0
         self.dataset_path = '/home/pc/bgp-feature-extractor/datasets/'
         # self.set_files()
 
@@ -103,5 +101,17 @@ class BGPDataset(object):
         else:
             timebin = str(timebin)
             files = glob.glob(self.dataset_path + '/dataset_'+ self.event + '_'+ peer +'_'+ timebin +'_*.csv')
+
+        return sorted(files)
+
+    def get_files_multi(self, timebin = 0, peer = '*'):
+        if type(timebin) == list:
+            files = []
+            for bin in timebin:
+                bin = str(bin)
+                files += glob.glob(self.dataset_path + '/dataset_multi_'+ self.event + '_'+ peer +'_'+ bin +'_*.csv')
+        else:
+            timebin = str(timebin)
+            files = glob.glob(self.dataset_path + '/dataset_multi_'+ self.event + '_'+ peer +'_'+ timebin +'_*.csv')
 
         return sorted(files)
