@@ -306,8 +306,8 @@ def main():
 
     # tensorboard = TensorBoard(log_dir="logs/{}".format(time.time()))
     # ann_viz(model, view=True, filename="network.gv", title="nn-arch")
-    plot_model(model, show_shapes=True, to_file='network.png')
-    print( 'Fig saved')
+    # plot_model(model, show_shapes=True, to_file='network.png')
+    # print( 'Fig saved')
 
     tensorboard = TensorBoard(log_dir="logs/lstm")
     f1early = F1EarlyStop(patience = 10)
