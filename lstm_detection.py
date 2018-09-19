@@ -332,10 +332,8 @@ def main():
     batch_size = 32
     epsilon = 0.000000000000001
 
-    train_files = get_optimal_datasets_multi(['japan-earthquake', 'aws-leak', 'slammer'])
-    test_file = BGPDataset('slammer').get_files(5, peer='513')[0]
-    # test_file = BGPDataset('japan-earthquake').get_files(5, peer='2497')[0]
-    # test_file = BGPDataset('japan-earthquake').get_files(5, peer='2497')[0]
+    train_files = get_optimal_datasets(['japan-earthquake', 'aws-leak', 'malaysian-telecom'])
+    test_file = BGPDataset('malaysian-telecom').get_files(5, peer='20932')[0]
 
     for f in train_files:
         print f
