@@ -241,6 +241,69 @@ def get_optimal_datasets(exclude_dataset):
 
     return train_files
 
+def get_optimal_datasets_multi(exclude_dataset):
+    nimda_dataset             = BGPDataset('nimda')
+    code_red_dataset          = BGPDataset('code-red')
+    slammer_dataset           = BGPDataset('slammer')
+    moscow_dataset            = BGPDataset('moscow_blackout')
+    as9121_dataset            = BGPDataset('as9121')
+    aws_leak_dataset          = BGPDataset('aws-leak')
+    as_3561_filtering_dataset = BGPDataset('as-3561-filtering')
+    as_path_error_dataset     = BGPDataset('as-path-error')
+    malaysian_dataset         = BGPDataset('malaysian-telecom')
+    japan_dataset             = BGPDataset('japan-earthquake')
+
+    train_files = []
+
+    if 'code-red' not in exclude_dataset:
+        train_files += code_red_dataset.get_files_multi(timebin = [1, 5, 15], peer ='513')
+        train_files += code_red_dataset.get_files_multi(timebin = [1, 5, 15], peer ='6893')
+
+    if 'nimda' not in exclude_dataset:
+        train_files += nimda_dataset.get_files_multi(timebin = [1, 5], peer ='513')
+        train_files += nimda_dataset.get_files_multi(timebin = [1, 5], peer ='559')
+        train_files += nimda_dataset.get_files_multi(timebin = [1, 5, 15], peer ='6893')
+
+    if 'slammer' not in exclude_dataset:
+        train_files += slammer_dataset.get_files_multi(timebin = [1, 5, 15], peer ='513')
+        train_files += slammer_dataset.get_files_multi(timebin = [1, 5, 15], peer ='559')
+        train_files += slammer_dataset.get_files_multi(timebin = [1, 5, 15], peer ='6893')
+
+    if 'moscow' not in exclude_dataset:
+        train_files += moscow_dataset.get_files_multi(timebin = [1, 5], peer ='1853')
+        train_files += moscow_dataset.get_files_multi(timebin = [1, 5], peer ='12793')
+
+    if 'aws-leak' not in exclude_dataset:
+        train_files += aws_leak_dataset.get_files_multi(timebin = [1, 5], peer ='15547')
+        train_files += aws_leak_dataset.get_files_multi(timebin = [1, 5], peer ='25091')
+        train_files += aws_leak_dataset.get_files_multi(timebin = [1, 5], peer ='34781')
+
+    if 'as9121' not in exclude_dataset:
+        train_files += as9121_dataset.get_files_multi(timebin = [1, 5], peer ='1853')
+        train_files += as9121_dataset.get_files_multi(timebin = [1, 5], peer ='12793')
+        train_files += as9121_dataset.get_files_multi(timebin = [1, 5], peer ='13237')
+
+    if 'as-3561-filtering' not in exclude_dataset:
+        train_files += as_3561_filtering_dataset.get_files_multi(timebin = [1, 5], peer ='1286')
+        train_files += as_3561_filtering_dataset.get_files_multi(timebin = [1, 5], peer ='3257')
+        train_files += as_3561_filtering_dataset.get_files_multi(timebin = [1, 5], peer ='3333')
+
+    if 'as-path-error' not in exclude_dataset:
+        train_files += as_path_error_dataset.get_files_multi(timebin = [1, 5], peer = '3257')
+        train_files += as_path_error_dataset.get_files_multi(timebin = [1, 5], peer = '3333')
+        train_files += as_path_error_dataset.get_files_multi(timebin = [1, 5], peer = '9057')
+
+    if 'malaysian-telecom' not in exclude_dataset:
+        train_files += malaysian_dataset.get_files_multi(timebin = [1, 5], peer = '513')
+        train_files += malaysian_dataset.get_files_multi(timebin = [1, 5], peer = '20932')
+        train_files += malaysian_dataset.get_files_multi(timebin = [1, 5], peer = '25091')
+        train_files += malaysian_dataset.get_files_multi(timebin = [1, 5], peer = '34781')
+
+    if 'japan-earthquake' not in exclude_dataset:
+        train_files += japan_dataset.get_files_multi(timebin = [1,5], peer = '2497')
+
+    return train_files
+
 def add_lag(data, lag=1):
     df = pd.DataFrame(data)
     columns = [df.shift(i) for i in range(0, lag+1)]
@@ -269,8 +332,10 @@ def main():
     batch_size = 32
     epsilon = 0.000000000000001
 
-    train_files = get_optimal_datasets(['japan-earthquake', 'aws-leak', 'as-path-error'])
-    test_file = BGPDataset('japan-earthquake').get_files(5, peer='2497')[0]
+    train_files = get_optimal_datasets_multi(['japan-earthquake', 'aws-leak', 'slammer'])
+    test_file = BGPDataset('slammer').get_files(5, peer='513')[0]
+    # test_file = BGPDataset('japan-earthquake').get_files(5, peer='2497')[0]
+    # test_file = BGPDataset('japan-earthquake').get_files(5, peer='2497')[0]
 
     for f in train_files:
         print f
@@ -334,15 +399,16 @@ def main():
             validation_target = y_train
             print_header(filename)
 
-            class_weight = {0: 1., 1: 4}
+            # class_weight = {0: 1., 1: 4}
+            class_weight = {0: 1., 1: 4, 2:4, 3:4}
             hist = model.fit(x_train, y_train,
                                 # batch_size=batch_size,
                                 epochs=int(inner_epochs),
                                 verbose=1,
                                 shuffle=False,
                                 validation_data=(validation_data, validation_target),
-                                class_weight=class_weight,
-                                callbacks=[f1early, tensorboard])
+                                callbacks=[f1early, tensorboard],
+                                class_weight=class_weight)
             #Evaluate after each sequence processed
             if True:
                 y_pred = model.predict(x_test, verbose = 2).round()
@@ -390,9 +456,8 @@ def main():
     print( 'f1->' + str(np.round(confusion['f1']*100, decimals=2)) + '%')
 
     model_name = 'test_' + test_name + '_' + str(epochs) + 'x' + str(inner_epochs)+'x'+str(lag)
-    print type(y_pred)
+
     y_csv = pd.DataFrame()
-    print y_pred
     y_pred_list = map(lambda x: x[0], y_pred)
     y_test_list = map(lambda x: x[0], y_test)
     y_csv['y_pred'] = pd.Series(list(y_pred_list))

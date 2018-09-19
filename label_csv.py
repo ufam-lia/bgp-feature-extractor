@@ -24,6 +24,26 @@ def drop_columns(csv):
         csv.drop(label, 1, inplace=True)
     return csv
 
+def add_column(csv, col):
+    n_rows = csv.shape[0]
+    csv[col] = pd.Series([0 for x in xrange(0, n_rows+1)])
+    return csv
+
+def fix_columns(csv):
+    for i in xrange(0, 11):
+        col = 'edit_distance_dict_' + str(i) #+ '_'
+        if col not in csv.keys():
+            csv = add_column(csv, col)
+
+        col = 'edit_distance_unique_dict_' + str(i) #+ '_'
+        if col not in csv.keys():
+            csv = add_column(csv, col)
+
+    for i in xrange(0, 3):
+        col = 'origin_' + str(i) #+ '_'
+        if col not in csv.keys():
+            csv = add_column(csv, col)
+
 def add_label(csv, start, end, label):
     labels = []
     for ts in csv['timestamp2']:
@@ -86,7 +106,7 @@ def main(argv):
         as9121_files             = sorted(glob.glob(features_path + 'features-as9121-' + rrc + '-' + peer + '-' + ts + '.csv'))
         japan_files              = sorted(glob.glob(features_path + 'features-japan-earthquake-' + rrc + '-' + peer + '-' + ts + '.csv'))
 
-        preprocessing(code_red_files, name='code-red_'+peer+'_'+ts, start=995553071, end=995591487, label=1000)
+        preprocessing(code_red_files, name='code-red_'+peer+'_'+ts, start=995553071, end=995591487, label=1)
         preprocessing(nimda_files, name='nimda_'+peer+'_'+ts, start=1000818222, end=1001030344, label=1)
         preprocessing(slammer_files, name='slammer_'+peer+'_'+ts, start=1043472590, end=1043540404, label=1)
         preprocessing(aws_leak_files, name='aws-leak_'+peer+'_'+ts, start=1461345001,end=1461349210, label=2)
