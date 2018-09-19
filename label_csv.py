@@ -43,7 +43,8 @@ def fix_columns(csv):
         col = 'origin_' + str(i) #+ '_'
         if col not in csv.keys():
             csv = add_column(csv, col)
-
+    return csv
+    
 def add_label(csv, start, end, label):
     labels = []
     for ts in csv['timestamp2']:
@@ -69,6 +70,9 @@ def preprocessing(files, name='name', start=0, end=0, label=1):
         for f in files:
             csv = pd.read_csv(f, index_col=0, delimiter = ',', quoting=3)
             csv2 = pd.read_csv(f, index_col=0, delimiter = ',', quoting=3)
+
+            csv = fix_columns(csv)
+            csv2 = fix_columns(csv2)
 
             csv = add_label(csv, start, end, 1)
             csv2 = add_label(csv2, start, end, label)
