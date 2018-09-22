@@ -294,6 +294,8 @@ def main():
 
     train_files = get_optimal_datasets_multi(['slammer','aws-leak','japan-earthquake'])
     test_file = BGPDataset('slammer').get_files(5, peer='513')[0]
+    # test_file = BGPDataset('aws-leak').get_files(5, peer='15547')[0]
+    # test_file = BGPDataset('japan-earthquake').get_files(5, peer='2497')[0]
 
     for f in train_files:
         print f
