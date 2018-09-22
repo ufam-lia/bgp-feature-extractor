@@ -17,7 +17,7 @@ from keras.optimizers import RMSprop, Adam
 from keras.backend.tensorflow_backend import set_session
 from sklearn.preprocessing import MinMaxScaler
 from keras.callbacks import Callback
-from sklearn.metrics import confusion_matrix, f1_score, precision_score, recall_score
+from sklearn.metrics import confusion_matrix, f1_score, precision_score, recall_score, accuracy_score
 from keras.callbacks import TensorBoard
 from keras.utils import plot_model
 from keras.utils.np_utils import to_categorical
@@ -38,57 +38,6 @@ def calc_metrics(y_pred, y_test, print_metrics = True):
     pred_pos = 0
     pred_neg = 0
 
-    for i in xrange(len(y_pred)):
-        # print( str(y_pred[i]) + ' == ' + str(y_test[i]))
-        if y_pred[i] == y_test[i]:
-            if y_test[i] == 1:
-                tp += 1
-                pos += 1
-                pred_pos += 1
-            else:
-                tn += 1
-                neg += 1
-                pred_neg += 1
-        else:
-            if y_test[i] == 1:
-                fn += 1
-                pos += 1
-                pred_neg += 1
-            else:
-                fp += 1
-                neg += 1
-                pred_pos += 1
-
-    acc = (tp + tn)/(tp + tn + fp + fn)
-    precision = tp/(tp + fp + epsilon)
-    recall = (tp)/(tp + fn)
-    f1 = 2*(precision*recall)/(precision + recall + epsilon)
-
-    if print_metrics:
-        print( '--------------')
-        print( 'pos->' + str(pos))
-        print( 'neg->' + str(neg))
-        print( 'pred_pos->' + str(pred_pos))
-        print( 'pred_neg->' + str(pred_neg))
-        print( '--------------')
-        print( 'tp->' + str(tp))
-        print( 'tn->' + str(tn))
-        print( 'fp->' + str(fp))
-        print( 'fn->' + str(fn))
-        print( '--------------')
-
-    confusion = dict()
-    confusion['tp'] = tp
-    confusion['tn'] = tn
-    confusion['fp'] = fp
-    confusion['fn'] = fn
-    confusion['acc'] = acc
-    confusion['precision'] = precision
-    confusion['recall'] = recall
-    confusion['f1'] = f1
-
-    return confusion
-
 class F1EarlyStop(Callback):
     def __init__(self, patience=40):
         super(Callback, self).__init__()
@@ -105,9 +54,9 @@ class F1EarlyStop(Callback):
         # print( val_predict)
         val_targ = self.validation_data[1]
         # print( val_targ)
-        _val_f1 = f1_score(val_targ, val_predict)
-        _val_recall = recall_score(val_targ, val_predict)
-        _val_precision = precision_score(val_targ, val_predict)
+        _val_f1 = f1_score(val_targ, val_predict, average=None)
+        _val_recall = recall_score(val_targ, val_predict, average=None)
+        _val_precision = precision_score(val_targ, val_predict, average=None)
         epoch_metrics = dict()
         epoch_metrics['f1'] = _val_f1
         epoch_metrics['precision'] = _val_precision
@@ -345,11 +294,11 @@ def main():
     test_val = csv_to_xy(test_file)
     y_test = to_categorical(test_val[1], num_classes=4)
     x_test = test_val[0]
-    print y_test
+    # print y_test
 
     x_test = add_lag(x_test, lag=lag)
     x_test = x_test.reshape(x_test.shape[0], lag+1, x_test.shape[1]//(lag+1))
-    y_test = y_test.reshape(-1, 4, 1)
+    y_test = y_test.reshape(-1, 4)
 
     validation_data = x_test
     validation_target = y_test
@@ -362,7 +311,7 @@ def main():
     model.add(Dropout(0.2))
     model.add(LSTM(100, return_sequences=False, stateful = True, activation='sigmoid'))
     model.add(Dropout(0.2))
-    model.add(Dense(1, activation='softmax'))
+    model.add(Dense(4, activation='softmax'))
 
     # model.summary()
     model.compile(loss='categorical_crossentropy',
@@ -387,15 +336,17 @@ def main():
         i = 0
 
         random.shuffle(train_vals)
-        for sequence_tuple in train_vals[1:2]:
+        for sequence_tuple in train_vals:
             filename = sequence_tuple[1]
             sequence = sequence_tuple[0]
             x_train = sequence[0]
             y_train = to_categorical(sequence[1], num_classes=4)
-            print y_train
+            # print y_train
+            # for i in y_train:
+            #     print i
             x_train = add_lag(x_train, lag=lag)
             x_train = x_train.reshape(x_train.shape[0], lag+1, x_train.shape[1]//(lag+1))
-            y_train = y_train.reshape(-1, 4,1)
+            y_train = y_train.reshape(-1, 4)
             validation_data = x_train
             validation_target = y_train
             print_header(filename)
@@ -406,56 +357,30 @@ def main():
                                 # batch_size=batch_size,
                                 epochs=int(inner_epochs),
                                 verbose=1,
-                                shuffle=False,
                                 validation_data=(validation_data, validation_target),
                                 callbacks=[f1early, tensorboard],
-                                class_weight=class_weight)
+                                class_weight=class_weight,
+                                shuffle=False)
             #Evaluate after each sequence processed
-
-            if True:
-                y_pred = model.predict(x_test, verbose = 2).round()
-                print( '####TRAINING')
-                confusion = calc_metrics(y_pred, y_test, print_metrics = False)
-
-                train_name = filename.split('/')[5]
-                test_name = test_file.split('/')[5]
-                f1_history = {k: [dic[k] for dic in f1early.f1_history] for k in f1early.f1_history[0]}
-
-                model_history[train_name + '_f1'] += f1_history['f1']
-                model_history[train_name + '_precision'] += f1_history['precision']
-                model_history[train_name + '_recall'] += f1_history['recall']
-
-                model_history_all[test_name + '_f1'] += f1_history['f1']
-                model_history_all[test_name + '_precision'] += f1_history['precision']
-                model_history_all[test_name + '_recall'] += f1_history['recall']
-
-                model_history_all['all_files_f1'] += [confusion['f1']]
-                model_history_all['all_files_precision'] += [confusion['precision']]
-                model_history_all['all_files_recall'] += [confusion['recall']]
-
-                best_model = find_best_model(filename, f1early.f1_history)
-                best_models.append(best_model)
-
+            y_pred = model.predict(x_test, verbose = 2).round()
+            print( '####TRAINING')
             model.reset_states()
             i += 1
 
-    fieldnames = ['dataset', 'epoch', 'f1', 'precision', 'recall']
-    dicts_to_csv(best_models, fieldnames, 'best_models_'+ str(epochs) +'x'+str(inner_epochs)+'x'+str(lag))
-    lists_to_csv(model_history, ['dataset'], 'models_history_'+ str(epochs) +'x'+str(inner_epochs)+'x'+str(lag))
-    lists_to_csv(model_history_all, ['dataset'], 'models_history_all_'+ str(epochs) +'x'+str(inner_epochs)+'x'+str(lag))
-
+    test_name = test_file.split('/')[5]
     y_pred = model.predict(x_test, verbose = 2).round()
     print( '####VALIDATION')
-    confusion = calc_metrics(y_pred, y_test)
-    tp = confusion['tp']
-    tn = confusion['tn']
-    fp = confusion['fp']
-    fn = confusion['fn']
+    f1         = f1_score(y_test, y_pred, average=None)
+    recall     = recall_score(y_test, y_pred, average=None)
+    precision  = precision_score(y_test, y_pred, average=None)
 
-    print( 'acc->' + str(np.round(confusion['acc']*100, decimals=2)) + '%')
-    print( 'precision->' + str(np.round(confusion['precision']*100, decimals=2)) + '%')
-    print( 'recall->' + str(np.round(confusion['recall']*100, decimals=2)) + '%')
-    print( 'f1->' + str(np.round(confusion['f1']*100, decimals=2)) + '%')
+    print f1
+    print recall
+    print precision
+    # print( 'acc->' + str(np.round(confusion['acc']*100, decimals=2)) + '%')
+    # print( 'precision->' + str(np.round(confusion['precision']*100, decimals=2)) + '%')
+    # print( 'recall->' + str(np.round(confusion['recall']*100, decimals=2)) + '%')
+    # print( 'f1->' + str(np.round(confusion['f1']*100, decimals=2)) + '%')
 
     model_name = 'test_' + test_name + '_' + str(epochs) + 'x' + str(inner_epochs)+'x'+str(lag)
 
