@@ -275,6 +275,16 @@ def eval_single_file(model, test_file, lag):
     np.savetxt(filename, y_pred, delimiter=',')
     print filename
 
+def print_metrics(y_test, y_pred, header):
+    f1         = f1_score(y_test, y_pred, average=None)
+    recall     = recall_score(y_test, y_pred, average=None)
+    precision  = precision_score(y_test, y_pred, average=None)
+    print header
+    print 'precision->' + str(precision)
+    print 'recall->' + str(recall)
+    print 'f1->' + str(f1)
+    print
+
 def main():
     epochs = int(sys.argv[1])
     inner_epochs = int(sys.argv[2])
@@ -283,7 +293,7 @@ def main():
     epsilon = 0.000000000000001
 
     train_files = get_optimal_datasets_multi(['slammer','aws-leak','japan-earthquake'])
-    test_file = BGPDataset('malaysian-telecom').get_files(5, peer='20932')[0]
+    test_file = BGPDataset('slammer').get_files(5, peer='513')[0]
 
     for f in train_files:
         print f
@@ -349,38 +359,28 @@ def main():
             y_train = y_train.reshape(-1, 4)
             validation_data = x_train
             validation_target = y_train
-            print_header(filename)
+            # print_header(filename)
 
             # class_weight = {0: 1., 1: 4}
             class_weight = {0: 1., 1: 4, 2:4, 3:4}
             hist = model.fit(x_train, y_train,
                                 # batch_size=batch_size,
                                 epochs=int(inner_epochs),
-                                verbose=1,
+                                verbose=0,
                                 validation_data=(validation_data, validation_target),
                                 callbacks=[f1early, tensorboard],
                                 class_weight=class_weight,
                                 shuffle=False)
             #Evaluate after each sequence processed
-            y_pred = model.predict(x_test, verbose = 2).round()
-            print( '####TRAINING')
+            y_pred = model.predict(x_test, verbose = 0).round()
             model.reset_states()
             i += 1
+        y_pred = model.predict(x_test, verbose = 0).round()
+        print_metrics(y_test, y_pred, test_file)
+
 
     test_name = test_file.split('/')[5]
-    y_pred = model.predict(x_test, verbose = 2).round()
     print( '####VALIDATION')
-    f1         = f1_score(y_test, y_pred, average=None)
-    recall     = recall_score(y_test, y_pred, average=None)
-    precision  = precision_score(y_test, y_pred, average=None)
-
-    print f1
-    print recall
-    print precision
-    # print( 'acc->' + str(np.round(confusion['acc']*100, decimals=2)) + '%')
-    # print( 'precision->' + str(np.round(confusion['precision']*100, decimals=2)) + '%')
-    # print( 'recall->' + str(np.round(confusion['recall']*100, decimals=2)) + '%')
-    # print( 'f1->' + str(np.round(confusion['f1']*100, decimals=2)) + '%')
 
     model_name = 'test_' + test_name + '_' + str(epochs) + 'x' + str(inner_epochs)+'x'+str(lag)
 
