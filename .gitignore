@@ -1,4 +1,8 @@
 *.pyc
 *.~*
 *.log
+*.csv
+*.gv
+*.pdf
+*.png
 

@@ -2,25 +2,26 @@ from __future__ import division
 import pandas as pd
 import numpy as np
 import glob
-import keras
 import os, sys, csv
 import time
 from operator import itemgetter
 from collections import defaultdict
 import random
-
-import tensorflow as tf
 from bgpanomalies import *
-from keras import backend as K
+
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics import confusion_matrix, f1_score, precision_score, recall_score
+
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, LSTM
-from keras.optimizers import RMSprop, Adam
 from keras.backend.tensorflow_backend import set_session
-from sklearn.preprocessing import MinMaxScaler
+from keras.optimizers import RMSprop, Adam
 from keras.callbacks import Callback
-from sklearn.metrics import confusion_matrix, f1_score, precision_score, recall_score
 from keras.callbacks import TensorBoard
 from keras.utils import plot_model
+
+# import tensorflow as tf
+# from keras import backend as K
 # K.set_session(K.tf.Session(config=K.tf.ConfigProto(inter_op_parallelism_threads=1,intra_op_parallelism_threads=1)))
 
 def print_header(file):
@@ -332,7 +333,7 @@ def main():
     batch_size = 32
     epsilon = 0.000000000000001
 
-    train_files = get_optimal_datasets(['japan-earthquake', 'aws-leak', 'malaysian-telecom'])
+    train_files = get_optimal_datasets_multi(['slammer','aws-leak','japan-earthquake'])
     test_file = BGPDataset('malaysian-telecom').get_files(5, peer='20932')[0]
 
     for f in train_files:
