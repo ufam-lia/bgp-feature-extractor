@@ -28,17 +28,6 @@ from keras.utils.np_utils import to_categorical
 def print_header(file):
     print( '*******Training with file: ' + file + '***************')
 
-def calc_metrics(y_pred, y_test, print_metrics = True):
-    epsilon = 0.000000000000001
-    tp = 0
-    tn = 0
-    fp = 0
-    fn = 0
-    pos = 0
-    neg = 0
-    pred_pos = 0
-    pred_neg = 0
-
 class F1EarlyStop(Callback):
     def __init__(self, patience=40):
         super(Callback, self).__init__()
@@ -241,7 +230,7 @@ def get_train_datasets_multi(exclude_dataset):
 
     return train_files
 
-def get_test_datasets_multi(exclude_dataset):
+def get_test_datasets_multi(test_datasets):
     nimda_dataset             = BGPDataset('nimda')
     code_red_dataset          = BGPDataset('code-red')
     slammer_dataset           = BGPDataset('slammer')
@@ -255,51 +244,51 @@ def get_test_datasets_multi(exclude_dataset):
 
     test_files = []
 
-    if 'code-red' in exclude_dataset:
+    if 'code-red' in test_datasets:
         test_files += code_red_dataset.get_files_multi(timebin = [1, 5, 15], peer ='513')
         test_files += code_red_dataset.get_files_multi(timebin = [1, 5, 15], peer ='6893')
 
-    if 'nimda' in exclude_dataset:
+    if 'nimda' in test_datasets:
         test_files += nimda_dataset.get_files_multi(timebin = [1, 5], peer ='513')
         test_files += nimda_dataset.get_files_multi(timebin = [1, 5], peer ='559')
         test_files += nimda_dataset.get_files_multi(timebin = [1, 5, 15], peer ='6893')
 
-    if 'slammer' in exclude_dataset:
+    if 'slammer' in test_datasets:
         test_files += slammer_dataset.get_files_multi(timebin = [1, 5, 15], peer ='513')
         test_files += slammer_dataset.get_files_multi(timebin = [1, 5, 15], peer ='559')
         test_files += slammer_dataset.get_files_multi(timebin = [1, 5, 15], peer ='6893')
 
-    if 'moscow-blackout' in exclude_dataset:
+    if 'moscow-blackout' in test_datasets:
         test_files += moscow_dataset.get_files_multi(timebin = [1, 5], peer ='1853')
         test_files += moscow_dataset.get_files_multi(timebin = [1, 5], peer ='12793')
 
-    if 'aws-leak' in exclude_dataset:
+    if 'aws-leak' in test_datasets:
         test_files += aws_leak_dataset.get_files_multi(timebin = [1, 5], peer ='15547')
         test_files += aws_leak_dataset.get_files_multi(timebin = [1, 5], peer ='25091')
         test_files += aws_leak_dataset.get_files_multi(timebin = [1, 5], peer ='34781')
 
-    if 'as9121' in exclude_dataset:
+    if 'as9121' in test_datasets:
         test_files += as9121_dataset.get_files_multi(timebin = [1, 5], peer ='1853')
         test_files += as9121_dataset.get_files_multi(timebin = [1, 5], peer ='12793')
         test_files += as9121_dataset.get_files_multi(timebin = [1, 5], peer ='13237')
 
-    if 'as-3561-filtering' in exclude_dataset:
+    if 'as-3561-filtering' in test_datasets:
         test_files += as_3561_filtering_dataset.get_files_multi(timebin = [1, 5], peer ='1286')
         test_files += as_3561_filtering_dataset.get_files_multi(timebin = [1, 5], peer ='3257')
         test_files += as_3561_filtering_dataset.get_files_multi(timebin = [1, 5], peer ='3333')
 
-    if 'as-path-error' in exclude_dataset:
+    if 'as-path-error' in test_datasets:
         test_files += as_path_error_dataset.get_files_multi(timebin = [1, 5], peer = '3257')
         test_files += as_path_error_dataset.get_files_multi(timebin = [1, 5], peer = '3333')
         test_files += as_path_error_dataset.get_files_multi(timebin = [1, 5], peer = '9057')
 
-    if 'malaysian-telecom' in exclude_dataset:
+    if 'malaysian-telecom' in test_datasets:
         test_files += malaysian_dataset.get_files_multi(timebin = [1, 5], peer = '513')
         test_files += malaysian_dataset.get_files_multi(timebin = [1, 5], peer = '20932')
         test_files += malaysian_dataset.get_files_multi(timebin = [1, 5], peer = '25091')
         test_files += malaysian_dataset.get_files_multi(timebin = [1, 5], peer = '34781')
 
-    if 'japan-earthquake' in exclude_dataset:
+    if 'japan-earthquake' in test_datasets:
         test_files += japan_dataset.get_files_multi(timebin = [1,5], peer = '2497')
 
     return test_files
@@ -344,16 +333,27 @@ def csv_to_xy(val_file, num_classes, lag):
 
     return x_val, y_val
 
-def print_metrics(y_test, y_pred, header):
+def calc_metrics(y_test, y_pred):
     f1         = f1_score(y_test, y_pred, average=None)
     recall     = recall_score(y_test, y_pred, average=None)
     precision  = precision_score(y_test, y_pred, average=None)
+    return precision, recall, f1
+
+def print_metrics(precision, recall, f1, test_file):
     print '*'*100
-    print header
+    print test_file
     print 'precision->' + str(precision)
     print 'recall->' + str(recall)
     print 'f1->' + str(f1)
     print
+
+def save_metrics(precision, recall, f1, test_file, df):
+    num_classes = 4
+    for i in range(0, num_classes):
+        df.set_value(test_file,'precision_' + str(i), precision[i])
+        df.set_value(test_file,'recall_' + str(i), recall[i])
+        df.set_value(test_file,'f1_' + str(i), f1[i])
+    return df
 
 def main():
     parser = argparse.ArgumentParser()
@@ -369,6 +369,7 @@ def main():
     test_events = args['test'].split(',')
     batch_size = 32
     epsilon = 1e-10
+    df = pd.DataFrame()
 
     train_files = get_train_datasets_multi(test_events)
     test_files = get_test_datasets_multi(test_events)
@@ -428,7 +429,7 @@ def main():
         i = 0
 
         random.shuffle(train_vals)
-        for train_samples in train_vals:
+        for train_samples in train_vals[1:2]:
             filename = train_samples[1]
             x_train, y_train = (train_samples[0][0], train_samples[0][1])
 
@@ -453,18 +454,26 @@ def main():
             test_file = test_samples[1]
             x_test, y_test = test_samples[0]
             y_pred = model.predict(x_test, verbose = 0).round()
-            print_metrics(y_test, y_pred, test_file)
 
-    test_name = test_file.split('/')[5]
+            precision, recall, f1 = calc_metrics(y_test, y_pred)
+            print_metrics(precision, recall, f1, test_file)
+
+    for test_samples in test_vals:
+        test_file = test_samples[1].split('/')[-1]
+        x_test, y_test = test_samples[0]
+        y_pred = model.predict(x_test, verbose = 0).round()
+        precision, recall, f1 = calc_metrics(y_test, y_pred)
+        df = save_metrics(precision, recall, f1, test_file, df)
+
     print( '####VALIDATION')
-
-    model_name = 'test_' + test_name + '_' + str(epochs) + 'x' + str(inner_epochs)+'x'+str(lag)
-
+    model_name = 'test_' + test_file + '_' + str(epochs) + 'x' + str(inner_epochs)+'x'+str(lag)
     y_csv = pd.DataFrame()
     y_pred_list = map(lambda x: x[0], y_pred)
     y_test_list = map(lambda x: x[0], y_test)
     y_csv['y_pred'] = pd.Series(list(y_pred_list))
     y_csv['y_test'] = pd.Series(list(y_test_list))
+
+    df.to_csv('results_'+model_name+'.csv', sep=',')
     y_csv.to_csv('y_pred_' + model_name + '.csv', quoting=3)
     model.save(model_name + '.h5')
 
