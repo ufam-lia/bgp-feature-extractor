@@ -11,7 +11,8 @@ import argparse
 
 from bgpanomalies import *
 from sklearn.metrics import confusion_matrix, f1_score, precision_score, recall_score, accuracy_score
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import LabelEncoder, MinMaxScaler
+from sklearn.utils.class_weight import compute_class_weight, compute_sample_weight
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, LSTM
 from keras.optimizers import RMSprop, Adam
@@ -429,16 +430,37 @@ def main():
         i = 0
 
         random.shuffle(train_vals)
-        for train_samples in train_vals[1:2]:
+        for train_samples in train_vals:
             filename = train_samples[1]
             x_train, y_train = (train_samples[0][0], train_samples[0][1])
 
             validation_data = x_train
             validation_target = y_train
 
+            y_integers = np.argmax(y_train, axis=1)
+            y_classes = pd.DataFrame(y_train).idxmax(1, skipna=False)
+            label_encoder = LabelEncoder()
+            label_encoder.fit(list(y_classes))
+            y_integers = label_encoder.transform(list(y_classes))
+
+            # Create dict of labels : integer representation
+            labels_and_integers = dict(zip(y_classes, y_integers))
+            class_weights = compute_class_weight('balanced', np.unique(y_integers), y_integers)
+            sample_weights = compute_sample_weight('balanced', y_integers)
+            class_weights_dict = dict(zip(label_encoder.transform(list(label_encoder.classes_)), class_weights))
+            print filename
+            df1 = pd.DataFrame(sample_weights)
+            df2 = pd.DataFrame(y_train)
+            df1.to_csv('df1.csv',sep=',')
+            df2.to_csv('df2.csv',sep=',')
+            # class_weights = compute_class_weight('balanced', np.unique(y_integers), y_integers)
+            # d_class_weights = dict(enumerate(class_weights))
+            # print filename + 'class_weights -> ' + str(d_class_weights)
+
             class_weight = {0: 1., 1: 4, 2:4, 3:4}
             hist = model.fit(x_train, y_train,
                                 # batch_size=batch_size,
+                                sample_weight=sample_weights,
                                 epochs=inner_epochs,
                                 verbose=0,
                                 validation_data=(validation_data, validation_target),
@@ -456,7 +478,7 @@ def main():
             y_pred = model.predict(x_test, verbose = 0).round()
 
             precision, recall, f1 = calc_metrics(y_test, y_pred)
-            print_metrics(precision, recall, f1, test_file)
+            # print_metrics(precision, recall, f1, test_file)
 
     for test_samples in test_vals:
         test_file = test_samples[1].split('/')[-1]
