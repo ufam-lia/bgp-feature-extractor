@@ -105,7 +105,7 @@ def lists_to_csv(dicts, fieldnames, filename):
         writer.writerow(dicts.keys())
         writer.writerows(zip(*dicts.values()))
 
-def get_optimal_datasets(exclude_dataset):
+def get_train_datasets(exclude_dataset, multi = False):
     nimda_dataset             = BGPDataset('nimda')
     code_red_dataset          = BGPDataset('code-red')
     slammer_dataset           = BGPDataset('slammer')
@@ -120,118 +120,55 @@ def get_optimal_datasets(exclude_dataset):
     train_files = []
 
     if 'code-red' not in exclude_dataset:
-        train_files += code_red_dataset.get_files(timebin = [1, 5, 15], peer ='513')
-        train_files += code_red_dataset.get_files(timebin = [1, 5, 15], peer ='6893')
+        train_files += code_red_dataset.get_files(timebin = [1, 5, 15], peer ='513', multi = multi)
+        train_files += code_red_dataset.get_files(timebin = [1, 5, 15], peer ='6893', multi = multi)
 
     if 'nimda' not in exclude_dataset:
-        train_files += nimda_dataset.get_files(timebin = [1, 5], peer ='513')
-        train_files += nimda_dataset.get_files(timebin = [1, 5], peer ='559')
-        train_files += nimda_dataset.get_files(timebin = [1, 5, 15], peer ='6893')
+        train_files += nimda_dataset.get_files(timebin = [1, 5], peer ='513', multi = multi)
+        train_files += nimda_dataset.get_files(timebin = [1, 5], peer ='559', multi = multi)
+        train_files += nimda_dataset.get_files(timebin = [1, 5, 15], peer ='6893', multi = multi)
 
     if 'slammer' not in exclude_dataset:
-        train_files += slammer_dataset.get_files(timebin = [1, 5, 15], peer ='513')
-        train_files += slammer_dataset.get_files(timebin = [1, 5, 15], peer ='559')
-        train_files += slammer_dataset.get_files(timebin = [1, 5, 15], peer ='6893')
+        train_files += slammer_dataset.get_files(timebin = [1, 5, 15], peer ='513', multi = multi)
+        train_files += slammer_dataset.get_files(timebin = [1, 5, 15], peer ='559', multi = multi)
+        train_files += slammer_dataset.get_files(timebin = [1, 5, 15], peer ='6893', multi = multi)
 
     if 'moscow-blackout' not in exclude_dataset:
-        train_files += moscow_dataset.get_files(timebin = [1, 5], peer ='1853')
-        train_files += moscow_dataset.get_files(timebin = [1, 5], peer ='12793')
+        train_files += moscow_dataset.get_files(timebin = [1, 5], peer ='1853', multi = multi)
+        train_files += moscow_dataset.get_files(timebin = [1, 5], peer ='12793', multi = multi)
 
     if 'aws-leak' not in exclude_dataset:
-        train_files += aws_leak_dataset.get_files(timebin = [1, 5], peer ='15547')
-        train_files += aws_leak_dataset.get_files(timebin = [1, 5], peer ='25091')
-        train_files += aws_leak_dataset.get_files(timebin = [1, 5], peer ='34781')
+        train_files += aws_leak_dataset.get_files(timebin = [1, 5], peer ='15547', multi = multi)
+        train_files += aws_leak_dataset.get_files(timebin = [1, 5], peer ='25091', multi = multi)
+        train_files += aws_leak_dataset.get_files(timebin = [1, 5], peer ='34781', multi = multi)
 
     if 'as9121' not in exclude_dataset:
-        train_files += as9121_dataset.get_files(timebin = [1, 5], peer ='1853')
-        train_files += as9121_dataset.get_files(timebin = [1, 5], peer ='12793')
-        train_files += as9121_dataset.get_files(timebin = [1, 5], peer ='13237')
+        train_files += as9121_dataset.get_files(timebin = [1, 5], peer ='1853', multi = multi)
+        train_files += as9121_dataset.get_files(timebin = [1, 5], peer ='12793', multi = multi)
+        train_files += as9121_dataset.get_files(timebin = [1, 5], peer ='13237', multi = multi)
 
     if 'as-3561-filtering' not in exclude_dataset:
-        train_files += as_3561_filtering_dataset.get_files(timebin = [1, 5], peer ='1286')
-        train_files += as_3561_filtering_dataset.get_files(timebin = [1, 5], peer ='3257')
-        train_files += as_3561_filtering_dataset.get_files(timebin = [1, 5], peer ='3333')
+        train_files += as_3561_filtering_dataset.get_files(timebin = [1, 5], peer ='1286', multi = multi)
+        train_files += as_3561_filtering_dataset.get_files(timebin = [1, 5], peer ='3257', multi = multi)
+        train_files += as_3561_filtering_dataset.get_files(timebin = [1, 5], peer ='3333', multi = multi)
 
     if 'as-path-error' not in exclude_dataset:
-        train_files += as_path_error_dataset.get_files(timebin = [1, 5], peer = '3257')
-        train_files += as_path_error_dataset.get_files(timebin = [1, 5], peer = '3333')
-        train_files += as_path_error_dataset.get_files(timebin = [1, 5], peer = '9057')
+        train_files += as_path_error_dataset.get_files(timebin = [1, 5], peer = '3257', multi = multi)
+        train_files += as_path_error_dataset.get_files(timebin = [1, 5], peer = '3333', multi = multi)
+        train_files += as_path_error_dataset.get_files(timebin = [1, 5], peer = '9057', multi = multi)
 
     if 'malaysian-telecom' not in exclude_dataset:
-        train_files += malaysian_dataset.get_files(timebin = [1, 5], peer = '513')
-        train_files += malaysian_dataset.get_files(timebin = [1, 5], peer = '20932')
-        train_files += malaysian_dataset.get_files(timebin = [1, 5], peer = '25091')
-        train_files += malaysian_dataset.get_files(timebin = [1, 5], peer = '34781')
+        train_files += malaysian_dataset.get_files(timebin = [1, 5], peer = '513', multi = multi)
+        train_files += malaysian_dataset.get_files(timebin = [1, 5], peer = '20932', multi = multi)
+        train_files += malaysian_dataset.get_files(timebin = [1, 5], peer = '25091', multi = multi)
+        train_files += malaysian_dataset.get_files(timebin = [1, 5], peer = '34781', multi = multi)
 
     if 'japan-earthquake' not in exclude_dataset:
-        train_files += japan_dataset.get_files(timebin = [1,5], peer = '2497')
+        train_files += japan_dataset.get_files(timebin = [1,5], peer = '2497', multi = multi)
 
     return train_files
 
-def get_train_datasets_multi(exclude_dataset):
-    nimda_dataset             = BGPDataset('nimda')
-    code_red_dataset          = BGPDataset('code-red')
-    slammer_dataset           = BGPDataset('slammer')
-    moscow_dataset            = BGPDataset('moscow_blackout')
-    as9121_dataset            = BGPDataset('as9121')
-    aws_leak_dataset          = BGPDataset('aws-leak')
-    as_3561_filtering_dataset = BGPDataset('as-3561-filtering')
-    as_path_error_dataset     = BGPDataset('as-path-error')
-    malaysian_dataset         = BGPDataset('malaysian-telecom')
-    japan_dataset             = BGPDataset('japan-earthquake')
-
-    train_files = []
-
-    if 'code-red' not in exclude_dataset:
-        train_files += code_red_dataset.get_files_multi(timebin = [1, 5, 15], peer ='513')
-        train_files += code_red_dataset.get_files_multi(timebin = [1, 5, 15], peer ='6893')
-
-    if 'nimda' not in exclude_dataset:
-        train_files += nimda_dataset.get_files_multi(timebin = [1, 5], peer ='513')
-        train_files += nimda_dataset.get_files_multi(timebin = [1, 5], peer ='559')
-        train_files += nimda_dataset.get_files_multi(timebin = [1, 5, 15], peer ='6893')
-
-    if 'slammer' not in exclude_dataset:
-        train_files += slammer_dataset.get_files_multi(timebin = [1, 5, 15], peer ='513')
-        train_files += slammer_dataset.get_files_multi(timebin = [1, 5, 15], peer ='559')
-        train_files += slammer_dataset.get_files_multi(timebin = [1, 5, 15], peer ='6893')
-
-    if 'moscow-blackout' not in exclude_dataset:
-        train_files += moscow_dataset.get_files_multi(timebin = [1, 5], peer ='1853')
-        train_files += moscow_dataset.get_files_multi(timebin = [1, 5], peer ='12793')
-
-    if 'aws-leak' not in exclude_dataset:
-        train_files += aws_leak_dataset.get_files_multi(timebin = [1, 5], peer ='15547')
-        train_files += aws_leak_dataset.get_files_multi(timebin = [1, 5], peer ='25091')
-        train_files += aws_leak_dataset.get_files_multi(timebin = [1, 5], peer ='34781')
-
-    if 'as9121' not in exclude_dataset:
-        train_files += as9121_dataset.get_files_multi(timebin = [1, 5], peer ='1853')
-        train_files += as9121_dataset.get_files_multi(timebin = [1, 5], peer ='12793')
-        train_files += as9121_dataset.get_files_multi(timebin = [1, 5], peer ='13237')
-
-    if 'as-3561-filtering' not in exclude_dataset:
-        train_files += as_3561_filtering_dataset.get_files_multi(timebin = [1, 5], peer ='1286')
-        train_files += as_3561_filtering_dataset.get_files_multi(timebin = [1, 5], peer ='3257')
-        train_files += as_3561_filtering_dataset.get_files_multi(timebin = [1, 5], peer ='3333')
-
-    if 'as-path-error' not in exclude_dataset:
-        train_files += as_path_error_dataset.get_files_multi(timebin = [1, 5], peer = '3257')
-        train_files += as_path_error_dataset.get_files_multi(timebin = [1, 5], peer = '3333')
-        train_files += as_path_error_dataset.get_files_multi(timebin = [1, 5], peer = '9057')
-
-    if 'malaysian-telecom' not in exclude_dataset:
-        train_files += malaysian_dataset.get_files_multi(timebin = [1, 5], peer = '513')
-        train_files += malaysian_dataset.get_files_multi(timebin = [1, 5], peer = '20932')
-        train_files += malaysian_dataset.get_files_multi(timebin = [1, 5], peer = '25091')
-        train_files += malaysian_dataset.get_files_multi(timebin = [1, 5], peer = '34781')
-
-    if 'japan-earthquake' not in exclude_dataset:
-        train_files += japan_dataset.get_files_multi(timebin = [1,5], peer = '2497')
-
-    return train_files
-
-def get_test_datasets_multi(test_datasets):
+def get_test_datasets(test_datasets, multi = False):
     nimda_dataset             = BGPDataset('nimda')
     code_red_dataset          = BGPDataset('code-red')
     slammer_dataset           = BGPDataset('slammer')
@@ -246,51 +183,51 @@ def get_test_datasets_multi(test_datasets):
     test_files = []
 
     if 'code-red' in test_datasets:
-        test_files += code_red_dataset.get_files_multi(timebin = [1, 5, 15], peer ='513')
-        test_files += code_red_dataset.get_files_multi(timebin = [1, 5, 15], peer ='6893')
+        test_files += code_red_dataset.get_files(timebin = [1, 5, 15], peer ='513', multi = multi)
+        test_files += code_red_dataset.get_files(timebin = [1, 5, 15], peer ='6893', multi = multi)
 
     if 'nimda' in test_datasets:
-        test_files += nimda_dataset.get_files_multi(timebin = [1, 5], peer ='513')
-        test_files += nimda_dataset.get_files_multi(timebin = [1, 5], peer ='559')
-        test_files += nimda_dataset.get_files_multi(timebin = [1, 5, 15], peer ='6893')
+        test_files += nimda_dataset.get_files(timebin = [1, 5], peer ='513', multi = multi)
+        test_files += nimda_dataset.get_files(timebin = [1, 5], peer ='559', multi = multi)
+        test_files += nimda_dataset.get_files(timebin = [1, 5, 15], peer ='6893', multi = multi)
 
     if 'slammer' in test_datasets:
-        test_files += slammer_dataset.get_files_multi(timebin = [1, 5, 15], peer ='513')
-        test_files += slammer_dataset.get_files_multi(timebin = [1, 5, 15], peer ='559')
-        test_files += slammer_dataset.get_files_multi(timebin = [1, 5, 15], peer ='6893')
+        test_files += slammer_dataset.get_files(timebin = [1, 5, 15], peer ='513', multi = multi)
+        test_files += slammer_dataset.get_files(timebin = [1, 5, 15], peer ='559', multi = multi)
+        test_files += slammer_dataset.get_files(timebin = [1, 5, 15], peer ='6893', multi = multi)
 
     if 'moscow-blackout' in test_datasets:
-        test_files += moscow_dataset.get_files_multi(timebin = [1, 5], peer ='1853')
-        test_files += moscow_dataset.get_files_multi(timebin = [1, 5], peer ='12793')
+        test_files += moscow_dataset.get_files(timebin = [1, 5], peer ='1853', multi = multi)
+        test_files += moscow_dataset.get_files(timebin = [1, 5], peer ='12793', multi = multi)
 
     if 'aws-leak' in test_datasets:
-        test_files += aws_leak_dataset.get_files_multi(timebin = [1, 5], peer ='15547')
-        test_files += aws_leak_dataset.get_files_multi(timebin = [1, 5], peer ='25091')
-        test_files += aws_leak_dataset.get_files_multi(timebin = [1, 5], peer ='34781')
+        test_files += aws_leak_dataset.get_files(timebin = [1, 5], peer ='15547', multi = multi)
+        test_files += aws_leak_dataset.get_files(timebin = [1, 5], peer ='25091', multi = multi)
+        test_files += aws_leak_dataset.get_files(timebin = [1, 5], peer ='34781', multi = multi)
 
     if 'as9121' in test_datasets:
-        test_files += as9121_dataset.get_files_multi(timebin = [1, 5], peer ='1853')
-        test_files += as9121_dataset.get_files_multi(timebin = [1, 5], peer ='12793')
-        test_files += as9121_dataset.get_files_multi(timebin = [1, 5], peer ='13237')
+        test_files += as9121_dataset.get_files(timebin = [1, 5], peer ='1853', multi = multi)
+        test_files += as9121_dataset.get_files(timebin = [1, 5], peer ='12793', multi = multi)
+        test_files += as9121_dataset.get_files(timebin = [1, 5], peer ='13237', multi = multi)
 
     if 'as-3561-filtering' in test_datasets:
-        test_files += as_3561_filtering_dataset.get_files_multi(timebin = [1, 5], peer ='1286')
-        test_files += as_3561_filtering_dataset.get_files_multi(timebin = [1, 5], peer ='3257')
-        test_files += as_3561_filtering_dataset.get_files_multi(timebin = [1, 5], peer ='3333')
+        test_files += as_3561_filtering_dataset.get_files(timebin = [1, 5], peer ='1286', multi = multi)
+        test_files += as_3561_filtering_dataset.get_files(timebin = [1, 5], peer ='3257', multi = multi)
+        test_files += as_3561_filtering_dataset.get_files(timebin = [1, 5], peer ='3333', multi = multi)
 
     if 'as-path-error' in test_datasets:
-        test_files += as_path_error_dataset.get_files_multi(timebin = [1, 5], peer = '3257')
-        test_files += as_path_error_dataset.get_files_multi(timebin = [1, 5], peer = '3333')
-        test_files += as_path_error_dataset.get_files_multi(timebin = [1, 5], peer = '9057')
+        test_files += as_path_error_dataset.get_files(timebin = [1, 5], peer = '3257', multi = multi)
+        test_files += as_path_error_dataset.get_files(timebin = [1, 5], peer = '3333', multi = multi)
+        test_files += as_path_error_dataset.get_files(timebin = [1, 5], peer = '9057', multi = multi)
 
     if 'malaysian-telecom' in test_datasets:
-        test_files += malaysian_dataset.get_files_multi(timebin = [1, 5], peer = '513')
-        test_files += malaysian_dataset.get_files_multi(timebin = [1, 5], peer = '20932')
-        test_files += malaysian_dataset.get_files_multi(timebin = [1, 5], peer = '25091')
-        test_files += malaysian_dataset.get_files_multi(timebin = [1, 5], peer = '34781')
+        test_files += malaysian_dataset.get_files(timebin = [1, 5], peer = '513', multi = multi)
+        test_files += malaysian_dataset.get_files(timebin = [1, 5], peer = '20932', multi = multi)
+        test_files += malaysian_dataset.get_files(timebin = [1, 5], peer = '25091', multi = multi)
+        test_files += malaysian_dataset.get_files(timebin = [1, 5], peer = '34781', multi = multi)
 
     if 'japan-earthquake' in test_datasets:
-        test_files += japan_dataset.get_files_multi(timebin = [1,5], peer = '2497')
+        test_files += japan_dataset.get_files(timebin = [1,5], peer = '2497', multi = multi)
 
     return test_files
 
@@ -327,33 +264,54 @@ def csv_to_xy(val_file, num_classes, lag):
     x_val /= x_val.std(axis = 0)
     x_val = add_lag(x_val, lag=lag)
 
-    y_val = to_categorical(y_val, num_classes=num_classes)
-
     x_val = x_val.reshape(x_val.shape[0], lag+1, x_val.shape[1]//(lag+1))
-    y_val = y_val.reshape(-1, num_classes)
 
+    if num_classes > 2:
+        y_val = to_categorical(y_val, num_classes=num_classes)
+        y_val = y_val.reshape(-1, num_classes)
+    else:
+        y_val = y_val.reshape(-1, 1)
     return x_val, y_val
 
-def calc_metrics(y_test, y_pred):
-    f1         = f1_score(y_test, y_pred, average=None)
-    recall     = recall_score(y_test, y_pred, average=None)
-    precision  = precision_score(y_test, y_pred, average=None)
-    return precision, recall, f1
+def calc_metrics(y_test, y_pred, multi=False):
+    if multi:
+        f1         = f1_score(y_test, y_pred, average=None)
+        recall     = recall_score(y_test, y_pred, average=None)
+        precision  = precision_score(y_test, y_pred, average=None)
+        accuracy  = accuracy_score(y_test, y_pred)
+    else:
+        f1         = f1_score(y_test, y_pred, average='binary')
+        recall     = recall_score(y_test, y_pred, average='binary')
+        precision  = precision_score(y_test, y_pred, average='binary')
+        accuracy  = accuracy_score(y_test, y_pred)
+    return accuracy, precision, recall, f1
 
-def print_metrics(precision, recall, f1, test_file):
+def print_metrics(accuracy, precision, recall, f1, test_file):
     print '*'*100
     print test_file
+    print 'accuracy->' + str(accuracy)
     print 'precision->' + str(precision)
     print 'recall->' + str(recall)
     print 'f1->' + str(f1)
     print
 
-def save_metrics(precision, recall, f1, test_file, df):
-    num_classes = 4
-    for i in range(0, num_classes):
-        df.set_value(test_file,'precision_' + str(i), precision[i])
-        df.set_value(test_file,'recall_' + str(i), recall[i])
-        df.set_value(test_file,'f1_' + str(i), f1[i])
+def save_metrics(accuracy, precision, recall, f1, test_file, df):
+    if type(precision) == np.float64:
+        print 1
+        num_classes=1
+        for i in range(0, num_classes):
+            df.set_value(test_file,'accuracy_' + str(i), accuracy)
+            df.set_value(test_file,'precision_' + str(i), precision)
+            df.set_value(test_file,'recall_' + str(i), recall)
+            df.set_value(test_file,'f1_' + str(i), f1)
+    else:
+        print 2
+        num_classes=4
+        for i in range(0, num_classes):
+            df.set_value(test_file,'accuracy_' + str(i), accuracy)
+            df.set_value(test_file,'precision_' + str(i), precision[i])
+            df.set_value(test_file,'recall_' + str(i), recall[i])
+            df.set_value(test_file,'f1_' + str(i), f1[i])
     return df
 
 def main():
@@ -362,6 +320,9 @@ def main():
     parser.add_argument('-i','--inner', help='Number of epochs per each sequence', required=True)
     parser.add_argument('-l','--lag', help='Number of timesteps (1 = current step + last step)', required=True)
     parser.add_argument('-t','--test', help='Test datasets (might be a comma-separated list)', required=True)
+    parser.add_argument('-m','--multi', dest='multi',help='Enable multi-way datasets', action='store_true')
+    parser.add_argument('-o','--one', dest='multi',help='Disable multi-way datasets', action='store_false')
+    parser.set_defaults(multi=False)
     args = vars(parser.parse_args())
 
     epochs = int(args['epochs'])
@@ -372,8 +333,10 @@ def main():
     epsilon = 1e-10
     df = pd.DataFrame()
 
-    train_files = get_train_datasets_multi(test_events)
-    test_files = get_test_datasets_multi(test_events)
+    multi = args['multi']
+    # print multi
+    train_files = get_train_datasets(test_events, multi = multi)
+    test_files = get_test_datasets(test_events, multi = multi)
     # test_file = BGPDataset('aws-leak').get_files(5, peer='15547')[0]
     # test_file = BGPDataset('japan-earthquake').get_files(5, peer='2497')[0]
 
@@ -385,14 +348,19 @@ def main():
     for f in test_files:
         print f
 
+    if multi:
+        num_classes = 4
+    else:
+        num_classes = 2
+
     train_vals = []
     for file in train_files:
-        x_val, y_val = csv_to_xy(file, 4, lag)
+        x_val, y_val = csv_to_xy(file, num_classes, lag)
         train_vals.append(((x_val, y_val), file))
 
     test_vals = []
     for file in test_files:
-        x_val, y_val = csv_to_xy(file, 4, lag)
+        x_val, y_val = csv_to_xy(file, num_classes, lag)
         test_vals.append(((x_val, y_val), file))
 
     if len(test_vals) > 0:
@@ -409,19 +377,21 @@ def main():
     model.add(Dropout(0.2))
     model.add(LSTM(100, return_sequences=False, stateful = True, activation='sigmoid'))
     model.add(Dropout(0.2))
-    model.add(Dense(4, activation='softmax'))
+
+    if multi:
+        model.add(Dense(4, activation='softmax'))
+        model.compile(loss='categorical_crossentropy', optimizer=Adam(lr=0.0001),metrics=['accuracy'])
+    else:
+        model.add(Dense(1, activation='sigmoid'))
+        model.compile(loss='binary_crossentropy', optimizer=Adam(lr=0.0001),metrics=['accuracy'])
 
     # model.summary()
     # ann_viz(model, view=True, filename="network.gv", title="nn-arch")
     # plot_model(model, show_shapes=True, to_file='network.png')
     # print('Fig saved')
 
-    model.compile(loss='categorical_crossentropy',
-    optimizer=Adam(lr=0.0001),
-    metrics=['accuracy'])
-
-    tensorboard = TensorBoard(log_dir="logs/lstm")
     f1early = F1EarlyStop(patience = 10)
+    tensorboard = TensorBoard(log_dir="logs/lstm")
 
     round = 0
     for epoch in range(epochs):
@@ -430,15 +400,22 @@ def main():
         i = 0
 
         random.shuffle(train_vals)
-        for train_samples in train_vals:
+        for train_samples in train_vals[1:2]:
             filename = train_samples[1]
             x_train, y_train = (train_samples[0][0], train_samples[0][1])
 
             validation_data = x_train
             validation_target = y_train
 
-            y_integers = np.argmax(y_train, axis=1)
-            y_classes = pd.DataFrame(y_train).idxmax(1, skipna=False)
+            if not multi:
+                y_val = to_categorical(y_train, num_classes=2)
+                y_val = y_val.reshape(-1, 2)
+                y_train_labels = y_val
+            else:
+                y_train_labels = y_train
+
+            y_integers = np.argmax(y_train_labels, axis=1)
+            y_classes = pd.DataFrame(y_train_labels).idxmax(1, skipna=False)
             label_encoder = LabelEncoder()
             label_encoder.fit(list(y_classes))
             y_integers = label_encoder.transform(list(y_classes))
@@ -448,6 +425,7 @@ def main():
             class_weights = compute_class_weight('balanced', np.unique(y_integers), y_integers)
             sample_weights = compute_sample_weight('balanced', y_integers)
             class_weights_dict = dict(zip(label_encoder.transform(list(label_encoder.classes_)), class_weights))
+
             print filename
             df1 = pd.DataFrame(sample_weights)
             df2 = pd.DataFrame(y_train)
@@ -456,8 +434,8 @@ def main():
             # class_weights = compute_class_weight('balanced', np.unique(y_integers), y_integers)
             # d_class_weights = dict(enumerate(class_weights))
             # print filename + 'class_weights -> ' + str(d_class_weights)
+            # class_weight = {0: 1., 1: 4, 2:4, 3:4}
 
-            class_weight = {0: 1., 1: 4, 2:4, 3:4}
             hist = model.fit(x_train, y_train,
                                 # batch_size=batch_size,
                                 sample_weight=sample_weights,
@@ -465,7 +443,7 @@ def main():
                                 verbose=0,
                                 validation_data=(validation_data, validation_target),
                                 callbacks=[f1early, tensorboard],
-                                class_weight=class_weight,
+                                # class_weight=class_weights,
                                 shuffle=False)
             #Evaluate after each sequence processed
             # y_pred = model.predict(x_test, verbose = 0).round()
@@ -477,15 +455,15 @@ def main():
             x_test, y_test = test_samples[0]
             y_pred = model.predict(x_test, verbose = 0).round()
 
-            precision, recall, f1 = calc_metrics(y_test, y_pred)
+            accuracy, precision, recall, f1 = calc_metrics(y_test, y_pred, multi=multi)
             # print_metrics(precision, recall, f1, test_file)
 
     for test_samples in test_vals:
         test_file = test_samples[1].split('/')[-1]
         x_test, y_test = test_samples[0]
         y_pred = model.predict(x_test, verbose = 0).round()
-        precision, recall, f1 = calc_metrics(y_test, y_pred)
-        df = save_metrics(precision, recall, f1, test_file, df)
+        accuracy, precision, recall, f1 = calc_metrics(y_test, y_pred, multi=multi)
+        df = save_metrics(accuracy, precision, recall, f1, test_file, df)
 
     print( '####VALIDATION')
     model_name = 'test_' + test_file + '_' + str(epochs) + 'x' + str(inner_epochs)+'x'+str(lag)
@@ -498,6 +476,6 @@ def main():
     df.to_csv('results_'+model_name+'.csv', sep=',')
     y_csv.to_csv('y_pred_' + model_name + '.csv', quoting=3)
     model.save(model_name + '.h5')
-
+    print 'Results saved: results_'+model_name+'.csv'
 if __name__ == "__main__":
     main()

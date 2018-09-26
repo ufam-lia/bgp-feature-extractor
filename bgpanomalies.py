@@ -92,26 +92,19 @@ class BGPDataset(object):
         self.dataset_path = '/home/pc/bgp-feature-extractor/datasets/'
         # self.set_files()
 
-    def get_files(self, timebin = 0, peer = '*'):
+    def get_files(self, timebin = 0, peer = '*', multi = False):
+        if multi:
+            dataset_prefix = '/dataset_multi_'
+        else:
+            dataset_prefix = '/dataset_'
+
         if type(timebin) == list:
             files = []
             for bin in timebin:
                 bin = str(bin)
-                files += glob.glob(self.dataset_path + '/dataset_'+ self.event + '_'+ peer +'_'+ bin +'_*.csv')
+                files += glob.glob(self.dataset_path + dataset_prefix + self.event + '_'+ peer +'_'+ bin +'_*.csv')
         else:
             timebin = str(timebin)
-            files = glob.glob(self.dataset_path + '/dataset_'+ self.event + '_'+ peer +'_'+ timebin +'_*.csv')
-
-        return sorted(files)
-
-    def get_files_multi(self, timebin = 0, peer = '*'):
-        if type(timebin) == list:
-            files = []
-            for bin in timebin:
-                bin = str(bin)
-                files += glob.glob(self.dataset_path + '/dataset_multi_'+ self.event + '_'+ peer +'_'+ bin +'_*.csv')
-        else:
-            timebin = str(timebin)
-            files = glob.glob(self.dataset_path + '/dataset_multi_'+ self.event + '_'+ peer +'_'+ timebin +'_*.csv')
+            files = glob.glob(self.dataset_path + dataset_prefix + self.event + '_'+ peer +'_'+ timebin +'_*.csv')
 
         return sorted(files)

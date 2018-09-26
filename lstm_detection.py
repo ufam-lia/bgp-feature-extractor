@@ -7,87 +7,27 @@ import time
 from operator import itemgetter
 from collections import defaultdict
 import random
+import argparse
+
 from bgpanomalies import *
-
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.metrics import confusion_matrix, f1_score, precision_score, recall_score
-
+from sklearn.metrics import confusion_matrix, f1_score, precision_score, recall_score, accuracy_score
+from sklearn.preprocessing import LabelEncoder, MinMaxScaler
+from sklearn.utils.class_weight import compute_class_weight, compute_sample_weight
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, LSTM
-from keras.backend.tensorflow_backend import set_session
 from keras.optimizers import RMSprop, Adam
 from keras.callbacks import Callback
 from keras.callbacks import TensorBoard
 from keras.utils import plot_model
+from keras.utils.np_utils import to_categorical
 
+# import keras
 # import tensorflow as tf
 # from keras import backend as K
 # K.set_session(K.tf.Session(config=K.tf.ConfigProto(inter_op_parallelism_threads=1,intra_op_parallelism_threads=1)))
 
 def print_header(file):
     print( '*******Training with file: ' + file + '***************')
-
-def calc_metrics(y_pred, y_test, print_metrics = True):
-    epsilon = 0.000000000000001
-    tp = 0
-    tn = 0
-    fp = 0
-    fn = 0
-    pos = 0
-    neg = 0
-    pred_pos = 0
-    pred_neg = 0
-
-    for i in xrange(len(y_pred)):
-        # print( str(y_pred[i]) + ' == ' + str(y_test[i]))
-        if y_pred[i] == y_test[i]:
-            if y_test[i] == 1:
-                tp += 1
-                pos += 1
-                pred_pos += 1
-            else:
-                tn += 1
-                neg += 1
-                pred_neg += 1
-        else:
-            if y_test[i] == 1:
-                fn += 1
-                pos += 1
-                pred_neg += 1
-            else:
-                fp += 1
-                neg += 1
-                pred_pos += 1
-
-    acc = (tp + tn)/(tp + tn + fp + fn)
-    precision = tp/(tp + fp + epsilon)
-    recall = (tp)/(tp + fn)
-    f1 = 2*(precision*recall)/(precision + recall + epsilon)
-
-    if print_metrics:
-        print( '--------------')
-        print( 'pos->' + str(pos))
-        print( 'neg->' + str(neg))
-        print( 'pred_pos->' + str(pred_pos))
-        print( 'pred_neg->' + str(pred_neg))
-        print( '--------------')
-        print( 'tp->' + str(tp))
-        print( 'tn->' + str(tn))
-        print( 'fp->' + str(fp))
-        print( 'fn->' + str(fn))
-        print( '--------------')
-
-    confusion = dict()
-    confusion['tp'] = tp
-    confusion['tn'] = tn
-    confusion['fp'] = fp
-    confusion['fn'] = fn
-    confusion['acc'] = acc
-    confusion['precision'] = precision
-    confusion['recall'] = recall
-    confusion['f1'] = f1
-
-    return confusion
 
 class F1EarlyStop(Callback):
     def __init__(self, patience=40):
@@ -105,9 +45,9 @@ class F1EarlyStop(Callback):
         # print( val_predict)
         val_targ = self.validation_data[1]
         # print( val_targ)
-        _val_f1 = f1_score(val_targ, val_predict)
-        _val_recall = recall_score(val_targ, val_predict)
-        _val_precision = precision_score(val_targ, val_predict)
+        _val_f1 = f1_score(val_targ, val_predict, average=None)
+        _val_recall = recall_score(val_targ, val_predict, average=None)
+        _val_precision = precision_score(val_targ, val_predict, average=None)
         epoch_metrics = dict()
         epoch_metrics['f1'] = _val_f1
         epoch_metrics['precision'] = _val_precision
@@ -138,20 +78,6 @@ class F1EarlyStop(Callback):
             self.model.stop_training = True
         return
 
-def csv_to_xy(val_file):
-    x_val = pd.read_csv(val_file, index_col = 0, delimiter=',')
-    x_val = x_val.fillna(0)
-    y_val = x_val['class']
-    x_val.drop(['class', 'timestamp', 'timestamp2'], 1, inplace = True)
-    x_val = x_val.values
-    y_val = y_val.values
-
-    x_val = x_val.astype('float32')
-    y_val = y_val.astype('float32')
-
-    x_val -= x_val.mean(axis = 0)
-    x_val /= x_val.std(axis = 0)
-    return (x_val, y_val)
 
 def find_best_model(dataset, f1_history):
     l = sorted(f1_history, key=itemgetter('f1'), reverse = True)
@@ -179,7 +105,7 @@ def lists_to_csv(dicts, fieldnames, filename):
         writer.writerow(dicts.keys())
         writer.writerows(zip(*dicts.values()))
 
-def get_optimal_datasets(exclude_dataset):
+def get_train_datasets(exclude_dataset, multi = False):
     nimda_dataset             = BGPDataset('nimda')
     code_red_dataset          = BGPDataset('code-red')
     slammer_dataset           = BGPDataset('slammer')
@@ -194,55 +120,55 @@ def get_optimal_datasets(exclude_dataset):
     train_files = []
 
     if 'code-red' not in exclude_dataset:
-        train_files += code_red_dataset.get_files(timebin = [1, 5, 15], peer ='513')
-        train_files += code_red_dataset.get_files(timebin = [1, 5, 15], peer ='6893')
+        train_files += code_red_dataset.get_files(timebin = [1, 5, 15], peer ='513', multi = multi)
+        train_files += code_red_dataset.get_files(timebin = [1, 5, 15], peer ='6893', multi = multi)
 
     if 'nimda' not in exclude_dataset:
-        train_files += nimda_dataset.get_files(timebin = [1, 5], peer ='513')
-        train_files += nimda_dataset.get_files(timebin = [1, 5], peer ='559')
-        train_files += nimda_dataset.get_files(timebin = [1, 5, 15], peer ='6893')
+        train_files += nimda_dataset.get_files(timebin = [1, 5], peer ='513', multi = multi)
+        train_files += nimda_dataset.get_files(timebin = [1, 5], peer ='559', multi = multi)
+        train_files += nimda_dataset.get_files(timebin = [1, 5, 15], peer ='6893', multi = multi)
 
     if 'slammer' not in exclude_dataset:
-        train_files += slammer_dataset.get_files(timebin = [1, 5, 15], peer ='513')
-        train_files += slammer_dataset.get_files(timebin = [1, 5, 15], peer ='559')
-        train_files += slammer_dataset.get_files(timebin = [1, 5, 15], peer ='6893')
+        train_files += slammer_dataset.get_files(timebin = [1, 5, 15], peer ='513', multi = multi)
+        train_files += slammer_dataset.get_files(timebin = [1, 5, 15], peer ='559', multi = multi)
+        train_files += slammer_dataset.get_files(timebin = [1, 5, 15], peer ='6893', multi = multi)
 
-    if 'moscow' not in exclude_dataset:
-        train_files += moscow_dataset.get_files(timebin = [1, 5], peer ='1853')
-        train_files += moscow_dataset.get_files(timebin = [1, 5], peer ='12793')
+    if 'moscow-blackout' not in exclude_dataset:
+        train_files += moscow_dataset.get_files(timebin = [1, 5], peer ='1853', multi = multi)
+        train_files += moscow_dataset.get_files(timebin = [1, 5], peer ='12793', multi = multi)
 
     if 'aws-leak' not in exclude_dataset:
-        train_files += aws_leak_dataset.get_files(timebin = [1, 5], peer ='15547')
-        train_files += aws_leak_dataset.get_files(timebin = [1, 5], peer ='25091')
-        train_files += aws_leak_dataset.get_files(timebin = [1, 5], peer ='34781')
+        train_files += aws_leak_dataset.get_files(timebin = [1, 5], peer ='15547', multi = multi)
+        train_files += aws_leak_dataset.get_files(timebin = [1, 5], peer ='25091', multi = multi)
+        train_files += aws_leak_dataset.get_files(timebin = [1, 5], peer ='34781', multi = multi)
 
     if 'as9121' not in exclude_dataset:
-        train_files += as9121_dataset.get_files(timebin = [1, 5], peer ='1853')
-        train_files += as9121_dataset.get_files(timebin = [1, 5], peer ='12793')
-        train_files += as9121_dataset.get_files(timebin = [1, 5], peer ='13237')
+        train_files += as9121_dataset.get_files(timebin = [1, 5], peer ='1853', multi = multi)
+        train_files += as9121_dataset.get_files(timebin = [1, 5], peer ='12793', multi = multi)
+        train_files += as9121_dataset.get_files(timebin = [1, 5], peer ='13237', multi = multi)
 
     if 'as-3561-filtering' not in exclude_dataset:
-        train_files += as_3561_filtering_dataset.get_files(timebin = [1, 5], peer ='1286')
-        train_files += as_3561_filtering_dataset.get_files(timebin = [1, 5], peer ='3257')
-        train_files += as_3561_filtering_dataset.get_files(timebin = [1, 5], peer ='3333')
+        train_files += as_3561_filtering_dataset.get_files(timebin = [1, 5], peer ='1286', multi = multi)
+        train_files += as_3561_filtering_dataset.get_files(timebin = [1, 5], peer ='3257', multi = multi)
+        train_files += as_3561_filtering_dataset.get_files(timebin = [1, 5], peer ='3333', multi = multi)
 
     if 'as-path-error' not in exclude_dataset:
-        train_files += as_path_error_dataset.get_files(timebin = [1, 5], peer = '3257')
-        train_files += as_path_error_dataset.get_files(timebin = [1, 5], peer = '3333')
-        train_files += as_path_error_dataset.get_files(timebin = [1, 5], peer = '9057')
+        train_files += as_path_error_dataset.get_files(timebin = [1, 5], peer = '3257', multi = multi)
+        train_files += as_path_error_dataset.get_files(timebin = [1, 5], peer = '3333', multi = multi)
+        train_files += as_path_error_dataset.get_files(timebin = [1, 5], peer = '9057', multi = multi)
 
     if 'malaysian-telecom' not in exclude_dataset:
-        train_files += malaysian_dataset.get_files(timebin = [1, 5], peer = '513')
-        train_files += malaysian_dataset.get_files(timebin = [1, 5], peer = '20932')
-        train_files += malaysian_dataset.get_files(timebin = [1, 5], peer = '25091')
-        train_files += malaysian_dataset.get_files(timebin = [1, 5], peer = '34781')
+        train_files += malaysian_dataset.get_files(timebin = [1, 5], peer = '513', multi = multi)
+        train_files += malaysian_dataset.get_files(timebin = [1, 5], peer = '20932', multi = multi)
+        train_files += malaysian_dataset.get_files(timebin = [1, 5], peer = '25091', multi = multi)
+        train_files += malaysian_dataset.get_files(timebin = [1, 5], peer = '34781', multi = multi)
 
     if 'japan-earthquake' not in exclude_dataset:
-        train_files += japan_dataset.get_files(timebin = [1,5], peer = '2497')
+        train_files += japan_dataset.get_files(timebin = [1,5], peer = '2497', multi = multi)
 
     return train_files
 
-def get_optimal_datasets_multi(exclude_dataset):
+def get_test_datasets(test_datasets, multi = False):
     nimda_dataset             = BGPDataset('nimda')
     code_red_dataset          = BGPDataset('code-red')
     slammer_dataset           = BGPDataset('slammer')
@@ -254,56 +180,56 @@ def get_optimal_datasets_multi(exclude_dataset):
     malaysian_dataset         = BGPDataset('malaysian-telecom')
     japan_dataset             = BGPDataset('japan-earthquake')
 
-    train_files = []
+    test_files = []
 
-    if 'code-red' not in exclude_dataset:
-        train_files += code_red_dataset.get_files_multi(timebin = [1, 5, 15], peer ='513')
-        train_files += code_red_dataset.get_files_multi(timebin = [1, 5, 15], peer ='6893')
+    if 'code-red' in test_datasets:
+        test_files += code_red_dataset.get_files(timebin = [1, 5, 15], peer ='513', multi = multi)
+        test_files += code_red_dataset.get_files(timebin = [1, 5, 15], peer ='6893', multi = multi)
 
-    if 'nimda' not in exclude_dataset:
-        train_files += nimda_dataset.get_files_multi(timebin = [1, 5], peer ='513')
-        train_files += nimda_dataset.get_files_multi(timebin = [1, 5], peer ='559')
-        train_files += nimda_dataset.get_files_multi(timebin = [1, 5, 15], peer ='6893')
+    if 'nimda' in test_datasets:
+        test_files += nimda_dataset.get_files(timebin = [1, 5], peer ='513', multi = multi)
+        test_files += nimda_dataset.get_files(timebin = [1, 5], peer ='559', multi = multi)
+        test_files += nimda_dataset.get_files(timebin = [1, 5, 15], peer ='6893', multi = multi)
 
-    if 'slammer' not in exclude_dataset:
-        train_files += slammer_dataset.get_files_multi(timebin = [1, 5, 15], peer ='513')
-        train_files += slammer_dataset.get_files_multi(timebin = [1, 5, 15], peer ='559')
-        train_files += slammer_dataset.get_files_multi(timebin = [1, 5, 15], peer ='6893')
+    if 'slammer' in test_datasets:
+        test_files += slammer_dataset.get_files(timebin = [1, 5, 15], peer ='513', multi = multi)
+        test_files += slammer_dataset.get_files(timebin = [1, 5, 15], peer ='559', multi = multi)
+        test_files += slammer_dataset.get_files(timebin = [1, 5, 15], peer ='6893', multi = multi)
 
-    if 'moscow' not in exclude_dataset:
-        train_files += moscow_dataset.get_files_multi(timebin = [1, 5], peer ='1853')
-        train_files += moscow_dataset.get_files_multi(timebin = [1, 5], peer ='12793')
+    if 'moscow-blackout' in test_datasets:
+        test_files += moscow_dataset.get_files(timebin = [1, 5], peer ='1853', multi = multi)
+        test_files += moscow_dataset.get_files(timebin = [1, 5], peer ='12793', multi = multi)
 
-    if 'aws-leak' not in exclude_dataset:
-        train_files += aws_leak_dataset.get_files_multi(timebin = [1, 5], peer ='15547')
-        train_files += aws_leak_dataset.get_files_multi(timebin = [1, 5], peer ='25091')
-        train_files += aws_leak_dataset.get_files_multi(timebin = [1, 5], peer ='34781')
+    if 'aws-leak' in test_datasets:
+        test_files += aws_leak_dataset.get_files(timebin = [1, 5], peer ='15547', multi = multi)
+        test_files += aws_leak_dataset.get_files(timebin = [1, 5], peer ='25091', multi = multi)
+        test_files += aws_leak_dataset.get_files(timebin = [1, 5], peer ='34781', multi = multi)
 
-    if 'as9121' not in exclude_dataset:
-        train_files += as9121_dataset.get_files_multi(timebin = [1, 5], peer ='1853')
-        train_files += as9121_dataset.get_files_multi(timebin = [1, 5], peer ='12793')
-        train_files += as9121_dataset.get_files_multi(timebin = [1, 5], peer ='13237')
+    if 'as9121' in test_datasets:
+        test_files += as9121_dataset.get_files(timebin = [1, 5], peer ='1853', multi = multi)
+        test_files += as9121_dataset.get_files(timebin = [1, 5], peer ='12793', multi = multi)
+        test_files += as9121_dataset.get_files(timebin = [1, 5], peer ='13237', multi = multi)
 
-    if 'as-3561-filtering' not in exclude_dataset:
-        train_files += as_3561_filtering_dataset.get_files_multi(timebin = [1, 5], peer ='1286')
-        train_files += as_3561_filtering_dataset.get_files_multi(timebin = [1, 5], peer ='3257')
-        train_files += as_3561_filtering_dataset.get_files_multi(timebin = [1, 5], peer ='3333')
+    if 'as-3561-filtering' in test_datasets:
+        test_files += as_3561_filtering_dataset.get_files(timebin = [1, 5], peer ='1286', multi = multi)
+        test_files += as_3561_filtering_dataset.get_files(timebin = [1, 5], peer ='3257', multi = multi)
+        test_files += as_3561_filtering_dataset.get_files(timebin = [1, 5], peer ='3333', multi = multi)
 
-    if 'as-path-error' not in exclude_dataset:
-        train_files += as_path_error_dataset.get_files_multi(timebin = [1, 5], peer = '3257')
-        train_files += as_path_error_dataset.get_files_multi(timebin = [1, 5], peer = '3333')
-        train_files += as_path_error_dataset.get_files_multi(timebin = [1, 5], peer = '9057')
+    if 'as-path-error' in test_datasets:
+        test_files += as_path_error_dataset.get_files(timebin = [1, 5], peer = '3257', multi = multi)
+        test_files += as_path_error_dataset.get_files(timebin = [1, 5], peer = '3333', multi = multi)
+        test_files += as_path_error_dataset.get_files(timebin = [1, 5], peer = '9057', multi = multi)
 
-    if 'malaysian-telecom' not in exclude_dataset:
-        train_files += malaysian_dataset.get_files_multi(timebin = [1, 5], peer = '513')
-        train_files += malaysian_dataset.get_files_multi(timebin = [1, 5], peer = '20932')
-        train_files += malaysian_dataset.get_files_multi(timebin = [1, 5], peer = '25091')
-        train_files += malaysian_dataset.get_files_multi(timebin = [1, 5], peer = '34781')
+    if 'malaysian-telecom' in test_datasets:
+        test_files += malaysian_dataset.get_files(timebin = [1, 5], peer = '513', multi = multi)
+        test_files += malaysian_dataset.get_files(timebin = [1, 5], peer = '20932', multi = multi)
+        test_files += malaysian_dataset.get_files(timebin = [1, 5], peer = '25091', multi = multi)
+        test_files += malaysian_dataset.get_files(timebin = [1, 5], peer = '34781', multi = multi)
 
-    if 'japan-earthquake' not in exclude_dataset:
-        train_files += japan_dataset.get_files_multi(timebin = [1,5], peer = '2497')
+    if 'japan-earthquake' in test_datasets:
+        test_files += japan_dataset.get_files(timebin = [1,5], peer = '2497', multi = multi)
 
-    return train_files
+    return test_files
 
 def add_lag(data, lag=1):
     df = pd.DataFrame(data)
@@ -314,70 +240,156 @@ def add_lag(data, lag=1):
     return df
 
 def eval_single_file(model, test_file, lag):
-    test_val = csv_to_xy(test_file)
-    y_test = test_val[1]
-    x_test = test_val[0]
-    x_test = add_lag(x_test, lag=lag)
-    x_test = x_test.reshape(x_test.shape[0], lag+1, x_test.shape[1]//(lag+1))
-    y_test = y_test.reshape(-1, 1)
+    num_classes = 4
+    x_test, y_test = csv_to_xy(test_file, num_classes, lag)
+
     y_pred = model.predict(x_test, verbose=2).round()
     dataset = test_file.split('dataset_')[1].split('.csv')[0]
     filename = 'y_pred_' + dataset + '_' + str(random.randint(0, 1000)) + '.csv'
     np.savetxt(filename, y_pred, delimiter=',')
     print filename
 
+def csv_to_xy(val_file, num_classes, lag):
+    x_val = pd.read_csv(val_file, index_col = 0, delimiter=',')
+    x_val = x_val.fillna(0)
+    y_val = x_val['class']
+    x_val.drop(['class', 'timestamp', 'timestamp2'], 1, inplace = True)
+    x_val = x_val.values
+    y_val = y_val.values
+
+    x_val = x_val.astype('float32')
+    y_val = y_val.astype('float32')
+
+    x_val -= x_val.mean(axis = 0)
+    x_val /= x_val.std(axis = 0)
+    x_val = add_lag(x_val, lag=lag)
+
+    x_val = x_val.reshape(x_val.shape[0], lag+1, x_val.shape[1]//(lag+1))
+
+    if num_classes > 2:
+        y_val = to_categorical(y_val, num_classes=num_classes)
+        y_val = y_val.reshape(-1, num_classes)
+    else:
+        y_val = y_val.reshape(-1, 1)
+    return x_val, y_val
+
+def calc_metrics(y_test, y_pred, multi=False):
+    if multi:
+        f1         = f1_score(y_test, y_pred, average=None)
+        recall     = recall_score(y_test, y_pred, average=None)
+        precision  = precision_score(y_test, y_pred, average=None)
+        accuracy  = accuracy_score(y_test, y_pred)
+    else:
+        f1         = f1_score(y_test, y_pred, average='binary')
+        recall     = recall_score(y_test, y_pred, average='binary')
+        precision  = precision_score(y_test, y_pred, average='binary')
+        accuracy  = accuracy_score(y_test, y_pred)
+    return accuracy, precision, recall, f1
+
+def print_metrics(accuracy, precision, recall, f1, test_file):
+    print '*'*100
+    print test_file
+    print 'accuracy->' + str(accuracy)
+    print 'precision->' + str(precision)
+    print 'recall->' + str(recall)
+    print 'f1->' + str(f1)
+    print
+
+def save_metrics(accuracy, precision, recall, f1, test_file, df):
+    if type(precision) == np.float64:
+        num_classes=1
+        for i in range(0, num_classes):
+            df.set_value(test_file,'accuracy_' + str(i), accuracy)
+            df.set_value(test_file,'precision_' + str(i), precision)
+            df.set_value(test_file,'recall_' + str(i), recall)
+            df.set_value(test_file,'f1_' + str(i), f1)
+    else:
+        num_classes=4
+        for i in range(0, num_classes):
+            df.set_value(test_file,'accuracy_' + str(i), accuracy)
+            df.set_value(test_file,'precision_' + str(i), precision[i])
+            df.set_value(test_file,'recall_' + str(i), recall[i])
+            df.set_value(test_file,'f1_' + str(i), f1[i])
+    return df
+
 def main():
-    epochs = int(sys.argv[1])
-    inner_epochs = int(sys.argv[2])
-    lag = int(sys.argv[3])
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-e','--epochs', help='Number of epochs for all sequences', required=True)
+    parser.add_argument('-i','--inner', help='Number of epochs per each sequence', required=True)
+    parser.add_argument('-l','--lag', help='Number of timesteps (1 = current step + last step)', required=True)
+    parser.add_argument('-t','--test', help='Test datasets (might be a comma-separated list)', required=True)
+    parser.add_argument('-m','--multi', dest='multi',help='Enable multi-way datasets', action='store_true')
+    parser.add_argument('-o','--one', dest='multi',help='Disable multi-way datasets', action='store_false')
+    parser.set_defaults(multi=False)
+    args = vars(parser.parse_args())
+
+    epochs = int(args['epochs'])
+    inner_epochs = int(args['inner'])
+    lag = int(args['lag'])
+    test_events = args['test'].split(',')
     batch_size = 32
-    epsilon = 0.000000000000001
+    epsilon = 1e-10
+    df = pd.DataFrame()
 
-    train_files = get_optimal_datasets_multi(['slammer','aws-leak','japan-earthquake'])
-    test_file = BGPDataset('malaysian-telecom').get_files(5, peer='20932')[0]
+    multi = args['multi']
+    # print multi
+    train_files = get_train_datasets(test_events, multi = multi)
+    test_files = get_test_datasets(test_events, multi = multi)
+    # test_file = BGPDataset('aws-leak').get_files(5, peer='15547')[0]
+    # test_file = BGPDataset('japan-earthquake').get_files(5, peer='2497')[0]
 
+    print 'TRAIN'
     for f in train_files:
         print f
+
+    print 'TEST'
+    for f in test_files:
+        print f
+
+    if multi:
+        num_classes = 4
+    else:
+        num_classes = 2
+
     train_vals = []
     for file in train_files:
-        train_vals.append((csv_to_xy(file), file))
+        x_val, y_val = csv_to_xy(file, num_classes, lag)
+        train_vals.append(((x_val, y_val), file))
 
-    test_val = csv_to_xy(test_file)
-    y_test = test_val[1]
-    x_test = test_val[0]
+    test_vals = []
+    for file in test_files:
+        x_val, y_val = csv_to_xy(file, num_classes, lag)
+        test_vals.append(((x_val, y_val), file))
 
-    x_test = add_lag(x_test, lag=lag)
-    x_test = x_test.reshape(x_test.shape[0], lag+1, x_test.shape[1]//(lag+1))
-    y_test = y_test.reshape(-1, 1)
-
-    validation_data = x_test
-    validation_target = y_test
+    if len(test_vals) > 0:
+        validation_data = test_vals[0][0][0]
+        validation_target = test_vals[0][0][1]
+    else:
+        print 'No test set found with name(s): ' + str(test_events)
 
     model = Sequential()
     # model.add(Dense(10, activation='sigmoid', input_shape = (x_test[0].shape), batch_size = batch_size))
-    model.add(LSTM(100, return_sequences=True, batch_input_shape=(batch_size,x_test.shape[1], x_test.shape[2]), stateful=True, activation='sigmoid'))
+    model.add(LSTM(100, return_sequences=True, batch_input_shape=(batch_size,validation_data.shape[1], validation_data.shape[2]), stateful=True, activation='sigmoid'))
     model.add(Dropout(0.2))
     model.add(LSTM(100, return_sequences=True, stateful = True, activation='sigmoid'))
     model.add(Dropout(0.2))
     model.add(LSTM(100, return_sequences=False, stateful = True, activation='sigmoid'))
     model.add(Dropout(0.2))
-    model.add(Dense(1, activation='sigmoid'))
+
+    if multi:
+        model.add(Dense(4, activation='softmax'))
+        model.compile(loss='categorical_crossentropy', optimizer=Adam(lr=0.0001),metrics=['accuracy'])
+    else:
+        model.add(Dense(1, activation='sigmoid'))
+        model.compile(loss='binary_crossentropy', optimizer=Adam(lr=0.0001),metrics=['accuracy'])
 
     # model.summary()
-    model.compile(loss='binary_crossentropy',
-                  optimizer=Adam(lr=0.0001),
-                  metrics=['accuracy'])
-
-    # tensorboard = TensorBoard(log_dir="logs/{}".format(time.time()))
     # ann_viz(model, view=True, filename="network.gv", title="nn-arch")
     # plot_model(model, show_shapes=True, to_file='network.png')
-    # print( 'Fig saved')
+    # print('Fig saved')
 
-    tensorboard = TensorBoard(log_dir="logs/lstm")
     f1early = F1EarlyStop(patience = 10)
-    best_models = []
-    model_history = defaultdict(list)
-    model_history_all = defaultdict(list)
+    tensorboard = TensorBoard(log_dir="logs/lstm")
 
     round = 0
     for epoch in range(epochs):
@@ -386,83 +398,83 @@ def main():
         i = 0
 
         random.shuffle(train_vals)
-        for sequence_tuple in train_vals[1:2]:
-            filename = sequence_tuple[1]
-            sequence = sequence_tuple[0]
-            x_train = sequence[0]
-            y_train = sequence[1]
-            x_train = add_lag(x_train, lag=lag)
-            x_train = x_train.reshape(x_train.shape[0], lag+1, x_train.shape[1]//(lag+1))
-            y_train = y_train.reshape(-1, 1)
+        for train_samples in train_vals[1:2]:
+            filename = train_samples[1]
+            x_train, y_train = (train_samples[0][0], train_samples[0][1])
+
             validation_data = x_train
             validation_target = y_train
-            print_header(filename)
 
-            # class_weight = {0: 1., 1: 4}
-            class_weight = {0: 1., 1: 4, 2:4, 3:4}
+            if not multi:
+                y_val = to_categorical(y_train, num_classes=2)
+                y_val = y_val.reshape(-1, 2)
+                y_train_labels = y_val
+            else:
+                y_train_labels = y_train
+
+            y_integers = np.argmax(y_train_labels, axis=1)
+            y_classes = pd.DataFrame(y_train_labels).idxmax(1, skipna=False)
+            label_encoder = LabelEncoder()
+            label_encoder.fit(list(y_classes))
+            y_integers = label_encoder.transform(list(y_classes))
+
+            # Create dict of labels : integer representation
+            labels_and_integers = dict(zip(y_classes, y_integers))
+            class_weights = compute_class_weight('balanced', np.unique(y_integers), y_integers)
+            sample_weights = compute_sample_weight('balanced', y_integers)
+            class_weights_dict = dict(zip(label_encoder.transform(list(label_encoder.classes_)), class_weights))
+
+            print filename
+            df1 = pd.DataFrame(sample_weights)
+            df2 = pd.DataFrame(y_train)
+            df1.to_csv('df1.csv',sep=',')
+            df2.to_csv('df2.csv',sep=',')
+            # class_weights = compute_class_weight('balanced', np.unique(y_integers), y_integers)
+            # d_class_weights = dict(enumerate(class_weights))
+            # print filename + 'class_weights -> ' + str(d_class_weights)
+            # class_weight = {0: 1., 1: 4, 2:4, 3:4}
+
             hist = model.fit(x_train, y_train,
                                 # batch_size=batch_size,
-                                epochs=int(inner_epochs),
-                                verbose=1,
-                                shuffle=False,
+                                sample_weight=sample_weights,
+                                epochs=inner_epochs,
+                                verbose=0,
                                 validation_data=(validation_data, validation_target),
                                 callbacks=[f1early, tensorboard],
-                                class_weight=class_weight)
+                                # class_weight=class_weights,
+                                shuffle=False)
             #Evaluate after each sequence processed
-            if True:
-                y_pred = model.predict(x_test, verbose = 2).round()
-                print( '####TRAINING')
-                confusion = calc_metrics(y_pred, y_test, print_metrics = False)
-
-                train_name = filename.split('/')[5]
-                test_name = test_file.split('/')[5]
-                f1_history = {k: [dic[k] for dic in f1early.f1_history] for k in f1early.f1_history[0]}
-
-                model_history[train_name + '_f1'] += f1_history['f1']
-                model_history[train_name + '_precision'] += f1_history['precision']
-                model_history[train_name + '_recall'] += f1_history['recall']
-
-                model_history_all[test_name + '_f1'] += f1_history['f1']
-                model_history_all[test_name + '_precision'] += f1_history['precision']
-                model_history_all[test_name + '_recall'] += f1_history['recall']
-
-                model_history_all['all_files_f1'] += [confusion['f1']]
-                model_history_all['all_files_precision'] += [confusion['precision']]
-                model_history_all['all_files_recall'] += [confusion['recall']]
-
-                best_model = find_best_model(filename, f1early.f1_history)
-                best_models.append(best_model)
-
+            # y_pred = model.predict(x_test, verbose = 0).round()
             model.reset_states()
             i += 1
 
-    fieldnames = ['dataset', 'epoch', 'f1', 'precision', 'recall']
-    dicts_to_csv(best_models, fieldnames, 'best_models_'+ str(epochs) +'x'+str(inner_epochs)+'x'+str(lag))
-    lists_to_csv(model_history, ['dataset'], 'models_history_'+ str(epochs) +'x'+str(inner_epochs)+'x'+str(lag))
-    lists_to_csv(model_history_all, ['dataset'], 'models_history_all_'+ str(epochs) +'x'+str(inner_epochs)+'x'+str(lag))
+        for test_samples in test_vals:
+            test_file = test_samples[1]
+            x_test, y_test = test_samples[0]
+            y_pred = model.predict(x_test, verbose = 0).round()
 
-    y_pred = model.predict(x_test, verbose = 2).round()
+            accuracy, precision, recall, f1 = calc_metrics(y_test, y_pred, multi=multi)
+            # print_metrics(precision, recall, f1, test_file)
+
+    for test_samples in test_vals:
+        test_file = test_samples[1].split('/')[-1]
+        x_test, y_test = test_samples[0]
+        y_pred = model.predict(x_test, verbose = 0).round()
+        accuracy, precision, recall, f1 = calc_metrics(y_test, y_pred, multi=multi)
+        df = save_metrics(accuracy, precision, recall, f1, test_file, df)
+
     print( '####VALIDATION')
-    confusion = calc_metrics(y_pred, y_test)
-    tp = confusion['tp']
-    tn = confusion['tn']
-    fp = confusion['fp']
-    fn = confusion['fn']
-
-    print( 'acc->' + str(np.round(confusion['acc']*100, decimals=2)) + '%')
-    print( 'precision->' + str(np.round(confusion['precision']*100, decimals=2)) + '%')
-    print( 'recall->' + str(np.round(confusion['recall']*100, decimals=2)) + '%')
-    print( 'f1->' + str(np.round(confusion['f1']*100, decimals=2)) + '%')
-
-    model_name = 'test_' + test_name + '_' + str(epochs) + 'x' + str(inner_epochs)+'x'+str(lag)
-
+    model_name = 'test_' + test_file + '_' + str(epochs) + 'x' + str(inner_epochs)+'x'+str(lag)
     y_csv = pd.DataFrame()
     y_pred_list = map(lambda x: x[0], y_pred)
     y_test_list = map(lambda x: x[0], y_test)
     y_csv['y_pred'] = pd.Series(list(y_pred_list))
     y_csv['y_test'] = pd.Series(list(y_test_list))
+
+    df.to_csv('results_'+model_name+'.csv', sep=',')
     y_csv.to_csv('y_pred_' + model_name + '.csv', quoting=3)
     model.save(model_name + '.h5')
+    print 'Results saved: results_'+model_name+'.csv'
 
 if __name__ == "__main__":
     main()
