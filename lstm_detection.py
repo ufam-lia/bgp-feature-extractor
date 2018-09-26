@@ -456,6 +456,7 @@ def main():
             accuracy, precision, recall, f1 = calc_metrics(y_test, y_pred, multi=multi)
             # print_metrics(precision, recall, f1, test_file)
 
+    print( '####VALIDATION')
     for test_samples in test_vals:
         test_file = test_samples[1].split('/')[-1]
         x_test, y_test = test_samples[0]
@@ -463,16 +464,28 @@ def main():
         accuracy, precision, recall, f1 = calc_metrics(y_test, y_pred, multi=multi)
         df = save_metrics(accuracy, precision, recall, f1, test_file, df)
 
-    print( '####VALIDATION')
-    model_name = 'test_' + test_file + '_' + str(epochs) + 'x' + str(inner_epochs)+'x'+str(lag)
-    y_csv = pd.DataFrame()
-    y_pred_list = map(lambda x: x[0], y_pred)
-    y_test_list = map(lambda x: x[0], y_test)
-    y_csv['y_pred'] = pd.Series(list(y_pred_list))
-    y_csv['y_test'] = pd.Series(list(y_test_list))
+        model_name = 'test_' + test_file + '_' + str(epochs) + 'x' + str(inner_epochs)+'x'+str(lag)
+        print model_name
 
+        y_csv = pd.DataFrame()
+        if multi:
+            for i in range(0, num_classes):
+                y_test_list = map(lambda x: x[i], y_test)
+                y_csv['y_test_'+str(i)] = pd.Series(list(y_test_list))
+
+            for i in range(0, num_classes):
+                y_pred_list = map(lambda x: x[i], y_pred)
+                y_csv['y_pred_'+str(i)] = pd.Series(list(y_pred_list))
+        else:
+            y_pred_list = map(lambda x: x[0], y_pred)
+            y_test_list = map(lambda x: x[0], y_test)
+            y_csv['y_pred'] = pd.Series(list(y_pred_list))
+            y_csv['y_test'] = pd.Series(list(y_test_list))
+
+        y_csv.to_csv('y_pred_' + model_name + '.csv', quoting=3)
+
+    model_name = 'test_' + test_file + '_' + str(epochs) + 'x' + str(inner_epochs)+'x'+str(lag)
     df.to_csv('results_'+model_name+'.csv', sep=',')
-    y_csv.to_csv('y_pred_' + model_name + '.csv', quoting=3)
     model.save(model_name + '.h5')
     print 'Results saved: results_'+model_name+'.csv'
 
