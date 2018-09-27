@@ -298,15 +298,15 @@ def print_metrics(accuracy, precision, recall, f1, test_file):
 def save_metrics(accuracy, precision, recall, f1, test_file, df):
     if type(precision) == np.float64:
         num_classes=1
+        df.set_value(test_file,'accuracy', accuracy)
         for i in range(0, num_classes):
-            df.set_value(test_file,'accuracy_' + str(i), accuracy)
             df.set_value(test_file,'precision_' + str(i), precision)
             df.set_value(test_file,'recall_' + str(i), recall)
             df.set_value(test_file,'f1_' + str(i), f1)
     else:
         num_classes=4
+        df.set_value(test_file,'accuracy', accuracy)
         for i in range(0, num_classes):
-            df.set_value(test_file,'accuracy_' + str(i), accuracy)
             df.set_value(test_file,'precision_' + str(i), precision[i])
             df.set_value(test_file,'recall_' + str(i), recall[i])
             df.set_value(test_file,'f1_' + str(i), f1[i])
@@ -482,11 +482,11 @@ def main():
             y_csv['y_pred'] = pd.Series(list(y_pred_list))
             y_csv['y_test'] = pd.Series(list(y_test_list))
 
-        y_csv.to_csv('y_pred_' + model_name + '.csv', quoting=3)
+        y_csv.to_csv('results/y_pred_' + model_name + '.csv', quoting=3)
 
-    model_name = 'test_' + test_file + '_' + str(epochs) + 'x' + str(inner_epochs)+'x'+str(lag)
-    df.to_csv('results_'+model_name+'.csv', sep=',')
-    model.save(model_name + '.h5')
+    model_name = 'test_' + args['test'].replace(',','-') + '_' + str(epochs) + 'x' + str(inner_epochs)+'x'+str(lag)
+    df.to_csv('results/results_'+model_name+'.csv', sep=',')
+    model.save('models/'+model_name + '.h5')
     print 'Results saved: results_'+model_name+'.csv'
 
 if __name__ == "__main__":
