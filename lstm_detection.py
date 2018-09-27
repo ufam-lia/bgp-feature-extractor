@@ -398,7 +398,7 @@ def main():
         i = 0
 
         random.shuffle(train_vals)
-        for train_samples in train_vals[1:2]:
+        for train_samples in train_vals:
             filename = train_samples[1]
             x_train, y_train = (train_samples[0][0], train_samples[0][1])
 
