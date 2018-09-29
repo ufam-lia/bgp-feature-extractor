@@ -87,8 +87,9 @@ class BGPAnomaly(object):
             return None
 
 class BGPDataset(object):
-    def __init__(self, event_name):
+    def __init__(self, event_name, anomaly = False):
         self.event = event_name
+        self.anomaly = anomaly
         self.dataset_path = '/home/pc/bgp-feature-extractor/datasets/'
         # self.set_files()
 
@@ -97,6 +98,9 @@ class BGPDataset(object):
             dataset_prefix = '/dataset_multi_'
         else:
             dataset_prefix = '/dataset_'
+
+        if self.anomaly:
+            dataset_prefix = '/anomaly_multi_'
 
         if type(timebin) == list:
             files = []

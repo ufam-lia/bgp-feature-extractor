@@ -44,7 +44,7 @@ def fix_columns(csv):
         if col not in csv.keys():
             csv = add_column(csv, col)
     return csv
-    
+
 def add_label(csv, start, end, label):
     labels = []
     for ts in csv['timestamp2']:
@@ -64,7 +64,9 @@ def adjust_to_batch_size(csv, batch_size):
 
 def preprocessing(files, name='name', start=0, end=0, label=1):
     df = pd.DataFrame()
-    df2 = pd.DataFrame()
+    df_multi = pd.DataFrame()
+    anomaly = pd.DataFrame()
+    anomaly_multi = pd.DataFrame()
 
     if len(files) > 0:
         for f in files:
@@ -78,19 +80,27 @@ def preprocessing(files, name='name', start=0, end=0, label=1):
             csv2 = add_label(csv2, start, end, label)
 
             df = df.append(csv, sort = True)
-            df2 = df2.append(csv2, sort = True)
+            df_multi = df_multi.append(csv2, sort = True)
 
             df = df.fillna(0)
-            df2 = df2.fillna(0)
+            df_multi = df_multi.fillna(0)
 
         df = adjust_to_batch_size(df, 32)
-        df2 = adjust_to_batch_size(df2, 32)
+        df_multi = adjust_to_batch_size(df_multi, 32)
 
         df.reset_index(drop=True, inplace=True)
-        df2.reset_index(drop=True, inplace=True)
+        df_multi.reset_index(drop=True, inplace=True)
 
+        anomaly = df[df['class'] != 0]
+        anomaly_multi = df_multi[df_multi['class'] != 0]
+
+        anomaly.reset_index(drop=True, inplace=True)
+        anomaly_multi.reset_index(drop=True, inplace=True)
+
+        anomaly.to_csv(features_path + 'anomaly_' + name + '_' + rrc + '.csv', quoting=3)
+        anomaly_multi.to_csv(features_path + 'anomaly_multi_' + name + '_' + rrc + '.csv', quoting=3)
         df.to_csv(features_path + 'dataset_' + name + '_' + rrc + '.csv', quoting=3)
-        df2.to_csv(features_path + 'dataset_multi_' + name + '_' + rrc + '.csv', quoting=3)
+        df_multi.to_csv(features_path + 'dataset_multi_' + name + '_' + rrc + '.csv', quoting=3)
 
 def main(argv):
     global rrc
