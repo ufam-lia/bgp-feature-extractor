@@ -105,17 +105,17 @@ def lists_to_csv(dicts, fieldnames, filename):
         writer.writerow(dicts.keys())
         writer.writerows(zip(*dicts.values()))
 
-def get_train_datasets(exclude_dataset, multi = False):
-    nimda_dataset             = BGPDataset('nimda')
-    code_red_dataset          = BGPDataset('code-red')
-    slammer_dataset           = BGPDataset('slammer')
-    moscow_dataset            = BGPDataset('moscow_blackout')
-    as9121_dataset            = BGPDataset('as9121')
-    aws_leak_dataset          = BGPDataset('aws-leak')
-    as_3561_filtering_dataset = BGPDataset('as-3561-filtering')
-    as_path_error_dataset     = BGPDataset('as-path-error')
-    malaysian_dataset         = BGPDataset('malaysian-telecom')
-    japan_dataset             = BGPDataset('japan-earthquake')
+def get_train_datasets(exclude_dataset, multi = False, anomaly = False):
+    nimda_dataset             = BGPDataset('nimda', anomaly)
+    code_red_dataset          = BGPDataset('code-red', anomaly)
+    slammer_dataset           = BGPDataset('slammer', anomaly)
+    moscow_dataset            = BGPDataset('moscow_blackout', anomaly)
+    as9121_dataset            = BGPDataset('as9121', anomaly)
+    aws_leak_dataset          = BGPDataset('aws-leak', anomaly)
+    as_3561_filtering_dataset = BGPDataset('as-3561-filtering', anomaly)
+    as_path_error_dataset     = BGPDataset('as-path-error', anomaly)
+    malaysian_dataset         = BGPDataset('malaysian-telecom', anomaly)
+    japan_dataset             = BGPDataset('japan-earthquake', anomaly)
 
     train_files = []
 
@@ -168,17 +168,17 @@ def get_train_datasets(exclude_dataset, multi = False):
 
     return train_files
 
-def get_test_datasets(test_datasets, multi = False):
-    nimda_dataset             = BGPDataset('nimda')
-    code_red_dataset          = BGPDataset('code-red')
-    slammer_dataset           = BGPDataset('slammer')
-    moscow_dataset            = BGPDataset('moscow_blackout')
-    as9121_dataset            = BGPDataset('as9121')
-    aws_leak_dataset          = BGPDataset('aws-leak')
-    as_3561_filtering_dataset = BGPDataset('as-3561-filtering')
-    as_path_error_dataset     = BGPDataset('as-path-error')
-    malaysian_dataset         = BGPDataset('malaysian-telecom')
-    japan_dataset             = BGPDataset('japan-earthquake')
+def get_test_datasets(test_datasets, multi = False, anomaly = False):
+    nimda_dataset             = BGPDataset('nimda', anomaly)
+    code_red_dataset          = BGPDataset('code-red', anomaly)
+    slammer_dataset           = BGPDataset('slammer', anomaly)
+    moscow_dataset            = BGPDataset('moscow_blackout', anomaly)
+    as9121_dataset            = BGPDataset('as9121', anomaly)
+    aws_leak_dataset          = BGPDataset('aws-leak', anomaly)
+    as_3561_filtering_dataset = BGPDataset('as-3561-filtering', anomaly)
+    as_path_error_dataset     = BGPDataset('as-path-error', anomaly)
+    malaysian_dataset         = BGPDataset('malaysian-telecom', anomaly)
+    japan_dataset             = BGPDataset('japan-earthquake', anomaly)
 
     test_files = []
 
@@ -262,15 +262,18 @@ def csv_to_xy(val_file, num_classes, lag):
 
     x_val -= x_val.mean(axis = 0)
     x_val /= x_val.std(axis = 0)
-    x_val = add_lag(x_val, lag=lag)
+    x_val[np.isnan(x_val)] = 0
 
-    x_val = x_val.reshape(x_val.shape[0], lag+1, x_val.shape[1]//(lag+1))
+    if lag > 0:
+        x_val = add_lag(x_val, lag=lag)
+        x_val = x_val.reshape(x_val.shape[0], lag+1, x_val.shape[1]//(lag+1))
 
     if num_classes > 2:
         y_val = to_categorical(y_val, num_classes=num_classes)
         y_val = y_val.reshape(-1, num_classes)
     else:
         y_val = y_val.reshape(-1, 1)
+
     return x_val, y_val
 
 def calc_metrics(y_test, y_pred, multi=False):
