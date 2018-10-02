@@ -7,7 +7,7 @@ from sklearn.preprocessing import LabelBinarizer
 from bgpanomalies import *
 from lstm_detection import *
 
-test_events = ['slammer','japan-earthquake']
+test_events = ['slammer','nimda','japan-earthquake','aws-leak']
 train_files = get_train_datasets(test_events, multi = True, anomaly = True)
 test_files = get_test_datasets(test_events, multi = True, anomaly = True)
 
@@ -34,37 +34,31 @@ x_total, y_total = (train_vals[0][0][0], train_vals[0][0][1])
 for train_samples in train_vals[1:]:
     filename = train_samples[1]
     x_train, y_train = (train_samples[0][0], train_samples[0][1])
-    y_train_labels = y_train
     x_total = np.append(x_total, x_train, axis=0)
     y_total = np.append(y_total, y_train, axis=0)
-    print x_total.shape
-    print y_total
+    print filename.split('multi_')[1] + '->' + str(y_train.shape[0])
 
-xy_total = np.concatenate((x_total, y_total), axis=1)
-np.random.shuffle(xy_total)
-y_total = xy_total[:,-1:]
-print 'y_total.shape'
-print y_total.shape
-print y_total
+classif = SVC(gamma=0.001,random_state=0)
 
-y_weights = to_categorical(y_total, num_classes=4)
-y_weights = y_weights.reshape(-1, 4)
-y_classes = pd.DataFrame(y_weights).idxmax(1, skipna=False)
-label_encoder = LabelEncoder()
-label_encoder.fit(list(y_classes))
-y_integers = label_encoder.transform(list(y_classes))
-sample_weights = compute_sample_weight('balanced', y_integers)
-print filename
-print 'sample_weights'
-print sample_weights.shape
+for i in range(0,50):
+    xy_total = np.concatenate((x_total, y_total), axis=1)
+    np.random.shuffle(xy_total)
+    y_total = xy_total[:,-1:]
 
-np.savetxt('s1.csv',y_total,delimiter=',')
-np.savetxt('s2.csv',sample_weights,delimiter=',')
+    y_weights = to_categorical(y_total, num_classes=4)
+    y_weights = y_weights.reshape(-1, 4)
+    y_classes = pd.DataFrame(y_weights).idxmax(1, skipna=False)
+    label_encoder = LabelEncoder()
+    label_encoder.fit(list(y_classes))
+    y_integers = label_encoder.transform(list(y_classes))
+    sample_weights = compute_sample_weight('balanced', y_integers)
 
-classif = OneVsRestClassifier(estimator=SVC(gamma=0.001,random_state=0))
-# classif = SVC(gamma=0.001,random_state=0)
-# classif.fit(x_total, y_total, sample_weight=sample_weights)
-classif.fit(x_total, y_total)
+    np.savetxt('s1.csv',y_total,delimiter=',')
+    np.savetxt('s2.csv',sample_weights,delimiter=',')
+
+    # classif = OneVsRestClassifier(estimator=SVC(gamma=0.001,random_state=0))
+    classif.fit(x_total, y_total, sample_weight=sample_weights)
+# classif.fit(x_total, y_total)
 
 for test_samples in test_vals:
     test_file = test_samples[1]

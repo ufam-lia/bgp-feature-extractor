@@ -3,9 +3,12 @@ import numpy as np
 import os, glob, sys
 
 features_path = '/home/pc/bgp-feature-extractor/datasets/'
-LABELS_DROP = ['news','nadas','flaps','origin_changes','as_path_avg','unique_as_path_max',\
-               'unique_as_path_avg','rare_ases_max','rare_ases_avg','number_rare_ases','edit_distance_max',\
-               'edit_distance_avg','ann_to_shorter','ann_to_longer','origin_2','imp_wd_dpath','imp_wd_spath']
+# LABELS_DROP = ['news','nadas','flaps','origin_changes','as_path_avg','unique_as_path_max',\
+#                'unique_as_path_avg','rare_ases_max','rare_ases_avg','number_rare_ases','edit_distance_max',\
+#                'edit_distance_avg','ann_to_shorter','ann_to_longer','origin_2','imp_wd_dpath','imp_wd_spath']
+LABELS_DROP = ['news','nadas','flaps','origin_changes','unique_as_path_max',\
+               'rare_ases_max','number_rare_ases','edit_distance_max',\
+               'ann_to_shorter','ann_to_longer','origin_2','imp_wd_dpath','imp_wd_spath']
 rrc = 'rrc00'
 peer = '1'
 

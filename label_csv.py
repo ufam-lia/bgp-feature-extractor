@@ -3,11 +3,12 @@ import numpy as np
 import os, glob, sys
 
 features_path = '/home/pc/bgp-feature-extractor/datasets/'
-LABELS_DROP = ['news','nadas','flaps','origin_changes','as_path_avg','unique_as_path_max',\
-               'unique_as_path_avg','rare_ases_max','rare_ases_avg','number_rare_ases','edit_distance_max',\
-               'edit_distance_avg','ann_to_shorter','ann_to_longer','origin_2','imp_wd_dpath','imp_wd_spath']
-rrc = 'rrc00'
-peer = '1'
+# LABELS_DROP = ['news','nadas','flaps','origin_changes','as_path_avg','unique_as_path_max',\
+#                'unique_as_path_avg','rare_ases_max','rare_ases_avg','number_rare_ases','edit_distance_max',\
+#                'edit_distance_avg','ann_to_shorter','ann_to_longer','origin_2','imp_wd_dpath','imp_wd_spath']
+LABELS_DROP = ['news','nadas','flaps','origin_changes','unique_as_path_max',\
+               'rare_ases_max','number_rare_ases','edit_distance_max',\
+               'ann_to_shorter','ann_to_longer','origin_2','imp_wd_dpath','imp_wd_spath']
 
 def drop_columns(csv):
     for i in xrange(0, 200):
@@ -78,6 +79,9 @@ def preprocessing(files, name='name', start=0, end=0, label=1):
 
             csv = add_label(csv, start, end, 1)
             csv2 = add_label(csv2, start, end, label)
+
+            csv = drop_columns(csv)
+            csv2 = drop_columns(csv2)
 
             df = df.append(csv, sort = True)
             df_multi = df_multi.append(csv2, sort = True)
