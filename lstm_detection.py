@@ -321,10 +321,12 @@ def main():
     parser.add_argument('-i','--inner', help='Number of epochs per each sequence', required=True)
     parser.add_argument('-l','--lag', help='Number of timesteps (1 = current step + last step)', required=True)
     parser.add_argument('-t','--test', help='Test datasets (might be a comma-separated list)', required=True)
+    parser.add_argument('-d','--ignore', help='List of datasets that must be ignored', required=False)
     parser.add_argument('-m','--multi', dest='multi',help='Enable multi-way datasets', action='store_true')
     parser.add_argument('-o','--one', dest='multi',help='Disable multi-way datasets', action='store_false')
     parser.set_defaults(multi=False)
     args = vars(parser.parse_args())
+
 
     epochs = int(args['epochs'])
     inner_epochs = int(args['inner'])
@@ -333,10 +335,15 @@ def main():
     batch_size = 32
     epsilon = 1e-10
     df = pd.DataFrame()
-
     multi = args['multi']
-    # print multi
-    train_files = get_train_datasets(test_events, multi = multi)
+
+    if args['ignore'] is not None:
+        ignored_events = args['ignore'].split(',')
+        ignored_events += test_events
+    else:
+        ignored_events = test_events
+
+    train_files = get_train_datasets(ignored_events, multi = multi)
     test_files = get_test_datasets(test_events, multi = multi)
     # test_file = BGPDataset('aws-leak').get_files(5, peer='15547')[0]
     # test_file = BGPDataset('japan-earthquake').get_files(5, peer='2497')[0]
