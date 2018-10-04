@@ -22,12 +22,18 @@ def compute_weights(xy_total):
 
 def print_metrics(y_pred, accuracy, test_file):
     count = Counter(y_pred)
+    length = len(y_pred)
+    indirect = np.round(count[1]/len(y_pred)*100,2)
+    direct = np.round(count[2]/len(y_pred)*100,2)
+    outage = np.round(count[3]/len(y_pred)*100,2)
+    accuracy = np.round(accuracy*100,2)
     print test_file
-    print 'len      -> '  + str(len(y_pred))
-    print 'indirect -> '  + str(np.round(count[1]/len(y_pred)*100,2)) + '%'
-    print 'direct   -> '  + str(np.round(count[2]/len(y_pred)*100,2)) + '%'
-    print 'outage   -> '  + str(np.round(count[3]/len(y_pred)*100,2)) + '%'
-    print '*** accuracy -> ' + str(np.round(accuracy*100,2)) + '%'
+    print 'len      -> '  + str(length)
+    print 'indirect -> '  + str(indirect) + '%'
+    print 'direct   -> '  + str(direct) + '%'
+    print 'outage   -> '  + str(outage) + '%'
+    print '*** accuracy -> ' + str(accuracy) + '%'
+    return length, indirect, direct, outage, accuracy
 
 def print_files(train_files, test_files):
     print 'Train files:'
@@ -67,7 +73,7 @@ def main():
     max_steps = int(args['steps'])
     test_events = args['test'].split(',')
 
-    if args.has_key('ignore'):
+    if args['ignore'] is not None:
         ignored_events = args['ignore'].split(',')
         ignored_events += test_events
     else:
@@ -98,27 +104,17 @@ def main():
         x_total = np.append(x_total, x_train, axis=0)
         y_total = np.append(y_total, y_train, axis=0)
 
-    print type(train_vals)
-    print type(train_vals[0])
-    print type(train_vals[0][0])
-    print type(train_vals[0][0][0])
-
     xy_total = np.concatenate((x_total, y_total), axis=1)
     np.random.shuffle(xy_total)
     y_total = xy_total[:,-1:]
 
     #Compute weights in order to cope with unbalanced datasets
     sample_weights = compute_weights(xy_total)
-    print sample_weights
-    print y_total
-
-    print sample_weights.shape
-    print x_total.shape
-    print y_total.shape
     classif = SVC(gamma=0.001,random_state=0)
     # classif = OneVsRestClassifier(estimator=SVC(gamma=0.001,random_state=0))
     classif.fit(x_total, y_total, sample_weight=sample_weights)
     # classif.fit(x_total, y_total)
+    df = pd.DataFrame()
 
     print( '####VALIDATION')
     for test_samples in test_vals:
@@ -128,9 +124,18 @@ def main():
         accuracy, precision, recall, f1 = calc_metrics(y_test[0:max_steps,], y_pred, multi=True)
 
         num_classes = 2
-        print_metrics(y_pred, accuracy, test_file)
         y_csv = calc_prediction(y_pred, y_test, num_classes)
         y_csv.to_csv('results/y_pred_' + test_file + '.csv', quoting=3)
+
+        length, indirect, direct, outage, accuracy = print_metrics(y_pred, accuracy, test_file)
+        df.set_value(test_file,'len', length)
+        df.set_value(test_file,'indirect', indirect)
+        df.set_value(test_file,'direct', direct)
+        df.set_value(test_file,'outage', outage)
+        df.set_value(test_file,'accuracy', accuracy)
+
+    model_name = 'svm_results_' + args['test'].replace(',','-')
+    df.to_csv('results/'+model_name+'.csv', sep=',')
 
 if __name__ == "__main__":
     main()
