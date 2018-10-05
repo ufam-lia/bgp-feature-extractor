@@ -1,7 +1,7 @@
 from __future__ import division
 from sklearn import datasets
 from sklearn import svm
-from sklearn.svm import SVC
+from sklearn.svm import SVC, NuSVC, LinearSVC
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.preprocessing import LabelBinarizer
 
@@ -65,11 +65,16 @@ def calc_prediction(y_pred, y_test, num_classes):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-c','--cparam', help='Number of epochs for all sequences', required=True)
+    parser.add_argument('-k','--kernel', help='Kernel type - rbf, linear, poly, sigmoid', required=True)
+    parser.add_argument('-f','--function', help='Classifier type - 1) SVC, 2) NuSVC, 3) LinearSVC', required=True)
     parser.add_argument('-t','--test', help='Test datasets (might be a comma-separated list)', required=True)
     parser.add_argument('-i','--ignore', help='List of datasets that must be ignored', required=False)
     parser.add_argument('-s','--steps', help='Number of steps to consider', required=True)
     args = vars(parser.parse_args())
 
+    cparam = float(args['cparam'])
+    kernel = args['kernel']
+    function = int(args['function'])
     max_steps = int(args['steps'])
     test_events = args['test'].split(',')
 
@@ -110,10 +115,16 @@ def main():
 
     #Compute weights in order to cope with unbalanced datasets
     sample_weights = compute_weights(xy_total)
-    classif = SVC(gamma=0.001,random_state=0)
-    # classif = OneVsRestClassifier(estimator=SVC(gamma=0.001,random_state=0))
+    if function == 1:
+        classif = SVC(kernel='sigmoid',C=cparam,random_state=0)
+    elif function == 2:
+        classif = NuSVC(kernel='sigmoid',random_state=0)
+    elif function == 3:
+        classif = LinearSVC(kernel='sigmoid',C=cparam,random_state=0)
     classif.fit(x_total, y_total, sample_weight=sample_weights)
+    # classif = OneVsRestClassifier(estimator=SVC(gamma=0.001,random_state=0))
     # classif.fit(x_total, y_total)
+
     df = pd.DataFrame()
 
     print( '####VALIDATION')

@@ -80,8 +80,8 @@ def preprocessing(files, name='name', start=0, end=0, label=1):
             csv = add_label(csv, start, end, 1)
             csv2 = add_label(csv2, start, end, label)
 
-            csv = drop_columns(csv)
-            csv2 = drop_columns(csv2)
+            # csv = drop_columns(csv)
+            # csv2 = drop_columns(csv2)
 
             df = df.append(csv, sort = True)
             df_multi = df_multi.append(csv2, sort = True)
