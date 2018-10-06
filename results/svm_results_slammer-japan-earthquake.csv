@@ -1,0 +1,9 @@
+,len,indirect,direct,outage,accuracy
+anomaly_multi_slammer_513_1_rrc04.csv,1129.0,37.73,0.0,62.27,37.73
+anomaly_multi_slammer_513_5_rrc04.csv,225.0,48.0,0.0,52.0,48.0
+anomaly_multi_slammer_559_1_rrc04.csv,1129.0,29.14,0.0,70.86,29.14
+anomaly_multi_slammer_559_5_rrc04.csv,225.0,38.22,0.0,61.78,38.22
+anomaly_multi_slammer_6893_1_rrc04.csv,1129.0,37.64,0.0,62.36,37.64
+anomaly_multi_slammer_6893_5_rrc04.csv,225.0,50.67,0.0,49.33,50.67
+anomaly_multi_japan-earthquake_2497_1_rrc06.csv,386.0,25.39,0.0,74.61,74.61
+anomaly_multi_japan-earthquake_2497_5_rrc06.csv,76.0,56.58,0.0,43.42,43.42

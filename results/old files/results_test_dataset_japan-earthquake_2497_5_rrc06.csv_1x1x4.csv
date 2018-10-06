@@ -1,0 +1,15 @@
+,accuracy,precision_0,recall_0,f1_0
+dataset_slammer_513_1_rrc04.csv,0.8430555555555556,0.0,0.0,0.0
+dataset_slammer_513_5_rrc04.csv,0.8430555555555556,0.0,0.0,0.0
+dataset_slammer_559_1_rrc04.csv,0.8430555555555556,0.0,0.0,0.0
+dataset_slammer_559_5_rrc04.csv,0.8430555555555556,0.0,0.0,0.0
+dataset_slammer_6893_1_rrc04.csv,0.8430555555555556,0.0,0.0,0.0
+dataset_slammer_6893_5_rrc04.csv,0.8430555555555556,0.0,0.0,0.0
+dataset_as9121_1853_1_rrc05.csv,0.9940277777777777,0.0,0.0,0.0
+dataset_as9121_1853_5_rrc05.csv,0.99375,0.0,0.0,0.0
+dataset_as9121_12793_1_rrc05.csv,0.9940277777777777,0.0,0.0,0.0
+dataset_as9121_12793_5_rrc05.csv,0.99375,0.0,0.0,0.0
+dataset_as9121_13237_1_rrc05.csv,0.9940277777777777,0.0,0.0,0.0
+dataset_as9121_13237_5_rrc05.csv,0.99375,0.0,0.0,0.0
+dataset_japan-earthquake_2497_1_rrc06.csv,0.94625,0.0,0.0,0.0
+dataset_japan-earthquake_2497_5_rrc06.csv,0.9465277777777777,0.0,0.0,0.0
