@@ -130,7 +130,11 @@ def main(argv):
         preprocessing(aws_leak_files, name='aws-leak_'+peer+'_'+ts, start=1461345001,end=1461349210, label=2)
         preprocessing(as_3561_filtering_files, name='as-3561-filtering_'+peer+'_'+ts, start=986578087,end=986579527, label=2)
         preprocessing(as9121_files, name='as9121_'+peer+'_'+ts, start=1103916000, end=1103918580, label=2)
-        preprocessing(japan_files, name='japan-earthquake_'+peer+'_'+ts, start=1299834783, end=1299857943, label=3)
+
+        if peer == '2497':
+            preprocessing(japan_files, name='japan-earthquake_'+peer+'_'+ts, start=1299834783, end=1299857943, label=3)
+        if peer == '10026': # 8:56 - 15:15
+            preprocessing(japan_files, name='japan-earthquake_'+peer+'_'+ts, start=1299833704, end=1299856504, label=3)
 
         if peer == '3257':
             preprocessing(as_path_error_files, name='as-path-error_'+peer+'_'+ts, start=1002484580,end=1002504620, label=2)

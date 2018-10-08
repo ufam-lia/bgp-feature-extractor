@@ -110,6 +110,7 @@ def main():
         y_total = np.append(y_total, y_train, axis=0)
 
     xy_total = np.concatenate((x_total, y_total), axis=1)
+    np.random.seed(42)
     np.random.shuffle(xy_total)
     y_total = xy_total[:,-1:]
 
