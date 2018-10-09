@@ -466,7 +466,7 @@ def main():
             accuracy, precision, recall, f1 = calc_metrics(y_test, y_pred, multi=multi)
             # print_metrics(precision, recall, f1, test_file)
         print epoch
-        if ((epoch % 4) == 0 and epoch >= 4) or (epoch == epochs-1):
+        if ((epoch % 20) == 0 and epoch >= 20) or (epoch == epochs-1):
             print( '####VALIDATION')
             for test_samples in test_vals:
                 test_file = test_samples[1].split('/')[-1]

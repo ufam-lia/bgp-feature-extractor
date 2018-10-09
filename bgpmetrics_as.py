@@ -16,7 +16,7 @@ import cPickle as pickle
 import argparse
 import operator
 import pdir
-from getsizeoflib import total_size
+#from getsizeoflib import total_size
 # from guppy import hpy
 import gc
 import pandas as pd
