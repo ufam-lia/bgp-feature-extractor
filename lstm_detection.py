@@ -202,12 +202,12 @@ def get_test_datasets(test_datasets, multi = False, anomaly = False):
 
     if 'aws-leak' in test_datasets:
         test_files += aws_leak_dataset.get_files(timebin = [1, 5], peer ='15547', multi = multi)
-        test_files += aws_leak_dataset.get_files(timebin = [1, 5], peer ='25091', multi = multi)
+        # test_files += aws_leak_dataset.get_files(timebin = [1, 5], peer ='25091', multi = multi)
         test_files += aws_leak_dataset.get_files(timebin = [1, 5], peer ='34781', multi = multi)
 
     if 'as9121' in test_datasets:
-        test_files += as9121_dataset.get_files(timebin = [1, 5], peer ='1853', multi = multi)
-        test_files += as9121_dataset.get_files(timebin = [1, 5], peer ='12793', multi = multi)
+        # test_files += as9121_dataset.get_files(timebin = [1, 5], peer ='1853', multi = multi)
+        # test_files += as9121_dataset.get_files(timebin = [1, 5], peer ='12793', multi = multi)
         test_files += as9121_dataset.get_files(timebin = [1, 5], peer ='13237', multi = multi)
 
     if 'as-3561-filtering' in test_datasets:
@@ -228,6 +228,7 @@ def get_test_datasets(test_datasets, multi = False, anomaly = False):
 
     if 'japan-earthquake' in test_datasets:
         test_files += japan_dataset.get_files(timebin = [1,5], peer = '2497', multi = multi)
+        test_files += japan_dataset.get_files(timebin = [1,5], peer = '10026', multi = multi)
 
     return test_files
 
