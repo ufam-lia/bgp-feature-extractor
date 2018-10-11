@@ -139,33 +139,35 @@ def get_train_datasets(exclude_dataset, multi = False, anomaly = False):
 
     if 'aws-leak' not in exclude_dataset:
         train_files += aws_leak_dataset.get_files(timebin = [1, 5], peer ='15547', multi = multi)
-        train_files += aws_leak_dataset.get_files(timebin = [1, 5], peer ='25091', multi = multi)
+        # train_files += aws_leak_dataset.get_files(timebin = [1, 5], peer ='25091', multi = multi)
         train_files += aws_leak_dataset.get_files(timebin = [1, 5], peer ='34781', multi = multi)
 
     if 'as9121' not in exclude_dataset:
-        train_files += as9121_dataset.get_files(timebin = [1, 5], peer ='1853', multi = multi)
-        train_files += as9121_dataset.get_files(timebin = [1, 5], peer ='12793', multi = multi)
+        # train_files += as9121_dataset.get_files(timebin = [1, 5], peer ='1853', multi = multi)
+        # train_files += as9121_dataset.get_files(timebin = [1, 5], peer ='12793', multi = multi)
         train_files += as9121_dataset.get_files(timebin = [1, 5], peer ='13237', multi = multi)
 
     if 'as-3561-filtering' not in exclude_dataset:
-        train_files += as_3561_filtering_dataset.get_files(timebin = [1, 5], peer ='1286', multi = multi)
-        train_files += as_3561_filtering_dataset.get_files(timebin = [1, 5], peer ='3257', multi = multi)
-        train_files += as_3561_filtering_dataset.get_files(timebin = [1, 5], peer ='3333', multi = multi)
+        # train_files += as_3561_filtering_dataset.get_files(timebin = [1, 5], peer ='1286', multi = multi)
+        # train_files += as_3561_filtering_dataset.get_files(timebin = [1, 5], peer ='3257', multi = multi)
+        # train_files += as_3561_filtering_dataset.get_files(timebin = [1, 5], peer ='3333', multi = multi)
+        pass
 
     if 'as-path-error' not in exclude_dataset:
-        train_files += as_path_error_dataset.get_files(timebin = [1, 5], peer = '3257', multi = multi)
-        train_files += as_path_error_dataset.get_files(timebin = [1, 5], peer = '3333', multi = multi)
-        train_files += as_path_error_dataset.get_files(timebin = [1, 5], peer = '9057', multi = multi)
+        # train_files += as_path_error_dataset.get_files(timebin = [1, 5], peer = '3257', multi = multi)
+        # train_files += as_path_error_dataset.get_files(timebin = [1, 5], peer = '3333', multi = multi)
+        # train_files += as_path_error_dataset.get_files(timebin = [1, 5], peer = '9057', multi = multi)
+        pass
 
     if 'malaysian-telecom' not in exclude_dataset:
-        train_files += malaysian_dataset.get_files(timebin = [1, 5], peer = '513', multi = multi)
-        train_files += malaysian_dataset.get_files(timebin = [1, 5], peer = '20932', multi = multi)
+        # train_files += malaysian_dataset.get_files(timebin = [1, 5], peer = '513', multi = multi)
+        # train_files += malaysian_dataset.get_files(timebin = [1, 5], peer = '20932', multi = multi)
         train_files += malaysian_dataset.get_files(timebin = [1, 5], peer = '25091', multi = multi)
-        train_files += malaysian_dataset.get_files(timebin = [1, 5], peer = '34781', multi = multi)
+        # train_files += malaysian_dataset.get_files(timebin = [1, 5], peer = '34781', multi = multi)
 
     if 'japan-earthquake' not in exclude_dataset:
         train_files += japan_dataset.get_files(timebin = [1,5], peer = '2497', multi = multi)
-
+        train_files += japan_dataset.get_files(timebin = [1,5], peer = '10026', multi = multi)
     return train_files
 
 def get_test_datasets(test_datasets, multi = False, anomaly = False):
@@ -261,9 +263,12 @@ def csv_to_xy(val_file, num_classes, lag):
     x_val = x_val.astype('float32')
     y_val = y_val.astype('float32')
 
-    x_val -= x_val.mean(axis = 0)
-    x_val /= x_val.std(axis = 0)
+    # x_val -= x_val.mean(axis = 0)
+    # x_val /= x_val.std(axis = 0)
     x_val[np.isnan(x_val)] = 0
+    scaler = MinMaxScaler()
+    x_val = scaler.fit_transform(x_val)
+    np.savetxt('oi.csv',x_val, delimiter=',')
 
     if lag > 0:
         x_val = add_lag(x_val, lag=lag)

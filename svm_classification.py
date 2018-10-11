@@ -8,6 +8,10 @@ from sklearn.preprocessing import LabelBinarizer
 from bgpanomalies import *
 from lstm_detection import *
 from collections import Counter
+import warnings
+
+warnings.filterwarnings("ignore", category=FutureWarning)
+np.random.seed(42)
 
 def compute_weights(xy_total):
     y_total = xy_total[:,-1:]
@@ -27,11 +31,11 @@ def print_metrics(y_pred, accuracy, test_file):
     direct = np.round(count[2]/len(y_pred)*100,2)
     outage = np.round(count[3]/len(y_pred)*100,2)
     accuracy = np.round(accuracy*100,2)
-    print test_file
-    print 'len      -> '  + str(length)
-    print 'indirect -> '  + str(indirect) + '%'
-    print 'direct   -> '  + str(direct) + '%'
-    print 'outage   -> '  + str(outage) + '%'
+    # print test_file
+    # print 'len      -> '  + str(length)
+    # print 'indirect -> '  + str(indirect) + '%'
+    # print 'direct   -> '  + str(direct) + '%'
+    # print 'outage   -> '  + str(outage) + '%'
     print '*** accuracy -> ' + str(accuracy) + '%'
     return length, indirect, direct, outage, accuracy
 
@@ -73,10 +77,14 @@ def main():
     args = vars(parser.parse_args())
 
     cparam = float(args['cparam'])
-    kernel = args['kernel']
     function = int(args['function'])
     max_steps = int(args['steps'])
     test_events = args['test'].split(',')
+
+    if args['kernel'] is not None:
+        kernel = args['kernel']
+    else:
+        kernel = 'rbf'
 
     if args['ignore'] is not None:
         ignored_events = args['ignore'].split(',')
@@ -87,7 +95,7 @@ def main():
     train_files = get_train_datasets(ignored_events, multi = True, anomaly = True)
     test_files = get_test_datasets(test_events, multi = True, anomaly = True)
 
-    print_files(train_files, test_files)
+    # print_files(train_files, test_files)
     train_vals = []
     for file in train_files:
         x_val, y_val = csv_to_xy(file, 2, 0)
@@ -110,18 +118,18 @@ def main():
         y_total = np.append(y_total, y_train, axis=0)
 
     xy_total = np.concatenate((x_total, y_total), axis=1)
-    np.random.seed(42)
+
     np.random.shuffle(xy_total)
     y_total = xy_total[:,-1:]
 
     #Compute weights in order to cope with unbalanced datasets
     sample_weights = compute_weights(xy_total)
     if function == 1:
-        classif = SVC(kernel='sigmoid',C=cparam,random_state=0)
+        classif = SVC(kernel=kernel,C=cparam,random_state=0)
     elif function == 2:
-        classif = NuSVC(kernel='sigmoid',random_state=0)
+        classif = NuSVC(kernel=kernel,random_state=0)
     elif function == 3:
-        classif = LinearSVC(kernel='sigmoid',C=cparam,random_state=0)
+        classif = LinearSVC(C=cparam,random_state=0)
     classif.fit(x_total, y_total, sample_weight=sample_weights)
     # classif = OneVsRestClassifier(estimator=SVC(gamma=0.001,random_state=0))
     # classif.fit(x_total, y_total)
@@ -129,6 +137,7 @@ def main():
     df = pd.DataFrame()
 
     print( '####VALIDATION')
+    acc_total = 0
     for test_samples in test_vals:
         test_file = test_samples[1].split('/')[-1]
         x_test, y_test = test_samples[0]
@@ -140,12 +149,14 @@ def main():
         y_csv.to_csv('results/y_pred_' + test_file + '.csv', quoting=3)
 
         length, indirect, direct, outage, accuracy = print_metrics(y_pred, accuracy, test_file)
+        acc_total += accuracy
         df.set_value(test_file,'len', length)
         df.set_value(test_file,'indirect', indirect)
         df.set_value(test_file,'direct', direct)
         df.set_value(test_file,'outage', outage)
         df.set_value(test_file,'accuracy', accuracy)
 
+    print 'TOTAL -> ' + str(np.round(acc_total/len(test_vals),2))
     model_name = 'svm_results_' + args['test'].replace(',','-')
     df.to_csv('results/'+model_name+'.csv', sep=',')
 
