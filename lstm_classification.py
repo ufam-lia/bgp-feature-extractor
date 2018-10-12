@@ -320,7 +320,7 @@ def save_metrics(accuracy, precision, recall, f1, test_file, df):
             df.set_value(test_file,'f1_' + str(i), f1[i])
     return df
 
-def main():
+def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument('-e','--epochs', help='Number of epochs for all sequences', required=True)
     parser.add_argument('-i','--inner', help='Number of epochs per each sequence', required=False)
@@ -330,16 +330,51 @@ def main():
     parser.add_argument('-m','--multi', dest='multi',help='Enable multi-way datasets', action='store_true')
     parser.add_argument('-o','--one', dest='multi',help='Disable multi-way datasets', action='store_false')
     parser.set_defaults(multi=False)
-    args = vars(parser.parse_args())
+    return vars(parser.parse_args())
 
+def print_files(train_files, test_files):
+    print 'TRAIN'
+    for f in train_files:
+        print f
 
+    print 'TEST'
+    for f in test_files:
+        print f
+def get_xy_vals(train_files, num_classes, lag):
+    xy_vals = []
+    for file in train_files:
+        x_val, y_val = csv_to_xy(file, num_classes, lag)
+        xy_vals.append(((x_val, y_val), file))
+    return xy_vals
+
+def calc_class_weights(y_train_labels):
+    y_integers = np.argmax(y_train_labels, axis=1)
+    y_classes = pd.DataFrame(y_train_labels).idxmax(1, skipna=False)
+    label_encoder = LabelEncoder()
+    label_encoder.fit(list(y_classes))
+    y_integers = label_encoder.transform(list(y_classes))
+
+    # Create dict of labels : integer representation
+    labels_and_integers = dict(zip(y_classes, y_integers))
+    class_weights = compute_class_weight('balanced', np.unique(y_integers), y_integers)
+    sample_weights = compute_sample_weight('balanced', y_integers)
+    class_weights_dict = dict(zip(label_encoder.transform(list(label_encoder.classes_)), class_weights))
+    print label_encoder.classes_
+    print np.argmax(y_train_labels, axis=1)
+    print pd.DataFrame(y_train_labels).idxmax(1, skipna=False)
+    return class_weights_dict, sample_weights
+
+def main():
+    df = pd.DataFrame()
+
+    args = parse_arguments()
     epochs = int(args['epochs'])
     lag = int(args['lag'])
     test_events = args['test'].split(',')
-    batch_size = 32
+    batch_size = 1
     epsilon = 1e-10
-    df = pd.DataFrame()
-    multi = args['multi']
+    multi = True
+    num_classes = 4
 
     if args['inner'] is not None:
         inner_epochs = int(args['inner'])
@@ -352,55 +387,46 @@ def main():
     else:
         ignored_events = test_events
 
-    train_files = get_train_datasets(ignored_events, multi = multi)
-    test_files = get_test_datasets(test_events, multi = multi)
-    # test_file = BGPDataset('aws-leak').get_files(5, peer='15547')[0]
-    # test_file = BGPDataset('japan-earthquake').get_files(5, peer='2497')[0]
+    train_files = get_train_datasets(ignored_events, multi = multi, anomaly = True)
+    test_files = get_test_datasets(test_events, multi = multi, anomaly = True)
+    train_vals = get_xy_vals(train_files, num_classes, lag)
+    test_vals = get_xy_vals(test_files, num_classes, lag)
+    print_files(train_files, test_files)
 
-    print 'TRAIN'
-    for f in train_files:
-        print f
+    l = []
 
-    print 'TEST'
-    for f in test_files:
-        print f
+    x_total, y_total = (train_vals[0][0][0], train_vals[0][0][1])
 
-    if multi:
-        num_classes = 4
-    else:
-        num_classes = 2
+    for train_samples in train_vals[1:]:
+        x_train, y_train = (train_samples[0][0], train_samples[0][1])
+        x_total = np.append(x_total, x_train, axis=0)
+        y_total = np.append(y_total, y_train, axis=0)
 
-    train_vals = []
-    for file in train_files:
-        x_val, y_val = csv_to_xy(file, num_classes, lag)
-        train_vals.append(((x_val, y_val), file))
+    print x_total.shape
+    # print y_total.shape
+    # xy_total = np.concatenate((x_total, y_total), axis=1)
 
-    test_vals = []
-    for file in test_files:
-        x_val, y_val = csv_to_xy(file, num_classes, lag)
-        test_vals.append(((x_val, y_val), file))
+    class_weights, sample_weights = calc_class_weights(y_total)
+    print class_weights
 
     if len(test_vals) > 0:
-        validation_data = test_vals[0][0][0]
-        validation_target = test_vals[0][0][1]
+        validation_data = test_vals[0][0][0] #file[0] -> 0: (x,y) 1: filename
+        validation_target = test_vals[0][0][1] #file[0] -> 0: (x,y) 1: filename
     else:
         print 'No test set found with name(s): ' + str(test_events)
 
     model = Sequential()
     # model.add(Dense(10, activation='sigmoid', input_shape = (x_test[0].shape), batch_size = batch_size))
-    model.add(LSTM(100, return_sequences=True, batch_input_shape=(batch_size,validation_data.shape[1], validation_data.shape[2]), stateful=True, activation='sigmoid'))
+    model.add(LSTM(100, return_sequences=True, input_shape=((validation_data.shape[1],validation_data.shape[2])), stateful=False, activation='sigmoid'))
+    # model.add(LSTM(100, return_sequences=True, input_shape=(validation_data.shape), stateful=False, activation='sigmoid'))
     model.add(Dropout(0.2))
-    model.add(LSTM(100, return_sequences=True, stateful = True, activation='sigmoid'))
+    model.add(LSTM(100, return_sequences=True, stateful = False, activation='sigmoid'))
     model.add(Dropout(0.2))
-    model.add(LSTM(100, return_sequences=False, stateful = True, activation='sigmoid'))
+    model.add(LSTM(100, return_sequences=False, stateful = False, activation='sigmoid'))
     model.add(Dropout(0.2))
 
-    if multi:
-        model.add(Dense(4, activation='softmax'))
-        model.compile(loss='categorical_crossentropy', optimizer=Adam(lr=0.0001),metrics=['accuracy'])
-    else:
-        model.add(Dense(1, activation='sigmoid'))
-        model.compile(loss='binary_crossentropy', optimizer=Adam(lr=0.0001),metrics=['accuracy'])
+    model.add(Dense(4, activation='softmax'))
+    model.compile(loss='categorical_crossentropy', optimizer=Adam(lr=0.0001),metrics=['accuracy'])
 
     # model.summary()
     # ann_viz(model, view=True, filename="network.gv", title="nn-arch")
@@ -420,30 +446,17 @@ def main():
         for train_samples in train_vals:
             filename = train_samples[1]
             x_train, y_train = (train_samples[0][0], train_samples[0][1])
+            print filename +'->'+ str(x_train.shape)
 
             validation_data = x_train
             validation_target = y_train
+            y_train_labels = y_train
 
-            if not multi:
-                y_val = to_categorical(y_train, num_classes=2)
-                y_val = y_val.reshape(-1, 2)
-                y_train_labels = y_val
-            else:
-                y_train_labels = y_train
+            # class_weights, sample_weights = calc_class_weights(y_train_labels)
+            # print class_weights
+            print y_train
+            print np.argmax(y_train, axis=1)[0]
 
-            y_integers = np.argmax(y_train_labels, axis=1)
-            y_classes = pd.DataFrame(y_train_labels).idxmax(1, skipna=False)
-            label_encoder = LabelEncoder()
-            label_encoder.fit(list(y_classes))
-            y_integers = label_encoder.transform(list(y_classes))
-
-            # Create dict of labels : integer representation
-            labels_and_integers = dict(zip(y_classes, y_integers))
-            class_weights = compute_class_weight('balanced', np.unique(y_integers), y_integers)
-            sample_weights = compute_sample_weight('balanced', y_integers)
-            class_weights_dict = dict(zip(label_encoder.transform(list(label_encoder.classes_)), class_weights))
-
-            print filename
             df1 = pd.DataFrame(sample_weights)
             df2 = pd.DataFrame(y_train)
             df1.to_csv('df1.csv',sep=',')
@@ -453,15 +466,9 @@ def main():
             # print filename + 'class_weights -> ' + str(d_class_weights)
             # class_weight = {0: 1., 1: 4, 2:4, 3:4}
 
-            hist = model.fit(x_train, y_train,
-                                # batch_size=batch_size,
-                                sample_weight=sample_weights,
-                                epochs=inner_epochs,
-                                verbose=0,
-                                validation_data=(validation_data, validation_target),
-                                callbacks=[f1early, tensorboard],
-                                # class_weight=class_weights,
-                                shuffle=False)
+            hist = model.fit(x_train, y_train, epochs=inner_epochs, verbose=0,
+                             validation_data=(validation_data, validation_target),
+                             callbacks=[f1early, tensorboard], class_weight=class_weights, shuffle=False)
             #Evaluate after each sequence processed
             # y_pred = model.predict(x_test, verbose = 0).round()
             model.reset_states()

@@ -1,9 +1,12 @@
 from __future__ import division
 from sklearn import datasets
 from sklearn import svm
+from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import SVC, NuSVC, LinearSVC
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.preprocessing import LabelBinarizer
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
+from sklearn.neural_network import MLPClassifier
 
 from bgpanomalies import *
 from lstm_detection import *
@@ -11,7 +14,7 @@ from collections import Counter
 import warnings
 
 warnings.filterwarnings("ignore", category=FutureWarning)
-np.random.seed(42)
+# np.random.seed(42)
 
 def compute_weights(xy_total):
     y_total = xy_total[:,-1:]
@@ -73,18 +76,22 @@ def main():
     parser.add_argument('-f','--function', help='Classifier type - 1) SVC, 2) NuSVC, 3) LinearSVC', required=True)
     parser.add_argument('-t','--test', help='Test datasets (might be a comma-separated list)', required=True)
     parser.add_argument('-i','--ignore', help='List of datasets that must be ignored', required=False)
-    parser.add_argument('-s','--steps', help='Number of steps to consider', required=True)
+    parser.add_argument('-s','--steps', help='Number of steps to consider', required=False)
     args = vars(parser.parse_args())
 
     cparam = float(args['cparam'])
     function = int(args['function'])
-    max_steps = int(args['steps'])
     test_events = args['test'].split(',')
 
     if args['kernel'] is not None:
         kernel = args['kernel']
     else:
         kernel = 'rbf'
+
+    if args['steps'] is not None:
+        max_steps = int(args['steps'])
+    else:
+        max_steps = -1
 
     if args['ignore'] is not None:
         ignored_events = args['ignore'].split(',')
@@ -95,7 +102,7 @@ def main():
     train_files = get_train_datasets(ignored_events, multi = True, anomaly = True)
     test_files = get_test_datasets(test_events, multi = True, anomaly = True)
 
-    # print_files(train_files, test_files)
+    print_files(train_files, test_files)
     train_vals = []
     for file in train_files:
         x_val, y_val = csv_to_xy(file, 2, 0)
@@ -111,6 +118,7 @@ def main():
     l = []
     # x_total, y_total = (train_vals[0][0][0], train_vals[0][0][1])
     x_total, y_total = (train_vals[0][0][0][:max_steps, :], train_vals[0][0][1][:max_steps, :])
+
     for train_samples in train_vals[1:]:
         filename = train_samples[1]
         x_train, y_train = (train_samples[0][0][:max_steps,:], train_samples[0][1][:max_steps,:])
@@ -130,9 +138,16 @@ def main():
         classif = NuSVC(kernel=kernel,random_state=0)
     elif function == 3:
         classif = LinearSVC(C=cparam,random_state=0)
-    classif.fit(x_total, y_total, sample_weight=sample_weights)
+    elif function == 4:
+        classif = DecisionTreeClassifier(criterion="gini")
+    elif function == 5:
+        classif = RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1)
+    elif function == 6:
+        classif = AdaBoostClassifier()
+
+    # classif.fit(x_total, y_total, sample_weight=sample_weights)
     # classif = OneVsRestClassifier(estimator=SVC(gamma=0.001,random_state=0))
-    # classif.fit(x_total, y_total)
+    classif.fit(x_total, y_total)
 
     df = pd.DataFrame()
 

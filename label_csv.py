@@ -100,17 +100,11 @@ def preprocessing(files, name='name', start=0, end=0, label=1):
 
         df = adjust_to_batch_size(df, 32)
         df_multi = adjust_to_batch_size(df_multi, 32)
-
         df.reset_index(drop=True, inplace=True)
         df_multi.reset_index(drop=True, inplace=True)
 
-        anomaly = df[df['class'] != 0]
         anomaly_multi = df_multi[df_multi['class'] != 0]
-
-        anomaly.reset_index(drop=True, inplace=True)
         anomaly_multi.reset_index(drop=True, inplace=True)
-
-        anomaly.to_csv(features_path + 'anomaly_' + name + '_' + rrc + '.csv', quoting=3)
         anomaly_multi.to_csv(features_path + 'anomaly_multi_' + name + '_' + rrc + '.csv', quoting=3)
         df.to_csv(features_path + 'dataset_' + name + '_' + rrc + '.csv', quoting=3)
         df_multi.to_csv(features_path + 'dataset_multi_' + name + '_' + rrc + '.csv', quoting=3)
