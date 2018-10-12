@@ -11,7 +11,7 @@ import argparse
 
 from bgpanomalies import *
 from sklearn.metrics import confusion_matrix, f1_score, precision_score, recall_score, accuracy_score
-from sklearn.preprocessing import LabelEncoder, MinMaxScaler
+from sklearn.preprocessing import LabelEncoder, MinMaxScaler, StandardScaler
 from sklearn.utils.class_weight import compute_class_weight, compute_sample_weight
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, LSTM
@@ -262,11 +262,10 @@ def csv_to_xy(val_file, num_classes, lag):
 
     x_val = x_val.astype('float32')
     y_val = y_val.astype('float32')
-
-    # x_val -= x_val.mean(axis = 0)
-    # x_val /= x_val.std(axis = 0)
     x_val[np.isnan(x_val)] = 0
+
     scaler = MinMaxScaler()
+    # scaler = StandardScaler()
     x_val = scaler.fit_transform(x_val)
     np.savetxt('oi.csv',x_val, delimiter=',')
 

@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import os, glob, sys
+import random
 
 features_path = '/home/pc/bgp-feature-extractor/datasets/'
 # LABELS_DROP = ['news','nadas','flaps','origin_changes','as_path_avg','unique_as_path_max',\
@@ -63,6 +64,14 @@ def adjust_to_batch_size(csv, batch_size):
         csv = csv.append(last_line, sort=True)
     return csv
 
+def randomize_dataset(dataset, start, end):
+    margin = 10
+    before_length = dataset[dataset['timestamp2'] < start].shape[0]
+    after_length = dataset[dataset['timestamp2'] > end].shape[0]
+    before_clip = random.randint(0, before_length - margin)
+    after_clip = random.randint(dataset.shape[0] - after_length, dataset.shape[0]) + margin
+    return dataset[before_clip:after_clip]
+
 def preprocessing(files, name='name', start=0, end=0, label=1):
     df = pd.DataFrame()
     df_multi = pd.DataFrame()
@@ -105,6 +114,12 @@ def preprocessing(files, name='name', start=0, end=0, label=1):
         anomaly_multi.to_csv(features_path + 'anomaly_multi_' + name + '_' + rrc + '.csv', quoting=3)
         df.to_csv(features_path + 'dataset_' + name + '_' + rrc + '.csv', quoting=3)
         df_multi.to_csv(features_path + 'dataset_multi_' + name + '_' + rrc + '.csv', quoting=3)
+
+        for c in range(0,5):
+            df = randomize_dataset(df, start, end)
+            df_multi = randomize_dataset(df_multi, start, end)
+            df.to_csv(features_path + 'dataset_' + name + '_' + rrc + '_rand' + str(c) + '.csv', quoting=3)
+            df_multi.to_csv(features_path + 'dataset_multi_' + name + '_' + rrc + '_rand' + str(c) + '.csv', quoting=3)
 
 def main(argv):
     global rrc
