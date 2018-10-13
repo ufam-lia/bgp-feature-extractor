@@ -75,25 +75,32 @@ def randomize_dataset(dataset, start, end):
 def preprocessing(files, name='name', start=0, end=0, label=1):
     df = pd.DataFrame()
     df_multi = pd.DataFrame()
-    anomaly = pd.DataFrame()
     anomaly_multi = pd.DataFrame()
+    df_annotated = pd.DataFrame()
 
     if len(files) > 0:
         for f in files:
-            csv = pd.read_csv(f, index_col=0, delimiter = ',', quoting=3)
-            csv2 = pd.read_csv(f, index_col=0, delimiter = ',', quoting=3)
+            print f
+            csv           = pd.read_csv(f, index_col=0, delimiter = ',', quoting=3)
+            csv_multi     = pd.read_csv(f, index_col=0, delimiter = ',', quoting=3)
+            csv_annotated = pd.read_csv(f, index_col=0, delimiter = ',', quoting=3)
 
             csv = fix_columns(csv)
-            csv2 = fix_columns(csv2)
+            csv_multi = fix_columns(csv_multi)
+            csv_annotated = fix_columns(csv_annotated)
 
             csv = add_label(csv, start, end, 1)
-            csv2 = add_label(csv2, start, end, label)
+            csv_multi = add_label(csv_multi, start, end, label)
+
+            mark = csv['announcements'].max()
+            csv_annotated = add_label(csv_annotated, start, end, mark/2)
 
             # csv = drop_columns(csv)
-            # csv2 = drop_columns(csv2)
-
+            # csv_multi = drop_columns(csv_multi)
             df = df.append(csv, sort = True)
-            df_multi = df_multi.append(csv2, sort = True)
+            df_multi = df_multi.append(csv_multi, sort = True)
+            df_annotated = df_annotated.append(csv_annotated, sort = True)
+
 
             df = df.fillna(0)
             df_multi = df_multi.fillna(0)
@@ -105,9 +112,16 @@ def preprocessing(files, name='name', start=0, end=0, label=1):
 
         anomaly_multi = df_multi[df_multi['class'] != 0]
         anomaly_multi.reset_index(drop=True, inplace=True)
+        df_annotated.insert(df_annotated.shape[1], 'ann2',df_annotated['announcements'])
+        df_annotated.insert(df_annotated.shape[1], 'class2',df_annotated['class'])
+
+        if not os.path.exists(features_path + '/annotated'):
+            os.makedirs(features_path + '/annotated')
+
         anomaly_multi.to_csv(features_path + 'anomaly_multi_' + name + '_' + rrc + '.csv', quoting=3)
         df.to_csv(features_path + 'dataset_' + name + '_' + rrc + '.csv', quoting=3)
         df_multi.to_csv(features_path + 'dataset_multi_' + name + '_' + rrc + '.csv', quoting=3)
+        df_annotated.to_csv(features_path + 'annotated/dataset_multi_' + name + '_' + rrc + '.csv', quoting=3)
 
         for c in range(0,5):
             df = randomize_dataset(df, start, end)
@@ -133,12 +147,18 @@ def main(argv):
         as9121_files             = sorted(glob.glob(features_path + 'features-as9121-' + rrc + '-' + peer + '-' + ts + '.csv'))
         japan_files              = sorted(glob.glob(features_path + 'features-japan-earthquake-' + rrc + '-' + peer + '-' + ts + '.csv'))
 
-        preprocessing(code_red_files, name='code-red_'+peer+'_'+ts, start=995553071, end=995591487, label=1)
         preprocessing(nimda_files, name='nimda_'+peer+'_'+ts, start=1000818222, end=1001030344, label=1)
         preprocessing(slammer_files, name='slammer_'+peer+'_'+ts, start=1043472590, end=1043540404, label=1)
         preprocessing(aws_leak_files, name='aws-leak_'+peer+'_'+ts, start=1461345001,end=1461349210, label=2)
         preprocessing(as_3561_filtering_files, name='as-3561-filtering_'+peer+'_'+ts, start=986578087,end=986579527, label=2)
-        preprocessing(as9121_files, name='as9121_'+peer+'_'+ts, start=1103916000, end=1103918580, label=2)
+        preprocessing(as9121_files, name='as9121_'+peer+'_'+ts, start=1103879947, end=1103884629, label=2)
+
+        if peer == '513':
+            preprocessing(code_red_files, name='code-red_'+peer+'_'+ts, start=995555750, end=995587250, label=1)
+        if peer == '559':
+            preprocessing(code_red_files, name='code-red_'+peer+'_'+ts, start=995560190, end=995588450, label=1)
+        if peer == '6893':
+            preprocessing(code_red_files, name='code-red_'+peer+'_'+ts, start=995555750, end=995587250, label=1)
 
         if peer == '2497':
             preprocessing(japan_files, name='japan-earthquake_'+peer+'_'+ts, start=1299834783, end=1299857943, label=3)
