@@ -58,7 +58,13 @@ def add_label(csv, start, end, label):
     return csv
 
 def adjust_to_batch_size(csv, batch_size):
-    diff = (32 - csv.shape[0] % batch_size) if (csv.shape[0] % batch_size) != 0 else 0
+    diff = (batch_size - csv.shape[0] % batch_size) if (csv.shape[0] % batch_size) != 0 else 0
+    print 'batch_size'
+    print batch_size
+    print csv.shape[0]
+    print csv.shape[0] % batch_size
+    print diff
+
     last_line = pd.DataFrame(csv.tail(1), columns=csv.columns)
     for i in range(0, diff):
         csv = csv.append(last_line, sort=True)
@@ -118,6 +124,7 @@ def preprocessing(files, name='name', start=0, end=0, label=1):
         if not os.path.exists(features_path + '/annotated'):
             os.makedirs(features_path + '/annotated')
 
+        anomaly_multi = adjust_to_batch_size(anomaly_multi, 2)
         anomaly_multi.to_csv(features_path + 'anomaly_multi_' + name + '_' + rrc + '.csv', quoting=3)
         df.to_csv(features_path + 'dataset_' + name + '_' + rrc + '.csv', quoting=3)
         df_multi.to_csv(features_path + 'dataset_multi_' + name + '_' + rrc + '.csv', quoting=3)

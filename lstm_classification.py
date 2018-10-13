@@ -41,7 +41,8 @@ class F1EarlyStop(Callback):
         self.f1_history = []
 
     def on_epoch_end(self, epoch, logs={}):
-        val_predict = (np.asarray(self.model.predict(self.validation_data[0]))).round()
+        #XXX Batch size is fixed, must be changed to work with other batch_sizes
+        val_predict = (np.asarray(self.model.predict(self.validation_data[0], batch_size = 1))).round()
         # print( val_predict)
         val_targ = self.validation_data[1]
         # print( val_targ)
@@ -336,10 +337,10 @@ def print_files(train_files, test_files):
     print 'TRAIN'
     for f in train_files:
         print f
-
     print 'TEST'
     for f in test_files:
         print f
+
 def get_xy_vals(train_files, num_classes, lag):
     xy_vals = []
     for file in train_files:
@@ -356,12 +357,19 @@ def calc_class_weights(y_train_labels):
 
     # Create dict of labels : integer representation
     labels_and_integers = dict(zip(y_classes, y_integers))
+    print 'labels_and_integers'
     class_weights = compute_class_weight('balanced', np.unique(y_integers), y_integers)
     sample_weights = compute_sample_weight('balanced', y_integers)
-    class_weights_dict = dict(zip(label_encoder.transform(list(label_encoder.classes_)), class_weights))
-    print label_encoder.classes_
-    print np.argmax(y_train_labels, axis=1)
-    print pd.DataFrame(y_train_labels).idxmax(1, skipna=False)
+    # class_weights_dict = dict(zip(label_encoder.transform(list(label_encoder.classes_)), class_weights))
+    # print y_classes
+    class_weights_dict = dict(zip(labels_and_integers.keys(), class_weights))
+    print class_weights_dict
+    # print labels_and_integers
+    # print y_classes
+    # print class_weights_dict
+    # print label_encoder.classes_
+    # print np.argmax(y_train_labels, axis=1)
+    # print pd.DataFrame(y_train_labels).idxmax(1, skipna=False)
     return class_weights_dict, sample_weights
 
 def main():
@@ -394,7 +402,6 @@ def main():
     print_files(train_files, test_files)
 
     l = []
-
     x_total, y_total = (train_vals[0][0][0], train_vals[0][0][1])
 
     for train_samples in train_vals[1:]:
@@ -407,7 +414,7 @@ def main():
     # xy_total = np.concatenate((x_total, y_total), axis=1)
 
     class_weights, sample_weights = calc_class_weights(y_total)
-    print class_weights
+    # print class_weights
 
     if len(test_vals) > 0:
         validation_data = test_vals[0][0][0] #file[0] -> 0: (x,y) 1: filename
@@ -417,12 +424,13 @@ def main():
 
     model = Sequential()
     # model.add(Dense(10, activation='sigmoid', input_shape = (x_test[0].shape), batch_size = batch_size))
-    model.add(LSTM(100, return_sequences=True, input_shape=((validation_data.shape[1],validation_data.shape[2])), stateful=False, activation='sigmoid'))
-    # model.add(LSTM(100, return_sequences=True, input_shape=(validation_data.shape), stateful=False, activation='sigmoid'))
+    # model.add(LSTM(100, return_sequences=True, input_shape=((validation_data.shape[1],validation_data.shape[2])), stateful=True, activation='sigmoid'))
+    model.add(LSTM(100, return_sequences=True, batch_size=batch_size,batch_input_shape=((batch_size, validation_data.shape[1],validation_data.shape[2])), stateful=True, activation='sigmoid'))
+    # model.add(LSTM(100, return_sequences=True, input_shape=(validation_data.shape), stateful=True, activation='sigmoid'))
     model.add(Dropout(0.2))
-    model.add(LSTM(100, return_sequences=True, stateful = False, activation='sigmoid'))
+    model.add(LSTM(100, return_sequences=True, stateful = True, activation='sigmoid'))
     model.add(Dropout(0.2))
-    model.add(LSTM(100, return_sequences=False, stateful = False, activation='sigmoid'))
+    model.add(LSTM(100, return_sequences=False, stateful = True, activation='sigmoid'))
     model.add(Dropout(0.2))
 
     model.add(Dense(4, activation='softmax'))
@@ -454,10 +462,12 @@ def main():
 
             # class_weights, sample_weights = calc_class_weights(y_train_labels)
             # print class_weights
-            print y_train
-            print np.argmax(y_train, axis=1)[0]
+            # print y_train
+            class_index = np.argmax(y_train, axis=1)[0]
+            sample_length = np.argmax(y_train, axis=1).shape[0]
+            sample_weight_sequence = np.asarray([class_weights[class_index] for x in range(0, sample_length)])
 
-            df1 = pd.DataFrame(sample_weights)
+            df1 = pd.DataFrame(sample_weight_sequence)
             df2 = pd.DataFrame(y_train)
             df1.to_csv('df1.csv',sep=',')
             df2.to_csv('df2.csv',sep=',')
@@ -466,9 +476,14 @@ def main():
             # print filename + 'class_weights -> ' + str(d_class_weights)
             # class_weight = {0: 1., 1: 4, 2:4, 3:4}
 
-            hist = model.fit(x_train, y_train, epochs=inner_epochs, verbose=0,
+            hist = model.fit(x_train, y_train,
+                             epochs=inner_epochs, verbose=1,
                              validation_data=(validation_data, validation_target),
-                             callbacks=[f1early, tensorboard], class_weight=class_weights, shuffle=False)
+                             callbacks=[tensorboard],
+                             # class_weight=class_weights,
+                             sample_weight=sample_weight_sequence,
+                             batch_size = 1,
+                             shuffle=False)
             #Evaluate after each sequence processed
             # y_pred = model.predict(x_test, verbose = 0).round()
             model.reset_states()

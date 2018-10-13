@@ -118,7 +118,6 @@ def main():
     l = []
     # x_total, y_total = (train_vals[0][0][0], train_vals[0][0][1])
     x_total, y_total = (train_vals[0][0][0][:max_steps, :], train_vals[0][0][1][:max_steps, :])
-
     for train_samples in train_vals[1:]:
         filename = train_samples[1]
         x_train, y_train = (train_samples[0][0][:max_steps,:], train_samples[0][1][:max_steps,:])
