@@ -371,13 +371,6 @@ class Metrics(object):
                     # self.prefix_history[m.bgp.peer_as][prefix].append(m)
                     self.msg_counter[m.bgp.peer_as + '@' + prefix] += 1
 
-    def dbg_prefix(self, m, prefix):
-        if self.prfx_set[m.bgp.peer_as][prefix] == 1:
-            self.rib_count += 1
-            self.prfx_set[m.bgp.peer_as][prefix] = 0
-            self.prefix_found = prefix
-            self.peer_found = m.bgp.peer_as
-
     def classify_reannouncement(self, m, prefix):
         is_implicit_wd = False
         is_implicit_dpath = False
@@ -412,7 +405,6 @@ class Metrics(object):
                 if attr_name == 'AS_PATH':
                     is_implicit_dpath = True
             self.prefix_lookup[m.bgp.peer_as][prefix][BGP_ATTR_T[new_attr.type]] = new_attr
-
 
         #Figure it out which counter will be incremented
         if is_implicit_wd:
@@ -541,7 +533,6 @@ class Metrics(object):
                 if len(unique_as_path) > self.unique_as_path_max[self.bin]:
                     self.unique_as_path_max[self.bin] = len(unique_as_path)
 
-
                 self.num_of_paths_rcvd[self.bin] += 1
                 self.as_path_avg_length[self.bin] = (as_path['len'] * self.num_of_paths_rcvd[self.bin] + self.as_path_avg_length[self.bin])/self.num_of_paths_rcvd[self.bin]
                 self.unique_as_path_avg[self.bin] = (len(unique_as_path) * self.num_of_paths_rcvd[self.bin] + self.unique_as_path_max[self.bin])/self.num_of_paths_rcvd[self.bin]
@@ -571,7 +562,6 @@ class Metrics(object):
             for attr in m.bgp.msg.attr:
                 if BGP_ATTR_T[attr.type] == 'ORIGIN':
                     self.count_origin[attr.origin][self.bin] += 1
-
 
     def is_equal(self, new_attr, old_attr):
         if BGP_ATTR_T[new_attr.type] == 'ORIGIN':
@@ -612,72 +602,6 @@ class Metrics(object):
             if old_attr['COMMUNITY'] != [] and new_attr.comm <> old_attr['COMMUNITY'].comm:
                 self.diff_counter['COMMUNITY'] += 1
             return (old_attr['COMMUNITY'] != []) and (new_attr.comm == old_attr['COMMUNITY'].comm)
-
-    def print_classification(self, m, type, prefix):
-        # if prefix == self.prefix_found and m.bgp.peer_as == self.peer_found:
-        if prefix == '2.31.96.0/24':
-            if MRT_T[m.type] == 'BGP4MP' or  MRT_T[m.type] == 'BGP4MP_ET':
-                peer = m.bgp.peer_as
-                if peer == '2686':
-                    print '#'*15 + type + '#'*15
-                    print 'Timestamp: %s' % (dt.datetime.fromtimestamp(m.ts))
-                    print_bgp4mp(m)
-            else:
-                peer = m.td.peer_as
-                if peer == '2686':
-                    print '#'*15 + type + '#'*15
-                    print 'Timestamp: %s' % (dt.datetime.fromtimestamp(m.ts))
-                    print_td(m)
-
-            if type != 'RIB':
-                self.print_dicts()
-                # os.abort()
-
-    def print_prefix_history(self, peer, prefix):
-        for msg in self.prefix_history[peer][prefix]:
-            print 'Timestamp: %s' % (dt.datetime.fromtimestamp(msg.ts))
-            print_bgp4mp(msg)
-            print '_'*80
-            print ''
-
-    def print_peers(self):
-        print self.prefix_lookup.keys()
-
-    def print_dicts(self):
-        self.print_dict('updates', self.updates)
-        # self.print_dict('upds_prefixes', self.upds_prefixes)
-        self.print_dict('implicit_withdrawals_dpath', self.implicit_withdrawals_dpath)
-        self.print_dict('implicit_withdrawals_spath', self.implicit_withdrawals_spath)
-        self.print_dict('dup_announcements', self.dup_announcements)
-        self.print_dict('new_announcements', self.new_announcements)
-        self.print_dict('new_ann_after_wd', self.new_ann_after_wd)
-        self.print_dict('flap_announcements', self.flap_announcements)
-
-    def plot_timeseries(self):
-        fig = plt.figure(1)
-        plt.subplot(1,2,1)
-        plt.plot(range(len(self.updates.keys())), self.updates.values(), lw=1.25, color = 'black')
-        plt.plot(range(len(self.announcements.keys())), self.announcements.values(), lw=0.5, color = 'blue')
-        plt.plot(range(len(self.withdrawals.keys())), self.withdrawals.values(), lw=0.5, color = 'red')
-
-        plt.subplot(1,2,2)
-        plt.plot(range(len(self.max_prefix.keys())), self.max_prefix.values(), lw=0.5, color = 'blue')
-        plt.plot(range(len(self.mean_prefix.keys())), self.mean_prefix.values(), lw=0.5, color = 'red')
-
-        output = str(random.randint(1, 1000)) + '.png'
-        fig.savefig(output, bboxes_inches = '30', dpi = 400)
-        # print output
-        # os.system('xviewer ' + output + ' &')
-
-    def sort_dict(self, unsort_dict):
-        return defaultdict(int, dict(sorted(unsort_dict.items(), key = operator.itemgetter(1))))
-
-    def print_dict(self, name, dict):
-        for k, v in dict.iteritems():
-            print name + '  ' + str(dt.datetime.fromtimestamp(self.first_ts + self.bin_size * k)) + ' -> ' + str(v)
-
-    def is_implicit_wd(self, bgp_msg):
-        pass
 
     def sort_timeseries(self):
         #Ordering timeseries
@@ -766,6 +690,79 @@ class Metrics(object):
             self.ann_to_shorter[i]
             self.ann_to_longer[i]
             self.class_traffic[i]
+
+    def dbg_prefix(self, m, prefix):
+        if self.prfx_set[m.bgp.peer_as][prefix] == 1:
+            self.rib_count += 1
+            self.prfx_set[m.bgp.peer_as][prefix] = 0
+            self.prefix_found = prefix
+            self.peer_found = m.bgp.peer_as
+
+    def print_classification(self, m, type, prefix):
+        # if prefix == self.prefix_found and m.bgp.peer_as == self.peer_found:
+        if prefix == '2.31.96.0/24':
+            if MRT_T[m.type] == 'BGP4MP' or  MRT_T[m.type] == 'BGP4MP_ET':
+                peer = m.bgp.peer_as
+                if peer == '2686':
+                    print '#'*15 + type + '#'*15
+                    print 'Timestamp: %s' % (dt.datetime.fromtimestamp(m.ts))
+                    print_bgp4mp(m)
+            else:
+                peer = m.td.peer_as
+                if peer == '2686':
+                    print '#'*15 + type + '#'*15
+                    print 'Timestamp: %s' % (dt.datetime.fromtimestamp(m.ts))
+                    print_td(m)
+
+            if type != 'RIB':
+                self.print_dicts()
+                # os.abort()
+
+    def print_prefix_history(self, peer, prefix):
+        for msg in self.prefix_history[peer][prefix]:
+            print 'Timestamp: %s' % (dt.datetime.fromtimestamp(msg.ts))
+            print_bgp4mp(msg)
+            print '_'*80
+            print ''
+
+    def print_peers(self):
+        print self.prefix_lookup.keys()
+
+    def print_dicts(self):
+        self.print_dict('updates', self.updates)
+        # self.print_dict('upds_prefixes', self.upds_prefixes)
+        self.print_dict('implicit_withdrawals_dpath', self.implicit_withdrawals_dpath)
+        self.print_dict('implicit_withdrawals_spath', self.implicit_withdrawals_spath)
+        self.print_dict('dup_announcements', self.dup_announcements)
+        self.print_dict('new_announcements', self.new_announcements)
+        self.print_dict('new_ann_after_wd', self.new_ann_after_wd)
+        self.print_dict('flap_announcements', self.flap_announcements)
+
+    def plot_timeseries(self):
+        fig = plt.figure(1)
+        plt.subplot(1,2,1)
+        plt.plot(range(len(self.updates.keys())), self.updates.values(), lw=1.25, color = 'black')
+        plt.plot(range(len(self.announcements.keys())), self.announcements.values(), lw=0.5, color = 'blue')
+        plt.plot(range(len(self.withdrawals.keys())), self.withdrawals.values(), lw=0.5, color = 'red')
+
+        plt.subplot(1,2,2)
+        plt.plot(range(len(self.max_prefix.keys())), self.max_prefix.values(), lw=0.5, color = 'blue')
+        plt.plot(range(len(self.mean_prefix.keys())), self.mean_prefix.values(), lw=0.5, color = 'red')
+
+        output = str(random.randint(1, 1000)) + '.png'
+        fig.savefig(output, bboxes_inches = '30', dpi = 400)
+        # print output
+        # os.system('xviewer ' + output + ' &')
+
+    def sort_dict(self, unsort_dict):
+        return defaultdict(int, dict(sorted(unsort_dict.items(), key = operator.itemgetter(1))))
+
+    def print_dict(self, name, dict):
+        for k, v in dict.iteritems():
+            print name + '  ' + str(dt.datetime.fromtimestamp(self.first_ts + self.bin_size * k)) + ' -> ' + str(v)
+
+    def is_implicit_wd(self, bgp_msg):
+        pass
 
     def plot_ts(self, dict_ts, name_dict):
         fig = plt.figure(1)
