@@ -121,8 +121,8 @@ def get_train_datasets(exclude_dataset, multi = False, anomaly = False):
     train_files = []
 
     if 'code-red' not in exclude_dataset:
-        train_files += code_red_dataset.get_files(timebin = [1, 5, 15], peer ='513', multi = multi)
-        train_files += code_red_dataset.get_files(timebin = [1, 5, 15], peer ='6893', multi = multi)
+        train_files += code_red_dataset.get_files(timebin = [5], peer ='513', multi = multi)
+        train_files += code_red_dataset.get_files(timebin = [5], peer ='6893', multi = multi)
 
     if 'nimda' not in exclude_dataset:
         train_files += nimda_dataset.get_files(timebin = [1, 5], peer ='513', multi = multi)
@@ -130,13 +130,13 @@ def get_train_datasets(exclude_dataset, multi = False, anomaly = False):
         train_files += nimda_dataset.get_files(timebin = [1, 5, 15], peer ='6893', multi = multi)
 
     if 'slammer' not in exclude_dataset:
-        train_files += slammer_dataset.get_files(timebin = [1, 5, 15], peer ='513', multi = multi)
-        train_files += slammer_dataset.get_files(timebin = [1, 5, 15], peer ='559', multi = multi)
-        train_files += slammer_dataset.get_files(timebin = [1, 5, 15], peer ='6893', multi = multi)
+        train_files += slammer_dataset.get_files(timebin = [5], peer ='513', multi = multi)
+        train_files += slammer_dataset.get_files(timebin = [5], peer ='559', multi = multi)
+        train_files += slammer_dataset.get_files(timebin = [5], peer ='6893', multi = multi)
 
     if 'moscow-blackout' not in exclude_dataset:
-        train_files += moscow_dataset.get_files(timebin = [1, 5], peer ='1853', multi = multi)
-        train_files += moscow_dataset.get_files(timebin = [1, 5], peer ='12793', multi = multi)
+        train_files += moscow_dataset.get_files(timebin = [5], peer ='1853', multi = multi)
+        train_files += moscow_dataset.get_files(timebin = [5], peer ='12793', multi = multi)
 
     if 'aws-leak' not in exclude_dataset:
         train_files += aws_leak_dataset.get_files(timebin = [1, 5], peer ='15547', multi = multi)
@@ -167,8 +167,8 @@ def get_train_datasets(exclude_dataset, multi = False, anomaly = False):
         # train_files += malaysian_dataset.get_files(timebin = [1, 5], peer = '34781', multi = multi)
 
     if 'japan-earthquake' not in exclude_dataset:
-        train_files += japan_dataset.get_files(timebin = [1,5], peer = '2497', multi = multi)
-        train_files += japan_dataset.get_files(timebin = [1,5], peer = '10026', multi = multi)
+        train_files += japan_dataset.get_files(timebin = [1], peer = '2497', multi = multi)
+        train_files += japan_dataset.get_files(timebin = [1], peer = '10026', multi = multi)
     return train_files
 
 def get_test_datasets(test_datasets, multi = False, anomaly = False):
@@ -425,13 +425,13 @@ def main():
     model = Sequential()
     # model.add(Dense(10, activation='sigmoid', input_shape = (x_test[0].shape), batch_size = batch_size))
     # model.add(LSTM(100, return_sequences=True, input_shape=((validation_data.shape[1],validation_data.shape[2])), stateful=True, activation='sigmoid'))
-    model.add(LSTM(100, return_sequences=True, batch_size=batch_size,batch_input_shape=((batch_size, validation_data.shape[1],validation_data.shape[2])), stateful=True, activation='sigmoid'))
+    model.add(LSTM(20, return_sequences=True, batch_size=batch_size,batch_input_shape=((batch_size, validation_data.shape[1],validation_data.shape[2])), stateful=True, activation='sigmoid'))
     # model.add(LSTM(100, return_sequences=True, input_shape=(validation_data.shape), stateful=True, activation='sigmoid'))
     model.add(Dropout(0.2))
-    model.add(LSTM(100, return_sequences=True, stateful = True, activation='sigmoid'))
+    model.add(LSTM(20, return_sequences=False, stateful = True, activation='sigmoid'))
     model.add(Dropout(0.2))
-    model.add(LSTM(100, return_sequences=False, stateful = True, activation='sigmoid'))
-    model.add(Dropout(0.2))
+    # model.add(LSTM(100, return_sequences=False, stateful = True, activation='sigmoid'))
+    # model.add(Dropout(0.2))
 
     model.add(Dense(4, activation='softmax'))
     model.compile(loss='categorical_crossentropy', optimizer=Adam(lr=0.0001),metrics=['accuracy'])
@@ -444,9 +444,9 @@ def main():
     f1early = F1EarlyStop(patience = 10)
     tensorboard = TensorBoard(log_dir="logs/lstm")
 
-    round = 0
+    round = 1
     for epoch in range(epochs):
-        print( '\n\n###### ROUND %d \n' % (round+1))
+        print( '\n\n###### ROUND %d \n' % (round))
         round += 1
         i = 0
 
@@ -454,6 +454,7 @@ def main():
         for train_samples in train_vals:
             filename = train_samples[1]
             x_train, y_train = (train_samples[0][0], train_samples[0][1])
+            print ''
             print filename +'->'+ str(x_train.shape)
 
             validation_data = x_train
@@ -482,7 +483,7 @@ def main():
                              callbacks=[tensorboard],
                              # class_weight=class_weights,
                              sample_weight=sample_weight_sequence,
-                             batch_size = 1,
+                             batch_size = batch_size,
                              shuffle=False)
             #Evaluate after each sequence processed
             # y_pred = model.predict(x_test, verbose = 0).round()
@@ -492,17 +493,17 @@ def main():
         for test_samples in test_vals:
             test_file = test_samples[1]
             x_test, y_test = test_samples[0]
-            y_pred = model.predict(x_test, verbose = 0).round()
+            y_pred = model.predict(x_test, batch_size=batch_size, verbose = 0).round()
 
             accuracy, precision, recall, f1 = calc_metrics(y_test, y_pred, multi=multi)
             # print_metrics(precision, recall, f1, test_file)
         print epoch
-        if ((epoch % 20) == 0 and epoch >= 20) or (epoch == epochs-1):
+        if ((epoch % 3) == 0 and epoch >= 3) or (epoch == epochs-1):
             print( '####VALIDATION')
             for test_samples in test_vals:
                 test_file = test_samples[1].split('/')[-1]
                 x_test, y_test = test_samples[0]
-                y_pred = model.predict(x_test, verbose = 0).round()
+                y_pred = model.predict(x_test, batch_size=batch_size, verbose = 0).round()
                 accuracy, precision, recall, f1 = calc_metrics(y_test, y_pred, multi=multi)
                 df = save_metrics(accuracy, precision, recall, f1, test_file, df)
 
