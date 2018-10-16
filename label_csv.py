@@ -57,6 +57,39 @@ def add_label(csv, start, end, label):
     csv['class'] = pd.Series(labels)
     return csv
 
+def add_ratio_columns(csv, start, end, label):
+    labels = []
+    #announcements vs withdraw
+    csv['ratio_ann'] = (csv['announcements']/(csv['withdrawals']+csv['announcements'])).replace(np.inf, 0)
+    csv['ratio_wd']  = (csv['withdrawals']/(csv['withdrawals']+csv['announcements'])).replace(np.inf, 0)
+
+    #origins
+    count_origins = csv['origin_0'] + csv['origin_1'] + csv['origin_2']
+    csv['ratio_origin0'] = (csv['origin_0']/count_origins).replace(np.inf, 0)
+    csv['ratio_origin1'] = (csv['origin_1']/count_origins).replace(np.inf, 0)
+    csv['ratio_origin2'] = (csv['origin_2']/count_origins).replace(np.inf, 0)
+
+    #announcements types
+    csv['ratio_dups']   = (csv['dups']/csv['announcements']).replace(np.inf, 0)
+    csv['ratio_flaps']  = (csv['flaps']/csv['announcements']).replace(np.inf, 0)
+    csv['ratio_imp_wd'] = (csv['imp_wd']/csv['announcements']).replace(np.inf, 0)
+    csv['ratio_nadas']  = (csv['nadas']/csv['announcements']).replace(np.inf, 0)
+    csv['ratio_news']   = (csv['news']/csv['announcements']).replace(np.inf, 0)
+
+    #longer vs shorter
+    csv['ratio_longer']  = (csv['ann_to_longer']/csv['announcements']).replace(np.inf, 0)
+    csv['ratio_shorter']   = (csv['ann_to_shorter']/csv['announcements']).replace(np.inf, 0)
+
+    #withdrawals
+    count_withdrawals = csv['imp_wd'] + csv['withdrawals']
+    csv['ratio_imp_wd'] = (csv['imp_wd']/count_withdrawals).replace(np.inf, 0)
+    csv['ratio_exp_wd'] = (csv['withdrawals']/count_withdrawals).replace(np.inf, 0)
+    csv['ratio_wd_dups'] = (csv['wd_dups']/csv['withdrawals']).replace(np.inf, 0)
+    csv['ratio_imp_wd_dpath'] = (csv['imp_wd_dpath']/csv['imp_wd']).replace(np.inf, 0)
+    csv['ratio_imp_wd_spath'] = (csv['imp_wd_spath']/csv['imp_wd']).replace(np.inf, 0)
+
+    return csv
+
 def adjust_to_batch_size(csv, batch_size):
     diff = (batch_size - csv.shape[0] % batch_size) if (csv.shape[0] % batch_size) != 0 else 0
     # print 'batch_size'
@@ -100,6 +133,7 @@ def preprocessing(files, name='name', start=0, end=0, label=1):
 
             mark = csv['announcements'].max()
             csv_annotated = add_label(csv_annotated, start, end, mark/2)
+            csv_annotated = add_ratio_columns(csv_annotated, start, end, mark/2)
 
             # csv = drop_columns(csv)
             # csv_multi = drop_columns(csv_multi)

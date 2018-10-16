@@ -483,8 +483,10 @@ class Metrics(object):
         self.print_classification(m, 'ANN. AFTER WITHDRAW - UNKNOWN', prefix)
 
     def classify_new_announcement(self, m, prefix):
+        #If the announcement was not preceded by a withdraw
         if not self.prefix_withdrawals[m.bgp.peer_as][prefix]:
             self.classify_new_ann_simple(m, prefix)
+        #If the announcement was preceded by a withdraw, but there is already an entry for that prefix (ORIGIN is a mandatory attribute)
         elif self.prefix_lookup[m.bgp.peer_as][prefix]['ORIGIN'] != []:
             self.classify_new_ann_after_wd(m, prefix)
         else:
