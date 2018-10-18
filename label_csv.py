@@ -10,6 +10,7 @@ features_path = '/home/pc/bgp-feature-extractor/datasets/'
 LABELS_DROP = ['news','nadas','flaps','origin_changes','unique_as_path_max',\
                'rare_ases_max','number_rare_ases','edit_distance_max',\
                'ann_to_shorter','ann_to_longer','origin_2','imp_wd_dpath','imp_wd_spath']
+analysis_files = dict()
 
 def drop_columns(csv):
     for i in xrange(0, 200):
@@ -57,7 +58,7 @@ def add_label(csv, start, end, label):
     csv['class'] = pd.Series(labels)
     return csv
 
-def add_ratio_columns(csv, start, end, label):
+def add_ratio_columns(csv):
     labels = []
     #announcements vs withdraw
     csv['ratio_ann'] = (csv['announcements']/(csv['withdrawals']+csv['announcements'])).replace(np.inf, 0)
@@ -82,7 +83,7 @@ def add_ratio_columns(csv, start, end, label):
 
     #withdrawals
     count_withdrawals = csv['imp_wd'] + csv['withdrawals']
-    csv['ratio_imp_wd'] = (csv['imp_wd']/count_withdrawals).replace(np.inf, 0)
+    csv['ratio_imp_wd2'] = (csv['imp_wd']/count_withdrawals).replace(np.inf, 0)
     csv['ratio_exp_wd'] = (csv['withdrawals']/count_withdrawals).replace(np.inf, 0)
     csv['ratio_wd_dups'] = (csv['wd_dups']/csv['withdrawals']).replace(np.inf, 0)
     csv['ratio_imp_wd_dpath'] = (csv['imp_wd_dpath']/csv['imp_wd']).replace(np.inf, 0)
@@ -103,6 +104,85 @@ def adjust_to_batch_size(csv, batch_size):
         csv = csv.append(last_line, sort=True)
     return csv
 
+def analyze_dataset(csv, start, end):
+    columns = ['announcements', 'withdrawals','ratio_ann', 'ratio_wd','ratio_longer','ratio_origin0',\
+               'ratio_origin2','origin_changes','ratio_dups','ratio_flaps','ratio_imp_wd','ratio_nadas','ratio_news',\
+               'ratio_imp_wd2','ratio_exp_wd','ratio_imp_wd_dpath','ratio_imp_wd_spath','edit_distance_avg'\
+               ,'as_path_avg','rare_ases_avg','number_rare_ases']
+    analysis = dict()
+    for col in columns:
+        analysis.update(analyze_column(csv, col, start, end))
+    return analysis
+
+def analyze_column(csv, column, start, end):
+    df = pd.DataFrame()
+
+    before = csv[csv['timestamp2'] < start][column]
+    during = csv[(csv['timestamp2'] >= start) & (csv['timestamp2'] <= end)][column]
+    after = csv[csv['timestamp2'] > end][column]
+
+    mean_before = before.mean()
+    mean_during = during.mean()
+    mean_after = after.mean()
+
+    median_before = before.median()
+    median_during = during.median()
+    median_after = after.median()
+
+    if mean_before > 0:
+        mean_delta_before = 1 - (mean_during/mean_before)
+    else:
+        mean_delta_before = 1
+
+    if mean_after > 0:
+        mean_delta_after = 1 - (mean_during/mean_after)
+    else:
+        mean_delta_after = 1
+
+    if median_before > 0:
+        median_delta_before = 1 - (median_during/median_before)
+    else:
+        median_delta_before = 1
+
+    if median_after > 0:
+        median_delta_after = 1 - (median_during/median_after)
+    else:
+        median_delta_after = 1
+
+    analysis = dict()
+    analysis.update(evaluate_delta(mean_delta_before, mean_delta_after, column + '_mean'))
+    analysis.update(evaluate_delta(median_delta_before, median_delta_after, column + '_median'))
+
+    return analysis
+
+def evaluate_delta(delta_before, delta_after, column):
+    analysis = ''
+    analysis_dict = dict()
+    signal = 'higher' if delta_before < 0  else 'lower'
+
+    if abs(delta_before) < 0.1:
+        analysis += 'pretty much the same'
+    elif abs(delta_before) >= 0.1 and abs(delta_before)<0.25:
+        analysis += 'slightly ' + signal
+    elif abs(delta_before) >= 0.25 and abs(delta_before) < 0.5:
+        analysis += signal
+    elif abs(delta_before) >= 0.5:
+        analysis += 'much ' + signal
+    analysis_dict[column + '_before'] = analysis
+
+    analysis = ''
+    if abs(delta_after) < 0.1:
+        analysis += 'pretty much the same'
+    elif abs(delta_after) >= 0.1 and abs(delta_after)<0.25:
+        analysis += 'slightly ' + signal
+    elif abs(delta_after) >= 0.25 and abs(delta_after) < 0.5:
+        analysis += signal
+    elif abs(delta_after) >= 0.5:
+        analysis += 'much ' + signal
+    analysis_dict[column + '_after'] = analysis
+
+    return analysis_dict
+
 def randomize_dataset(dataset, start, end):
     margin = 10
     before_length = dataset[dataset['timestamp2'] < start].shape[0]
@@ -112,14 +192,16 @@ def randomize_dataset(dataset, start, end):
     return dataset[before_clip:after_clip]
 
 def preprocessing(files, name='name', start=0, end=0, label=1):
+    global analysis_files
     df = pd.DataFrame()
     df_multi = pd.DataFrame()
     anomaly_multi = pd.DataFrame()
     df_annotated = pd.DataFrame()
 
     if len(files) > 0:
+        print files
         for f in files:
-            print f
+            # print f
             csv           = pd.read_csv(f, index_col=0, delimiter = ',', quoting=3)
             csv_multi     = pd.read_csv(f, index_col=0, delimiter = ',', quoting=3)
             csv_annotated = pd.read_csv(f, index_col=0, delimiter = ',', quoting=3)
@@ -130,17 +212,30 @@ def preprocessing(files, name='name', start=0, end=0, label=1):
 
             csv = add_label(csv, start, end, 1)
             csv_multi = add_label(csv_multi, start, end, label)
-
             mark = csv['announcements'].max()
             csv_annotated = add_label(csv_annotated, start, end, mark/2)
-            csv_annotated = add_ratio_columns(csv_annotated, start, end, mark/2)
+            csv_annotated = add_ratio_columns(csv_annotated)
+
+            key_file = f.split('/')[-1]
+            analysis = pd.read_csv('analysis.csv')
+            if key_file not in analysis.keys().tolist():
+                if label == 1:
+                    anomaly_class = 'indirect_'
+                elif label == 2:
+                    anomaly_class = 'direct_'
+                elif label == 3:
+                    anomaly_class = 'outage_'
+
+                key_file = key_file.split('_')
+                key_file = anomaly_class + key_file
+                analysis_files[key_file] = analyze_dataset(csv_annotated, start, end)
+            # print analysis_files.keys()
 
             # csv = drop_columns(csv)
             # csv_multi = drop_columns(csv_multi)
             df = df.append(csv, sort = True)
             df_multi = df_multi.append(csv_multi, sort = True)
             df_annotated = df_annotated.append(csv_annotated, sort = True)
-
 
             df = df.fillna(0)
             df_multi = df_multi.fillna(0)
@@ -159,7 +254,7 @@ def preprocessing(files, name='name', start=0, end=0, label=1):
             os.makedirs(features_path + '/annotated')
 
         anomaly_multi = adjust_to_batch_size(anomaly_multi, 2)
-        print anomaly_multi.shape
+        # print anomaly_multi.shape
         anomaly_multi.to_csv(features_path + 'anomaly_multi_' + name + '_' + rrc + '.csv', quoting=3)
         df.to_csv(features_path + 'dataset_' + name + '_' + rrc + '.csv', quoting=3)
         df_multi.to_csv(features_path + 'dataset_multi_' + name + '_' + rrc + '.csv', quoting=3)
@@ -174,6 +269,8 @@ def preprocessing(files, name='name', start=0, end=0, label=1):
 def main(argv):
     global rrc
     global peer
+    global analysis_files
+
     rrc = sys.argv[1]
     peer = sys.argv[2]
     timescales = ['1', '5', '10', '15', '60', '120']
@@ -227,6 +324,22 @@ def main(argv):
             preprocessing(malaysian_telecom_files, name='malaysian-telecom_'+peer+'_'+ts, start=1434098520, end=1434104880, label=2)
         elif peer == '20932':
             preprocessing(malaysian_telecom_files, name='malaysian-telecom_'+peer+'_'+ts, start=1434098520, end=1434107700, label=2)
+
+        df_analysis_episode = pd.DataFrame(analysis_files)
+        # print df_analysis_episode
+
+        if os.path.isfile('analysis.csv'):
+            df_analysis = pd.read_csv('analysis.csv', index_col=0)
+            df_analysis = pd.concat([df_analysis, df_analysis_episode], axis=1, sort=True)
+        else:
+            df_analysis = df_analysis_episode
+        # print df_analysis
+        print '\n>>> python label_csv.py ' + rrc +' '+ peer +' '+ ts
+        print '1->'+str(df_analysis_episode.keys().tolist())
+        print '2->'+str(df_analysis.keys().tolist())
+        analysis_files = dict()
+        df_analysis = df_analysis[sorted(df_analysis.columns.tolist())]
+        df_analysis.to_csv('analysis.csv')
 
 if __name__ == "__main__":
     main(sys.argv)
