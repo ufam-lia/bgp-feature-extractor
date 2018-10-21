@@ -222,11 +222,12 @@ def preprocessing(files, name='name', start=0, end=0, label=1):
                 if label == 1:
                     anomaly_class = 'indirect_'
                 elif label == 2:
-                    anomaly_class = 'direct_'
+                    anomaly_class = 'directz_'
                 elif label == 3:
                     anomaly_class = 'outage_'
 
-                key_file = key_file.split('_')
+                key_file = key_file.split('features-')[1].split('.csv')[0]
+                print key_file
                 key_file = anomaly_class + key_file
                 analysis_files[key_file] = analyze_dataset(csv_annotated, start, end)
             # print analysis_files.keys()
@@ -273,7 +274,8 @@ def main(argv):
 
     rrc = sys.argv[1]
     peer = sys.argv[2]
-    timescales = ['1', '5', '10', '15', '60', '120']
+    timescales = ['1']
+    # timescales = ['1', '5', '10', '15', '60', '120']
     for ts in timescales:
         nimda_files              = sorted(glob.glob(features_path + 'features-nimda-' + rrc + '-' + peer +  '-' + ts + '.csv'))
         slammer_files            = sorted(glob.glob(features_path + 'features-slammer-' + rrc + '-' + peer +  '-' + ts + '.csv'))
@@ -288,9 +290,15 @@ def main(argv):
 
         preprocessing(nimda_files, name='nimda_'+peer+'_'+ts, start=1000818222, end=1001030344, label=1)
         preprocessing(slammer_files, name='slammer_'+peer+'_'+ts, start=1043472590, end=1043540404, label=1)
-        preprocessing(aws_leak_files, name='aws-leak_'+peer+'_'+ts, start=1461345001,end=1461349210, label=2)
-        preprocessing(as_3561_filtering_files, name='as-3561-filtering_'+peer+'_'+ts, start=986578087,end=986579527, label=2)
-        preprocessing(as9121_files, name='as9121_'+peer+'_'+ts, start=1103879947, end=1103884629, label=2)
+        # preprocessing(as_3561_filtering_files, name='as-3561-filtering_'+peer+'_'+ts, start=986578087,end=986579527, label=2)
+
+        if peer == '15547':
+            preprocessing(aws_leak_files, name='aws-leak_'+peer+'_'+ts, start=1461345001,end=1461349210, label=2)
+        if peer == '34781':
+            preprocessing(aws_leak_files, name='aws-leak_'+peer+'_'+ts, start=1461345001,end=1461349210, label=2)
+
+        if peer == '13237':
+            preprocessing(as9121_files, name='as9121_'+peer+'_'+ts, start=1103879947, end=1103884629, label=2)
 
         if peer == '513':
             preprocessing(code_red_files, name='code-red_'+peer+'_'+ts, start=995555750, end=995587250, label=1)
@@ -304,26 +312,28 @@ def main(argv):
         if peer == '10026': # 8:56 - 15:15
             preprocessing(japan_files, name='japan-earthquake_'+peer+'_'+ts, start=1299833704, end=1299856504, label=3)
 
-        if peer == '3257':
-            preprocessing(as_path_error_files, name='as-path-error_'+peer+'_'+ts, start=1002484580,end=1002504620, label=2)
-        elif peer == '9057':
-            preprocessing(as_path_error_files, name='as-path-error_'+peer+'_'+ts, start=1002484700,end=1002499460, label=2)
-        elif peer == '3333':
-            preprocessing(as_path_error_files, name='as-path-error_'+peer+'_'+ts, start=1002484580,end=1002499400, label=2)
+        # if peer == '3257':
+        #     preprocessing(as_path_error_files, name='as-path-error_'+peer+'_'+ts, start=1002484580,end=1002504620, label=2)
+        # elif peer == '9057':
+        #     preprocessing(as_path_error_files, name='as-path-error_'+peer+'_'+ts, start=1002484700,end=1002499460, label=2)
+        # elif peer == '3333':
+        #     preprocessing(as_path_error_files, name='as-path-error_'+peer+'_'+ts, start=1002484580,end=1002499400, label=2)
 
-        if peer == '13237':
-            preprocessing(moscow_files, name='moscow_blackout_'+peer, start=1116996909, end=1117017309, label=3)
-        else:
+        # if peer == '13237':
+        #     preprocessing(moscow_files, name='moscow_blackout_'+peer, start=1116996909, end=1117017309, label=3)
+        if peer == '1853':
+            preprocessing(moscow_files, name='moscow_blackout_'+peer+'_'+ts, start=1116996009, end=1117006209, label=3)
+        if peer == '12793':
             preprocessing(moscow_files, name='moscow_blackout_'+peer+'_'+ts, start=1116996009, end=1117006209, label=3)
 
-        if peer == '513':
-            preprocessing(malaysian_telecom_files, name='malaysian-telecom_'+peer+'_'+ts, start=1434098520, end=1434104640, label=2)
-        elif peer == '25091':
+        # if peer == '513':
+        #     preprocessing(malaysian_telecom_files, name='malaysian-telecom_'+peer+'_'+ts, start=1434098520, end=1434104640, label=2)
+        if peer == '25091':
             preprocessing(malaysian_telecom_files, name='malaysian-telecom_'+peer+'_'+ts, start=1434098520, end=1434109560, label=2)
-        elif peer == '34781':
-            preprocessing(malaysian_telecom_files, name='malaysian-telecom_'+peer+'_'+ts, start=1434098520, end=1434104880, label=2)
-        elif peer == '20932':
-            preprocessing(malaysian_telecom_files, name='malaysian-telecom_'+peer+'_'+ts, start=1434098520, end=1434107700, label=2)
+        # if peer == '34781':
+        #     preprocessing(malaysian_telecom_files, name='malaysian-telecom_'+peer+'_'+ts, start=1434098520, end=1434104880, label=2)
+        # if peer == '20932':
+        #     preprocessing(malaysian_telecom_files, name='malaysian-telecom_'+peer+'_'+ts, start=1434098520, end=1434107700, label=2)
 
         df_analysis_episode = pd.DataFrame(analysis_files)
         # print df_analysis_episode
@@ -334,9 +344,7 @@ def main(argv):
         else:
             df_analysis = df_analysis_episode
         # print df_analysis
-        print '\n>>> python label_csv.py ' + rrc +' '+ peer +' '+ ts
-        print '1->'+str(df_analysis_episode.keys().tolist())
-        print '2->'+str(df_analysis.keys().tolist())
+
         analysis_files = dict()
         df_analysis = df_analysis[sorted(df_analysis.columns.tolist())]
         df_analysis.to_csv('analysis.csv')
