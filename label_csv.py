@@ -11,6 +11,7 @@ LABELS_DROP = ['news','nadas','flaps','origin_changes','unique_as_path_max',\
                'rare_ases_max','number_rare_ases','edit_distance_max',\
                'ann_to_shorter','ann_to_longer','origin_2','imp_wd_dpath','imp_wd_spath']
 analysis_files = dict()
+summary_files = dict()
 
 def drop_columns(csv):
     for i in xrange(0, 200):
@@ -80,6 +81,8 @@ def add_ratio_columns(csv):
     #longer vs shorter
     csv['ratio_longer']  = (csv['ann_to_longer']/csv['announcements']).replace(np.inf, 0)
     csv['ratio_shorter']   = (csv['ann_to_shorter']/csv['announcements']).replace(np.inf, 0)
+    csv['ratio_longer2']  = (csv['ann_to_longer']/(csv['ann_to_longer'] + csv['ann_to_shorter'])).replace(np.inf, 0)
+    csv['ratio_shorter2']   = (csv['ann_to_shorter']/(csv['ann_to_longer'] + csv['ann_to_shorter'])).replace(np.inf, 0)
 
     #withdrawals
     count_withdrawals = csv['imp_wd'] + csv['withdrawals']
@@ -108,10 +111,20 @@ def analyze_dataset(csv, start, end):
     columns = ['announcements', 'withdrawals','ratio_ann', 'ratio_wd','ratio_longer','ratio_origin0',\
                'ratio_origin2','origin_changes','ratio_dups','ratio_flaps','ratio_imp_wd','ratio_nadas','ratio_news',\
                'ratio_imp_wd2','ratio_exp_wd','ratio_imp_wd_dpath','ratio_imp_wd_spath','edit_distance_avg'\
-               ,'as_path_avg','rare_ases_avg','number_rare_ases']
+               ,'as_path_avg','rare_ases_avg','number_rare_ases','ratio_longer2','ratio_shorter2','ratio_shorter']
     analysis = dict()
     for col in columns:
         analysis.update(analyze_column(csv, col, start, end))
+    return analysis
+
+def summarize_dataset(dataset):
+    columns = ['ratio_ann', 'ratio_wd','ratio_longer','ratio_origin0',\
+               'ratio_origin2','origin_changes','ratio_dups','ratio_flaps','ratio_imp_wd','ratio_nadas','ratio_news',\
+               'ratio_imp_wd2','ratio_exp_wd','ratio_imp_wd_dpath','ratio_imp_wd_spath','edit_distance_avg'\
+               ,'as_path_avg','rare_ases_avg','number_rare_ases','ratio_longer2','ratio_shorter2','ratio_shorter']
+    analysis = dict()
+    for col in columns:
+        analysis.update(summarize_column(dataset, col))
     return analysis
 
 def analyze_column(csv, column, start, end):
@@ -155,6 +168,20 @@ def analyze_column(csv, column, start, end):
 
     return analysis
 
+def summarize_column(csv, column):
+    df = pd.DataFrame()
+
+    feature = csv[column]
+
+    mean = feature.mean()
+    median = feature.median()
+
+    analysis = dict()
+    analysis[column + '_mean'] = mean
+    analysis[column + '_median'] = median
+
+    return analysis
+
 def evaluate_delta(delta_before, delta_after, column):
     analysis = ''
     analysis_dict = dict()
@@ -193,53 +220,41 @@ def randomize_dataset(dataset, start, end):
 
 def preprocessing(files, name='name', start=0, end=0, label=1):
     global analysis_files
+    global summary_files
     df = pd.DataFrame()
     df_multi = pd.DataFrame()
     anomaly_multi = pd.DataFrame()
     df_annotated = pd.DataFrame()
 
     if len(files) > 0:
-        print files
-        for f in files:
-            # print f
-            csv           = pd.read_csv(f, index_col=0, delimiter = ',', quoting=3)
-            csv_multi     = pd.read_csv(f, index_col=0, delimiter = ',', quoting=3)
-            csv_annotated = pd.read_csv(f, index_col=0, delimiter = ',', quoting=3)
+        print len(files)
+        f = files[0]
+        # print f
+        csv           = pd.read_csv(f, index_col=0, delimiter = ',', quoting=3)
+        csv_multi     = pd.read_csv(f, index_col=0, delimiter = ',', quoting=3)
+        csv_annotated = pd.read_csv(f, index_col=0, delimiter = ',', quoting=3)
 
-            csv = fix_columns(csv)
-            csv_multi = fix_columns(csv_multi)
-            csv_annotated = fix_columns(csv_annotated)
+        csv           = fix_columns(csv)
+        csv_multi     = fix_columns(csv_multi)
+        csv_annotated = fix_columns(csv_annotated)
 
-            csv = add_label(csv, start, end, 1)
-            csv_multi = add_label(csv_multi, start, end, label)
-            mark = csv['announcements'].max()
-            csv_annotated = add_label(csv_annotated, start, end, mark/2)
-            csv_annotated = add_ratio_columns(csv_annotated)
+        mark = csv['announcements'].max()
+        csv           = add_label(csv, start, end, 1)
+        csv_multi     = add_label(csv_multi, start, end, label)
+        csv_annotated = add_label(csv_annotated, start, end, mark/2)
+        csv_annotated = add_ratio_columns(csv_annotated)
 
-            key_file = f.split('/')[-1]
-            analysis = pd.read_csv('analysis.csv')
-            if key_file not in analysis.keys().tolist():
-                if label == 1:
-                    anomaly_class = 'indirect_'
-                elif label == 2:
-                    anomaly_class = 'directz_'
-                elif label == 3:
-                    anomaly_class = 'outage_'
+        key_file = f.split('/')[-1]
+        analysis = pd.read_csv('analysis.csv')
 
-                key_file = key_file.split('features-')[1].split('.csv')[0]
-                print key_file
-                key_file = anomaly_class + key_file
-                analysis_files[key_file] = analyze_dataset(csv_annotated, start, end)
-            # print analysis_files.keys()
+        # csv = drop_columns(csv)
+        # csv_multi = drop_columns(csv_multi)
+        df = df.append(csv, sort = True)
+        df_multi = df_multi.append(csv_multi, sort = True)
+        df_annotated = df_annotated.append(csv_annotated, sort = True)
 
-            # csv = drop_columns(csv)
-            # csv_multi = drop_columns(csv_multi)
-            df = df.append(csv, sort = True)
-            df_multi = df_multi.append(csv_multi, sort = True)
-            df_annotated = df_annotated.append(csv_annotated, sort = True)
-
-            df = df.fillna(0)
-            df_multi = df_multi.fillna(0)
+        df = df.fillna(0)
+        df_multi = df_multi.fillna(0)
 
         df = adjust_to_batch_size(df, 32)
         df_multi = adjust_to_batch_size(df_multi, 32)
@@ -248,13 +263,28 @@ def preprocessing(files, name='name', start=0, end=0, label=1):
 
         anomaly_multi = df_multi[df_multi['class'] != 0]
         anomaly_multi.reset_index(drop=True, inplace=True)
+        anomaly_multi = adjust_to_batch_size(anomaly_multi, 2)
+
         df_annotated.insert(df_annotated.shape[1], 'ann2',df_annotated['announcements'])
         df_annotated.insert(df_annotated.shape[1], 'class2',df_annotated['class'])
 
+        if key_file not in analysis.keys().tolist():
+            if label == 1:
+                anomaly_class = 'indirect_'
+            elif label == 2:
+                anomaly_class = 'directz_'
+            elif label == 3:
+                anomaly_class = 'outage_'
+
+            key_file = key_file.split('features-')[1].split('.csv')[0]
+            key_file = anomaly_class + key_file
+            analysis_files[key_file] = analyze_dataset(csv_annotated, start, end)
+            summary_files[key_file] = summarize_dataset(csv_annotated)
+
+
+        #Save to files
         if not os.path.exists(features_path + '/annotated'):
             os.makedirs(features_path + '/annotated')
-
-        anomaly_multi = adjust_to_batch_size(anomaly_multi, 2)
         # print anomaly_multi.shape
         anomaly_multi.to_csv(features_path + 'anomaly_multi_' + name + '_' + rrc + '.csv', quoting=3)
         df.to_csv(features_path + 'dataset_' + name + '_' + rrc + '.csv', quoting=3)
@@ -271,6 +301,7 @@ def main(argv):
     global rrc
     global peer
     global analysis_files
+    global summary_files
 
     rrc = sys.argv[1]
     peer = sys.argv[2]
@@ -336,6 +367,7 @@ def main(argv):
         #     preprocessing(malaysian_telecom_files, name='malaysian-telecom_'+peer+'_'+ts, start=1434098520, end=1434107700, label=2)
 
         df_analysis_episode = pd.DataFrame(analysis_files)
+        df_summary_episode = pd.DataFrame(summary_files)
         # print df_analysis_episode
 
         if os.path.isfile('analysis.csv'):
@@ -343,11 +375,18 @@ def main(argv):
             df_analysis = pd.concat([df_analysis, df_analysis_episode], axis=1, sort=True)
         else:
             df_analysis = df_analysis_episode
-        # print df_analysis
 
-        analysis_files = dict()
+        if os.path.isfile('anomalies_comparison.csv'):
+            df_summary = pd.read_csv('anomalies_comparison.csv', index_col=0)
+            df_summary = pd.concat([df_summary, df_summary_episode], axis=1, sort=True)
+        else:
+            df_summary = df_summary_episode
+
         df_analysis = df_analysis[sorted(df_analysis.columns.tolist())]
         df_analysis.to_csv('analysis.csv')
+
+        df_summary = df_summary[sorted(df_summary.columns.tolist())]
+        df_summary.to_csv('anomalies_comparison.csv')
 
 if __name__ == "__main__":
     main(sys.argv)
