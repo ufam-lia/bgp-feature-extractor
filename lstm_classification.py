@@ -79,7 +79,6 @@ class F1EarlyStop(Callback):
             self.model.stop_training = True
         return
 
-
 def find_best_model(dataset, f1_history):
     l = sorted(f1_history, key=itemgetter('f1'), reverse = True)
     best_model = l[0]

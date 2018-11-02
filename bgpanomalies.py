@@ -106,7 +106,8 @@ class BGPDataset(object):
             files = []
             for bin in timebin:
                 bin = str(bin)
-                files += glob.glob(self.dataset_path + dataset_prefix + self.event + '_'+ peer +'_'+ bin +'_*.csv')
+                unique_files = glob.glob(self.dataset_path + dataset_prefix + self.event + '_'+ peer +'_'+ bin +'_*.csv')
+                files += [f for f in unique_files if 'rand' not in f]
         else:
             timebin = str(timebin)
             files = glob.glob(self.dataset_path + dataset_prefix + self.event + '_'+ peer +'_'+ timebin +'_*.csv')

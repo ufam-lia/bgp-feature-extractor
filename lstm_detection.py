@@ -78,7 +78,6 @@ class F1EarlyStop(Callback):
             self.model.stop_training = True
         return
 
-
 def find_best_model(dataset, f1_history):
     l = sorted(f1_history, key=itemgetter('f1'), reverse = True)
     best_model = l[0]
@@ -306,11 +305,11 @@ def print_metrics(accuracy, precision, recall, f1, test_file):
 def save_metrics(accuracy, precision, recall, f1, test_file, df):
     if type(precision) == np.float64:
         num_classes=1
-        df.set_value(test_file,'accuracy', accuracy)
+        df.loc[test_file,'accuracy'] = accuracy
         for i in range(0, num_classes):
-            df.set_value(test_file,'precision_' + str(i), precision)
-            df.set_value(test_file,'recall_' + str(i), recall)
-            df.set_value(test_file,'f1_' + str(i), f1)
+            df.loc[test_file,'precision_' + str(i)] = precision
+            df.loc[test_file,'recall_' + str(i)] = recall
+            df.loc[test_file,'f1_' + str(i)] = f1
     else:
         num_classes=4
         df.set_value(test_file,'accuracy', accuracy)
@@ -388,12 +387,12 @@ def main():
 
     model = Sequential()
     # model.add(Dense(10, activation='sigmoid', input_shape = (x_test[0].shape), batch_size = batch_size))
-    model.add(LSTM(100, return_sequences=True, batch_input_shape=(batch_size,validation_data.shape[1], validation_data.shape[2]), stateful=True, activation='sigmoid'))
+    model.add(LSTM(10, return_sequences=False, batch_input_shape=(batch_size,validation_data.shape[1], validation_data.shape[2]), stateful=True, activation='sigmoid'))
     model.add(Dropout(0.2))
-    model.add(LSTM(100, return_sequences=True, stateful = True, activation='sigmoid'))
-    model.add(Dropout(0.2))
-    model.add(LSTM(100, return_sequences=False, stateful = True, activation='sigmoid'))
-    model.add(Dropout(0.2))
+    # model.add(LSTM(100, return_sequences=True, stateful = True, activation='sigmoid'))
+    # model.add(Dropout(0.2))
+    # model.add(LSTM(100, return_sequences=False, stateful = True, activation='sigmoid'))
+    # model.add(Dropout(0.2))
 
     if multi:
         model.add(Dense(4, activation='softmax'))
@@ -410,7 +409,7 @@ def main():
     f1early = F1EarlyStop(patience = 10)
     tensorboard = TensorBoard(log_dir="logs/lstm")
 
-    round = 0
+    round = 1
     for epoch in range(epochs):
         print( '\n\n###### ROUND %d \n' % (round+1))
         round += 1
@@ -475,7 +474,7 @@ def main():
             accuracy, precision, recall, f1 = calc_metrics(y_test, y_pred, multi=multi)
             # print_metrics(precision, recall, f1, test_file)
         print epoch
-        if ((epoch % 20) == 0 and epoch >= 20) or (epoch == epochs-1):
+        if ((epoch % 10) == 0 and epoch >= 10) or (epoch == epochs-1):
             print( '####VALIDATION')
             for test_samples in test_vals:
                 test_file = test_samples[1].split('/')[-1]
