@@ -302,21 +302,25 @@ def print_metrics(accuracy, precision, recall, f1, test_file):
     print 'f1->' + str(f1)
     print
 
-def save_metrics(accuracy, precision, recall, f1, test_file, df):
+def save_metrics(accuracy, precision, recall, f1, test_file, df, epoch, lag):
     if type(precision) == np.float64:
         num_classes=1
         df.loc[test_file,'accuracy'] = accuracy
+        df.loc[test_file,'epoch'] = epoch
+        df.loc[test_file,'lag'] = lag
         for i in range(0, num_classes):
             df.loc[test_file,'precision_' + str(i)] = precision
             df.loc[test_file,'recall_' + str(i)] = recall
             df.loc[test_file,'f1_' + str(i)] = f1
     else:
         num_classes=4
-        df.set_value(test_file,'accuracy', accuracy)
+        df.loc[test_file,'accuracy'] = accuracy
+        df.loc[test_file,'epoch'] = epoch
+        df.loc[test_file,'lag'] = lag
         for i in range(0, num_classes):
-            df.set_value(test_file,'precision_' + str(i), precision[i])
-            df.set_value(test_file,'recall_' + str(i), recall[i])
-            df.set_value(test_file,'f1_' + str(i), f1[i])
+            df.loc[test_file,'precision_' + str(i)] = precision[i]
+            df.loc[test_file,'recall_' + str(i)] = recall[i]
+            df.loc[test_file,'f1_' + str(i)] = f1[i]
     return df
 
 def main():
@@ -388,7 +392,7 @@ def main():
     model = Sequential()
     # model.add(Dense(10, activation='sigmoid', input_shape = (x_test[0].shape), batch_size = batch_size))
     model.add(LSTM(10, return_sequences=False, batch_input_shape=(batch_size,validation_data.shape[1], validation_data.shape[2]), stateful=True, activation='sigmoid'))
-    model.add(Dropout(0.2))
+    model.add(Dropout(0.1))
     # model.add(LSTM(100, return_sequences=True, stateful = True, activation='sigmoid'))
     # model.add(Dropout(0.2))
     # model.add(LSTM(100, return_sequences=False, stateful = True, activation='sigmoid'))
@@ -409,7 +413,7 @@ def main():
     f1early = F1EarlyStop(patience = 10)
     tensorboard = TensorBoard(log_dir="logs/lstm")
 
-    round = 1
+    round = 0
     for epoch in range(epochs):
         print( '\n\n###### ROUND %d \n' % (round+1))
         round += 1
@@ -481,9 +485,10 @@ def main():
                 x_test, y_test = test_samples[0]
                 y_pred = model.predict(x_test, verbose = 0).round()
                 accuracy, precision, recall, f1 = calc_metrics(y_test, y_pred, multi=multi)
-                df = save_metrics(accuracy, precision, recall, f1, test_file, df)
+                test_file_annotated = test_file.split('.csv')[0]+ '_' + str(epoch) + 'epochs'
+                df = save_metrics(accuracy, precision, recall, f1, test_file, df, epoch, lag)
 
-                model_name = 'test_' + test_file + '_' + str(epoch) + 'x' + str(inner_epochs)+'x'+str(lag)
+                model_name = 'test_' + test_file + '_' + str(epoch+1) + 'x' + str(inner_epochs)+'x'+str(lag)
                 print model_name
 
                 y_csv = pd.DataFrame()
@@ -503,7 +508,7 @@ def main():
                 print 'results_saved'
                 y_csv.to_csv('results/predictions/y_pred_' + model_name + '.csv', quoting=3)
 
-            model_name = 'test_' + args['test'].replace(',','-') + '_' + str(epoch) + 'x' + str(inner_epochs)+'x'+str(lag)
+            model_name = 'test_' + args['test'].replace(',','-') + '_' + str(epoch+1) + 'x' + str(inner_epochs)+'x'+str(lag)
             df.to_csv('results/results_'+model_name+'.csv', sep=',')
             model.save('models/'+model_name + '.h5')
             print 'Results saved: results_'+model_name+'.csv'
