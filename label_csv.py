@@ -7,9 +7,10 @@ features_path = '/home/pc/bgp-feature-extractor/datasets/'
 # LABELS_DROP = ['news','nadas','flaps','origin_changes','as_path_avg','unique_as_path_max',\
 #                'unique_as_path_avg','rare_ases_max','rare_ases_avg','number_rare_ases','edit_distance_max',\
 #                'edit_distance_avg','ann_to_shorter','ann_to_longer','origin_2','imp_wd_dpath','imp_wd_spath']
-LABELS_DROP = ['news','nadas','flaps','origin_changes','unique_as_path_max',\
-               'rare_ases_max','number_rare_ases','edit_distance_max',\
-               'ann_to_shorter','ann_to_longer','origin_2','imp_wd_dpath','imp_wd_spath']
+LABELS_DROP = ['news','nadas','flaps','unique_as_path_max','as_path_avg',
+               'edit_distance_max','ann_to_shorter','ann_to_longer', 'edit_distance_avg',
+               'origin_0','origin_1','origin_2','imp_wd_dpath','imp_wd_spath','dups',
+               'imp_wd','ratio_wd_dups','wd_dups']
 analysis_files = dict()
 summary_files = dict()
 
@@ -80,7 +81,7 @@ def add_ratio_columns(csv):
 
     #longer vs shorter
     csv['ratio_longer']  = (csv['ann_to_longer']/csv['announcements']).replace(np.inf, 0)
-    csv['ratio_shorter']   = (csv['ann_to_shorter']/csv['announcements']).replace(np.inf, 0)
+    csv['ratio_shorter']   = (csv['ann_to_shorter']/csv['announcements']).replace(np.inf,    0)
     csv['ratio_longer2']  = (csv['ann_to_longer']/(csv['ann_to_longer'] + csv['ann_to_shorter'])).replace(np.inf, 0)
     csv['ratio_shorter2']   = (csv['ann_to_shorter']/(csv['ann_to_longer'] + csv['ann_to_shorter'])).replace(np.inf, 0)
 
@@ -218,84 +219,76 @@ def randomize_dataset(dataset, start, end):
     after_clip = random.randint(dataset.shape[0] - after_length, dataset.shape[0]) + margin
     return dataset[before_clip:after_clip]
 
+def preprocess_file(file, csv, name='name', base_path='', start=0, end=0, label=1, drop=False, ratio=False, batch_size=32, randomize=False):
+    df = pd.DataFrame()
+    anomaly = pd.DataFrame()
+
+    csv = pd.read_csv(file, index_col=0, delimiter = ',', quoting=3)
+    csv = fix_columns(csv)
+    csv = add_label(csv, start, end, 1)
+
+    if ratio:
+        csv = add_ratio_columns(csv)
+        if label < 4:
+            analyze_file(file, csv, start, end, label)
+
+    if drop:
+        csv = drop_columns(csv)
+
+    df = df.append(csv, sort = True)
+    df = df.fillna(0)
+    df.reset_index(drop=True, inplace=True)
+    df = adjust_to_batch_size(df, batch_size)
+    df.to_csv(features_path + base_path + name + '_' + rrc + '.csv', quoting=3)
+
+    if randomize:
+        for c in range(0,5):
+            df = randomize_dataset(df, start, end)
+            df.to_csv(features_path + base_path + name + '_' + rrc + '_rand' + str(c) + '.csv', quoting=3)
+
 def preprocessing(files, name='name', start=0, end=0, label=1):
-    global analysis_files
-    global summary_files
     df = pd.DataFrame()
     df_multi = pd.DataFrame()
     anomaly_multi = pd.DataFrame()
     df_annotated = pd.DataFrame()
 
     if len(files) > 0:
-        print len(files)
         f = files[0]
         # print f
-        csv           = pd.read_csv(f, index_col=0, delimiter = ',', quoting=3)
-        csv_multi     = pd.read_csv(f, index_col=0, delimiter = ',', quoting=3)
-        csv_annotated = pd.read_csv(f, index_col=0, delimiter = ',', quoting=3)
-
-        csv           = fix_columns(csv)
-        csv_multi     = fix_columns(csv_multi)
-        csv_annotated = fix_columns(csv_annotated)
-
+        csv = pd.read_csv(f, index_col=0, delimiter = ',', quoting=3)
         mark = csv['announcements'].max()
-        csv           = add_label(csv, start, end, 1)
-        csv_multi     = add_label(csv_multi, start, end, label)
-        csv_annotated = add_label(csv_annotated, start, end, mark/2)
-        csv_annotated = add_ratio_columns(csv_annotated)
-
-        key_file = f.split('/')[-1]
-        analysis = pd.read_csv('analysis.csv')
-
-        # csv = drop_columns(csv)
-        # csv_multi = drop_columns(csv_multi)
-        df = df.append(csv, sort = True)
-        df_multi = df_multi.append(csv_multi, sort = True)
-        df_annotated = df_annotated.append(csv_annotated, sort = True)
-
-        df = df.fillna(0)
-        df_multi = df_multi.fillna(0)
-
-        df = adjust_to_batch_size(df, 32)
-        df_multi = adjust_to_batch_size(df_multi, 32)
-        df.reset_index(drop=True, inplace=True)
-        df_multi.reset_index(drop=True, inplace=True)
-
-        anomaly_multi = df_multi[df_multi['class'] != 0]
-        anomaly_multi.reset_index(drop=True, inplace=True)
-        anomaly_multi = adjust_to_batch_size(anomaly_multi, 2)
-
-        df_annotated.insert(df_annotated.shape[1], 'ann2',df_annotated['announcements'])
-        df_annotated.insert(df_annotated.shape[1], 'class2',df_annotated['class'])
-
-        if key_file not in analysis.keys().tolist():
-            if label == 1:
-                anomaly_class = 'indirect_'
-            elif label == 2:
-                anomaly_class = 'directz_'
-            elif label == 3:
-                anomaly_class = 'outage_'
-
-            key_file = key_file.split('features-')[1].split('.csv')[0]
-            key_file = anomaly_class + key_file
-            analysis_files[key_file] = analyze_dataset(csv_annotated, start, end)
-            summary_files[key_file] = summarize_dataset(csv_annotated)
-
 
         #Save to files
         if not os.path.exists(features_path + '/annotated'):
             os.makedirs(features_path + '/annotated')
-        # print anomaly_multi.shape
-        anomaly_multi.to_csv(features_path + 'anomaly_multi_' + name + '_' + rrc + '.csv', quoting=3)
-        df.to_csv(features_path + 'dataset_' + name + '_' + rrc + '.csv', quoting=3)
-        df_multi.to_csv(features_path + 'dataset_multi_' + name + '_' + rrc + '.csv', quoting=3)
-        df_annotated.to_csv(features_path + 'annotated/dataset_multi_' + name + '_' + rrc + '.csv', quoting=3)
 
-        for c in range(0,5):
-            df = randomize_dataset(df, start, end)
-            df_multi = randomize_dataset(df_multi, start, end)
-            df.to_csv(features_path + 'dataset_' + name + '_' + rrc + '_rand' + str(c) + '.csv', quoting=3)
-            df_multi.to_csv(features_path + 'dataset_multi_' + name + '_' + rrc + '_rand' + str(c) + '.csv', quoting=3)
+        if not os.path.exists(features_path + '/ratios'):
+            os.makedirs(features_path + '/ratios')
+
+        preprocess_file(f, csv, name=name, base_path='ratios/dataset_', start=0, end=0, label=1, drop=True, ratio=True, batch_size=32)
+        preprocess_file(f, csv, name=name, base_path='ratios/dataset_multi_', start=0, end=0, label=label, drop=True, ratio=True, batch_size=32)
+        preprocess_file(f, csv, name=name, base_path='annotated/dataset_multi_', start=0, end=0, label=mark, drop=True, ratio=True, batch_size=32)
+
+        #analyze
+        key_file = f.split('/')[-1]
+
+def analyze_file(key_file, csv_annotated, start, end, label):
+    global analysis_files
+    global summary_files
+
+    analysis = pd.read_csv('analysis.csv')
+    if key_file not in analysis.keys().tolist():
+        if label == 1:
+            anomaly_class = 'indirect_'
+        elif label == 2:
+            anomaly_class = 'directz_'
+        elif label == 3:
+            anomaly_class = 'outage_'
+
+        key_file = key_file.split('features-')[1].split('.csv')[0]
+        key_file = anomaly_class + key_file
+        analysis_files[key_file] = analyze_dataset(csv_annotated, start, end)
+        summary_files[key_file] = summarize_dataset(csv_annotated)
 
 def main(argv):
     global rrc
@@ -305,8 +298,8 @@ def main(argv):
 
     rrc = sys.argv[1]
     peer = sys.argv[2]
-    timescales = ['1']
-    # timescales = ['1', '5', '10', '15', '60', '120']
+    # timescales = ['1']
+    timescales = ['1', '5', '10', '15', '60', '120']
     for ts in timescales:
         nimda_files              = sorted(glob.glob(features_path + 'features-nimda-' + rrc + '-' + peer +  '-' + ts + '.csv'))
         slammer_files            = sorted(glob.glob(features_path + 'features-slammer-' + rrc + '-' + peer +  '-' + ts + '.csv'))
