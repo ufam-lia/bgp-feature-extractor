@@ -230,7 +230,8 @@ def preprocess_file(file, csv, name='name', base_path='', start=0, end=0, label=
     if ratio:
         csv = add_ratio_columns(csv)
         if label < 4:
-            analyze_file(file, csv, start, end, label)
+            key_file = file.split('/')[-1]
+            analyze_file(key_file, csv, start, end, label)
 
     if drop:
         csv = drop_columns(csv)
@@ -268,9 +269,6 @@ def preprocessing(files, name='name', start=0, end=0, label=1):
         preprocess_file(f, csv, name=name, base_path='ratios/dataset_', start=0, end=0, label=1, drop=True, ratio=True, batch_size=32)
         preprocess_file(f, csv, name=name, base_path='ratios/dataset_multi_', start=0, end=0, label=label, drop=True, ratio=True, batch_size=32)
         preprocess_file(f, csv, name=name, base_path='annotated/dataset_multi_', start=0, end=0, label=mark, drop=True, ratio=True, batch_size=32)
-
-        #analyze
-        key_file = f.split('/')[-1]
 
 def analyze_file(key_file, csv_annotated, start, end, label):
     global analysis_files

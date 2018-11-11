@@ -104,17 +104,17 @@ def lists_to_csv(dicts, fieldnames, filename):
         writer.writerow(dicts.keys())
         writer.writerows(zip(*dicts.values()))
 
-def get_train_datasets(exclude_dataset, multi = False, anomaly = False):
-    nimda_dataset             = BGPDataset('nimda', anomaly)
-    code_red_dataset          = BGPDataset('code-red', anomaly)
-    slammer_dataset           = BGPDataset('slammer', anomaly)
-    moscow_dataset            = BGPDataset('moscow_blackout', anomaly)
-    as9121_dataset            = BGPDataset('as9121', anomaly)
-    aws_leak_dataset          = BGPDataset('aws-leak', anomaly)
-    as_3561_filtering_dataset = BGPDataset('as-3561-filtering', anomaly)
-    as_path_error_dataset     = BGPDataset('as-path-error', anomaly)
-    malaysian_dataset         = BGPDataset('malaysian-telecom', anomaly)
-    japan_dataset             = BGPDataset('japan-earthquake', anomaly)
+def get_train_datasets(exclude_dataset, multi = False, anomaly = False, base_path='/home/pc/bgp-feature-extractor/datasets/'):
+    nimda_dataset             = BGPDataset('nimda', anomaly, base_path=base_path)
+    code_red_dataset          = BGPDataset('code-red', anomaly, base_path=base_path)
+    slammer_dataset           = BGPDataset('slammer', anomaly, base_path=base_path)
+    moscow_dataset            = BGPDataset('moscow_blackout', anomaly, base_path=base_path)
+    as9121_dataset            = BGPDataset('as9121', anomaly, base_path=base_path)
+    aws_leak_dataset          = BGPDataset('aws-leak', anomaly, base_path=base_path)
+    as_3561_filtering_dataset = BGPDataset('as-3561-filtering', anomaly, base_path=base_path)
+    as_path_error_dataset     = BGPDataset('as-path-error', anomaly, base_path=base_path)
+    malaysian_dataset         = BGPDataset('malaysian-telecom', anomaly, base_path=base_path)
+    japan_dataset             = BGPDataset('japan-earthquake', anomaly, base_path=base_path)
 
     train_files = []
 
@@ -169,17 +169,17 @@ def get_train_datasets(exclude_dataset, multi = False, anomaly = False):
         train_files += japan_dataset.get_files(timebin = [1,5], peer = '10026', multi = multi)
     return train_files
 
-def get_test_datasets(test_datasets, multi = False, anomaly = False):
-    nimda_dataset             = BGPDataset('nimda', anomaly)
-    code_red_dataset          = BGPDataset('code-red', anomaly)
-    slammer_dataset           = BGPDataset('slammer', anomaly)
-    moscow_dataset            = BGPDataset('moscow_blackout', anomaly)
-    as9121_dataset            = BGPDataset('as9121', anomaly)
-    aws_leak_dataset          = BGPDataset('aws-leak', anomaly)
-    as_3561_filtering_dataset = BGPDataset('as-3561-filtering', anomaly)
-    as_path_error_dataset     = BGPDataset('as-path-error', anomaly)
-    malaysian_dataset         = BGPDataset('malaysian-telecom', anomaly)
-    japan_dataset             = BGPDataset('japan-earthquake', anomaly)
+def get_test_datasets(test_datasets, multi = False, anomaly = False, base_path='/home/pc/bgp-feature-extractor/datasets/'):
+    nimda_dataset             = BGPDataset('nimda', anomaly, base_path=base_path)
+    code_red_dataset          = BGPDataset('code-red', anomaly, base_path=base_path)
+    slammer_dataset           = BGPDataset('slammer', anomaly, base_path=base_path)
+    moscow_dataset            = BGPDataset('moscow_blackout', anomaly, base_path=base_path)
+    as9121_dataset            = BGPDataset('as9121', anomaly, base_path=base_path)
+    aws_leak_dataset          = BGPDataset('aws-leak', anomaly, base_path=base_path)
+    as_3561_filtering_dataset = BGPDataset('as-3561-filtering', anomaly, base_path=base_path)
+    as_path_error_dataset     = BGPDataset('as-path-error', anomaly, base_path=base_path)
+    malaysian_dataset         = BGPDataset('malaysian-telecom', anomaly, base_path=base_path)
+    japan_dataset             = BGPDataset('japan-earthquake', anomaly, base_path=base_path)
 
     test_files = []
 
@@ -355,10 +355,10 @@ def main():
     else:
         ignored_events = test_events
 
-    train_files = get_train_datasets(ignored_events, multi = multi)
-    test_files = get_test_datasets(test_events, multi = multi)
-    # test_file = BGPDataset('aws-leak').get_files(5, peer='15547')[0]
-    # test_file = BGPDataset('japan-earthquake').get_files(5, peer='2497')[0]
+    train_files = get_train_datasets(ignored_events, multi = multi, base_path='/home/pc/bgp-feature-extractor/datasets/ratios/')
+    test_files = get_test_datasets(test_events, multi = multi, base_path='/home/pc/bgp-feature-extractor/datasets/ratios/')
+    # test_file = BGPDataset('aws-leak').get_files(5, peer='15547')[0, base_path=base_path]
+    # test_file = BGPDataset('japan-earthquake').get_files(5, peer='2497')[0, base_path=base_path]
 
     print 'TRAIN'
     for f in train_files:

@@ -87,10 +87,10 @@ class BGPAnomaly(object):
             return None
 
 class BGPDataset(object):
-    def __init__(self, event_name, anomaly = False):
+    def __init__(self, event_name, anomaly = False, base_path='/home/pc/bgp-feature-extractor/datasets/'):
         self.event = event_name
         self.anomaly = anomaly
-        self.dataset_path = '/home/pc/bgp-feature-extractor/datasets/'
+        self.dataset_path = base_path
         # self.set_files()
 
     def get_files(self, timebin = 0, peer = '*', multi = False):
