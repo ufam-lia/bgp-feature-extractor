@@ -360,8 +360,8 @@ def main():
 
     train_files = get_train_datasets(ignored_events, multi = multi, base_path='/home/pc/bgp-feature-extractor/datasets/ratios/')
     test_files = get_test_datasets(test_events, multi = multi, base_path='/home/pc/bgp-feature-extractor/datasets/ratios/')
-    # test_file = BGPDataset('aws-leak').get_files(5, peer='15547')[0, base_path=base_path]
-    # test_file = BGPDataset('japan-earthquake').get_files(5, peer='2497')[0, base_path=base_path]
+    # test_file = BGPDataset('aws-leak').get_files(5, peer='15547')[0]
+    # test_file = BGPDataset('japan-earthquake').get_files(5, peer='2497')[0]
 
     print 'TRAIN'
     for f in train_files:
@@ -426,9 +426,11 @@ def main():
         for train_samples in train_vals:
             filename = train_samples[1]
             x_train, y_train = (train_samples[0][0], train_samples[0][1])
-
             validation_data = x_train
             validation_target = y_train
+
+            validation_data = test_vals[0][0][0]
+            validation_target = test_vals[0][0][1]
 
             if not multi:
                 y_val = to_categorical(y_train, num_classes=2)
@@ -460,14 +462,14 @@ def main():
             # class_weight = {0: 1., 1: 4, 2:4, 3:4}
 
             hist = model.fit(x_train, y_train,
-                                # batch_size=batch_size,
-                                sample_weight=sample_weights,
-                                epochs=inner_epochs,
-                                verbose=0,
-                                validation_data=(validation_data, validation_target),
-                                callbacks=[f1early, tensorboard],
-                                # class_weight=class_weights,
-                                shuffle=False)
+                            # batch_size=batch_size,
+                            sample_weight=sample_weights,
+                            epochs=inner_epochs,
+                            verbose=1,
+                            validation_data=(validation_data, validation_target),
+                            callbacks=[f1early, tensorboard],
+                            # class_weight=class_weights,
+                            shuffle=False)
             #Evaluate after each sequence processed
             # y_pred = model.predict(x_test, verbose = 0).round()
             model.reset_states()
