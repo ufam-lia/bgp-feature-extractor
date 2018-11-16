@@ -431,7 +431,6 @@ def main():
 
             validation_data = test_vals[0][0][0]
             validation_target = test_vals[0][0][1]
-
             if not multi:
                 y_val = to_categorical(y_train, num_classes=2)
                 y_val = y_val.reshape(-1, 2)
