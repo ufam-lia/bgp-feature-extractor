@@ -235,9 +235,11 @@ def get_test_datasets(test_datasets, multi = False, anomaly = False, base_path='
 
 def add_lag(data, lag=1):
     df = pd.DataFrame(data)
+    # df.to_csv('lag1.csv')
     columns = [df.shift(i) for i in range(0, lag+1)]
     df = pd.concat(columns, axis=1)
     df = df.fillna(0)
+    # df.to_csv('lag2.csv')
     df = df.values
     return df
 
@@ -303,7 +305,8 @@ def print_metrics(accuracy, precision, recall, f1, test_file):
     print
 
 def save_metrics(accuracy, precision, recall, f1, test_file, df, epoch, lag):
-    if type(precision) == np.float64:
+    print type(precision)
+    if (type(precision) == np.float64) or (type(precision) == float):
         num_classes=1
         df.loc[test_file,'accuracy'] = accuracy
         df.loc[test_file,'epoch'] = epoch
@@ -478,7 +481,7 @@ def main():
             accuracy, precision, recall, f1 = calc_metrics(y_test, y_pred, multi=multi)
             # print_metrics(precision, recall, f1, test_file)
         print epoch
-        if ((epoch % 10) == 0 and epoch >= 10) or (epoch == epochs-1):
+        if ((epoch % 1) == 0 and epoch >= 1) or (epoch == epochs-1):
             print( '####VALIDATION')
             for test_samples in test_vals:
                 test_file = test_samples[1].split('/')[-1]
