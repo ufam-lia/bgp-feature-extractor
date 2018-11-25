@@ -169,6 +169,91 @@ def get_train_datasets(exclude_dataset, multi = False, anomaly = False, base_pat
         train_files += japan_dataset.get_files(timebin = [1,5], peer = '10026', multi = multi)
     return train_files
 
+'''
+as9121_13237_1
+as9121_13237_5
+aws-leak_15547_1
+aws-leak_34781_1
+aws-leak_34781_5
+japan-earthquake_10026_1
+japan-earthquake_2497_1
+malaysian-telecom_25091_1
+moscow_blackout_12793_1
+moscow_blackout_1853_1
+nimda_513_1
+nimda_559_5
+nimda_6893_1
+slammer_513_1
+slammer_513_5
+slammer_559_1
+slammer_6893_1
+slammer_6893_5
+'''
+def get_optimal_train_datasets(exclude_dataset, multi = False, anomaly = False, base_path='/home/pc/bgp-feature-extractor/datasets/'):
+    nimda_dataset             = BGPDataset('nimda', anomaly, base_path=base_path)
+    code_red_dataset          = BGPDataset('code-red', anomaly, base_path=base_path)
+    slammer_dataset           = BGPDataset('slammer', anomaly, base_path=base_path)
+    moscow_dataset            = BGPDataset('moscow_blackout', anomaly, base_path=base_path)
+    as9121_dataset            = BGPDataset('as9121', anomaly, base_path=base_path)
+    aws_leak_dataset          = BGPDataset('aws-leak', anomaly, base_path=base_path)
+    as_3561_filtering_dataset = BGPDataset('as-3561-filtering', anomaly, base_path=base_path)
+    as_path_error_dataset     = BGPDataset('as-path-error', anomaly, base_path=base_path)
+    malaysian_dataset         = BGPDataset('malaysian-telecom', anomaly, base_path=base_path)
+    japan_dataset             = BGPDataset('japan-earthquake', anomaly, base_path=base_path)
+
+    train_files = []
+
+    if 'code-red' not in exclude_dataset:
+        # train_files += code_red_dataset.get_files(timebin = [1, 5, 15], peer ='513', multi = multi)
+        train_files += code_red_dataset.get_files(timebin = [5], peer ='6893', multi = multi)
+
+    if 'nimda' not in exclude_dataset:
+        train_files += nimda_dataset.get_files(timebin = [1], peer ='513', multi = multi)
+        train_files += nimda_dataset.get_files(timebin = [5], peer ='559', multi = multi)
+        train_files += nimda_dataset.get_files(timebin = [1], peer ='6893', multi = multi)
+
+    if 'slammer' not in exclude_dataset:
+        train_files += slammer_dataset.get_files(timebin = [1, 5], peer ='513', multi = multi)
+        train_files += slammer_dataset.get_files(timebin = [1], peer ='559', multi = multi)
+        train_files += slammer_dataset.get_files(timebin = [1, 5], peer ='6893', multi = multi)
+
+    if 'moscow-blackout' not in exclude_dataset:
+        train_files += moscow_dataset.get_files(timebin = [1], peer ='1853', multi = multi)
+        train_files += moscow_dataset.get_files(timebin = [1], peer ='12793', multi = multi)
+
+    if 'aws-leak' not in exclude_dataset:
+        train_files += aws_leak_dataset.get_files(timebin = [1], peer ='15547', multi = multi)
+        # train_files += aws_leak_dataset.get_files(timebin = [1, 5], peer ='25091', multi = multi)
+        train_files += aws_leak_dataset.get_files(timebin = [1, 5], peer ='34781', multi = multi)
+
+    if 'as9121' not in exclude_dataset:
+        # train_files += as9121_dataset.get_files(timebin = [1, 5], peer ='1853', multi = multi)
+        # train_files += as9121_dataset.get_files(timebin = [1, 5], peer ='12793', multi = multi)
+        train_files += as9121_dataset.get_files(timebin = [1, 5], peer ='13237', multi = multi)
+
+    if 'as-3561-filtering' not in exclude_dataset:
+        # train_files += as_3561_filtering_dataset.get_files(timebin = [1, 5], peer ='1286', multi = multi)
+        # train_files += as_3561_filtering_dataset.get_files(timebin = [1, 5], peer ='3257', multi = multi)
+        # train_files += as_3561_filtering_dataset.get_files(timebin = [1, 5], peer ='3333', multi = multi)
+        pass
+
+    if 'as-path-error' not in exclude_dataset:
+        # train_files += as_path_error_dataset.get_files(timebin = [1, 5], peer = '3257', multi = multi)
+        # train_files += as_path_error_dataset.get_files(timebin = [1, 5], peer = '3333', multi = multi)
+        # train_files += as_path_error_dataset.get_files(timebin = [1, 5], peer = '9057', multi = multi)
+        pass
+
+    if 'malaysian-telecom' not in exclude_dataset:
+        # train_files += malaysian_dataset.get_files(timebin = [1, 5], peer = '513', multi = multi)
+        # train_files += malaysian_dataset.get_files(timebin = [1, 5], peer = '20932', multi = multi)
+        train_files += malaysian_dataset.get_files(timebin = [1], peer = '25091', multi = multi)
+        # train_files += malaysian_dataset.get_files(timebin = [1, 5], peer = '34781', multi = multi)
+
+    if 'japan-earthquake' not in exclude_dataset:
+        train_files += japan_dataset.get_files(timebin = [1], peer = '2497', multi = multi)
+        train_files += japan_dataset.get_files(timebin = [1], peer = '10026', multi = multi)
+    return train_files
+
 def get_test_datasets(test_datasets, multi = False, anomaly = False, base_path='/home/pc/bgp-feature-extractor/datasets/'):
     nimda_dataset             = BGPDataset('nimda', anomaly, base_path=base_path)
     code_red_dataset          = BGPDataset('code-red', anomaly, base_path=base_path)
@@ -358,10 +443,10 @@ def main():
     else:
         ignored_events = test_events
 
-    train_files = get_train_datasets(ignored_events, multi = multi, base_path='/home/pc/bgp-feature-extractor/datasets/ratios/')
+    train_files = get_optimal_train_datasets(ignored_events, multi = multi, base_path='/home/pc/bgp-feature-extractor/datasets/ratios/')
     test_files = get_test_datasets(test_events, multi = multi, base_path='/home/pc/bgp-feature-extractor/datasets/ratios/')
-    # test_file = BGPDataset('aws-leak').get_files(5, peer='15547')[0, base_path=base_path]
-    # test_file = BGPDataset('japan-earthquake').get_files(5, peer='2497')[0, base_path=base_path]
+    # test_file = BGPDataset('aws-leak').get_files(5, peer='15547')[0]
+    # test_file = BGPDataset('japan-earthquake').get_files(5, peer='2497')[0]
 
     print 'TRAIN'
     for f in train_files:
@@ -394,10 +479,10 @@ def main():
 
     model = Sequential()
     # model.add(Dense(10, activation='sigmoid', input_shape = (x_test[0].shape), batch_size = batch_size))
-    model.add(LSTM(10, return_sequences=False, batch_input_shape=(batch_size,validation_data.shape[1], validation_data.shape[2]), stateful=True, activation='sigmoid'))
+    model.add(LSTM(10, return_sequences=True, batch_input_shape=(batch_size,validation_data.shape[1], validation_data.shape[2]), stateful=True, activation='sigmoid'))
     model.add(Dropout(0.1))
-    # model.add(LSTM(100, return_sequences=True, stateful = True, activation='sigmoid'))
-    # model.add(Dropout(0.2))
+    model.add(LSTM(10, return_sequences=False, stateful = False, activation='sigmoid'))
+    model.add(Dropout(01))
     # model.add(LSTM(100, return_sequences=False, stateful = True, activation='sigmoid'))
     # model.add(Dropout(0.2))
 
@@ -426,10 +511,11 @@ def main():
         for train_samples in train_vals:
             filename = train_samples[1]
             x_train, y_train = (train_samples[0][0], train_samples[0][1])
-
             validation_data = x_train
             validation_target = y_train
 
+            validation_data = test_vals[0][0][0]
+            validation_target = test_vals[0][0][1]
             if not multi:
                 y_val = to_categorical(y_train, num_classes=2)
                 y_val = y_val.reshape(-1, 2)
@@ -460,14 +546,14 @@ def main():
             # class_weight = {0: 1., 1: 4, 2:4, 3:4}
 
             hist = model.fit(x_train, y_train,
-                                # batch_size=batch_size,
-                                sample_weight=sample_weights,
-                                epochs=inner_epochs,
-                                verbose=0,
-                                validation_data=(validation_data, validation_target),
-                                callbacks=[f1early, tensorboard],
-                                # class_weight=class_weights,
-                                shuffle=False)
+                            # batch_size=batch_size,
+                            sample_weight=sample_weights,
+                            epochs=inner_epochs,
+                            verbose=1,
+                            validation_data=(validation_data, validation_target),
+                            callbacks=[f1early, tensorboard],
+                            # class_weight=class_weights,
+                            shuffle=False)
             #Evaluate after each sequence processed
             # y_pred = model.predict(x_test, verbose = 0).round()
             model.reset_states()

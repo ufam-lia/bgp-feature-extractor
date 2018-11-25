@@ -1,0 +1,5 @@
+,accuracy,epoch,lag,precision_0,recall_0,f1_0
+dataset_moscow_blackout_1853_1_rrc05.csv,0.97625,3.0,20.0,0.0,0.0,0.0
+dataset_moscow_blackout_1853_5_rrc05.csv,0.9756944444444444,3.0,20.0,0.0,0.0,0.0
+dataset_moscow_blackout_12793_1_rrc05.csv,0.9765277777777778,3.0,20.0,0.75,0.017543859649122806,0.03428571428571428
+dataset_moscow_blackout_12793_5_rrc05.csv,0.9756944444444444,3.0,20.0,0.0,0.0,0.0

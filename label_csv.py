@@ -225,7 +225,7 @@ def preprocess_file(file, csv, name='name', base_path='', start=0, end=0, label=
 
     csv = pd.read_csv(file, index_col=0, delimiter = ',', quoting=3)
     csv = fix_columns(csv)
-    csv = add_label(csv, start, end, 1)
+    csv = add_label(csv, start, end, label)
 
     if ratio:
         csv = add_ratio_columns(csv)
@@ -266,9 +266,9 @@ def preprocessing(files, name='name', start=0, end=0, label=1):
         if not os.path.exists(features_path + '/ratios'):
             os.makedirs(features_path + '/ratios')
 
-        preprocess_file(f, csv, name=name, base_path='ratios/dataset_', start=0, end=0, label=1, drop=True, ratio=True, batch_size=32)
-        preprocess_file(f, csv, name=name, base_path='ratios/dataset_multi_', start=0, end=0, label=label, drop=True, ratio=True, batch_size=32)
-        preprocess_file(f, csv, name=name, base_path='annotated/dataset_multi_', start=0, end=0, label=mark, drop=True, ratio=True, batch_size=32)
+        preprocess_file(f, csv, name=name, base_path='ratios/dataset_', start=start, end=end, label=1, drop=True, ratio=True, batch_size=32)
+        preprocess_file(f, csv, name=name, base_path='ratios/dataset_multi_', start=start, end=end, label=label, drop=True, ratio=True, batch_size=32)
+        preprocess_file(f, csv, name=name, base_path='annotated/dataset_multi_', start=start, end=end, label=mark, drop=True, ratio=True, batch_size=32)
 
 def analyze_file(key_file, csv_annotated, start, end, label):
     global analysis_files
