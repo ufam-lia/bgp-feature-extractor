@@ -551,7 +551,8 @@ def main():
                             epochs=inner_epochs,
                             verbose=1,
                             validation_data=(validation_data, validation_target),
-                            callbacks=[f1early, tensorboard],
+                            callbacks=[f1early],
+                            # callbacks=[f1early, tensorboard],
                             # class_weight=class_weights,
                             shuffle=False)
             #Evaluate after each sequence processed
