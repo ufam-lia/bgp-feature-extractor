@@ -4,20 +4,12 @@ import os, glob, sys
 import random
 
 features_path = '/home/pc/bgp-feature-extractor/datasets/'
-# LABELS_DROP = ['news','nadas','flaps','origin_changes','as_path_avg','unique_as_path_max',\
-#                'unique_as_path_avg','rare_ases_max','rare_ases_avg','number_rare_ases','edit_distance_max',\
-#                'edit_distance_avg','ann_to_shorter','ann_to_longer','origin_2','imp_wd_dpath','imp_wd_spath']
-LABELS_DROP = ['news','nadas','flaps','unique_as_path_max','as_path_avg',
-               'edit_distance_max','ann_to_shorter','ann_to_longer', 'edit_distance_avg',
-               'origin_0','origin_1','origin_2','imp_wd_dpath','imp_wd_spath','dups',
-               'imp_wd','ratio_wd_dups','wd_dups']
 analysis_files = dict()
 summary_files = dict()
 
 def drop_columns(csv):
     for i in xrange(0, 200):
         col = 'edit_distance_dict_' + str(i) #+ '_'
-        # print col
         if col in csv.keys():
             csv.drop(col, 1, inplace = True)
 
@@ -97,11 +89,6 @@ def add_ratio_columns(csv):
 
 def adjust_to_batch_size(csv, batch_size):
     diff = (batch_size - csv.shape[0] % batch_size) if (csv.shape[0] % batch_size) != 0 else 0
-    # print 'batch_size'
-    # print batch_size
-    # print csv.shape[0]
-    # print csv.shape[0] % batch_size
-    # print diff
 
     last_line = pd.DataFrame(csv.tail(1), columns=csv.columns)
     for i in range(0, diff):
@@ -334,32 +321,31 @@ def main(argv):
         if peer == '10026': # 8:56 - 15:15
             preprocessing(japan_files, name='japan-earthquake_'+peer+'_'+ts, start=1299833704, end=1299856504, label=3)
 
-        # if peer == '3257':
-        #     preprocessing(as_path_error_files, name='as-path-error_'+peer+'_'+ts, start=1002484580,end=1002504620, label=2)
-        # elif peer == '9057':
-        #     preprocessing(as_path_error_files, name='as-path-error_'+peer+'_'+ts, start=1002484700,end=1002499460, label=2)
-        # elif peer == '3333':
-        #     preprocessing(as_path_error_files, name='as-path-error_'+peer+'_'+ts, start=1002484580,end=1002499400, label=2)
+        if peer == '3257':
+            preprocessing(as_path_error_files, name='as-path-error_'+peer+'_'+ts, start=1002484580,end=1002504620, label=2)
+        elif peer == '9057':
+            preprocessing(as_path_error_files, name='as-path-error_'+peer+'_'+ts, start=1002484700,end=1002499460, label=2)
+        elif peer == '3333':
+            preprocessing(as_path_error_files, name='as-path-error_'+peer+'_'+ts, start=1002484580,end=1002499400, label=2)
 
-        # if peer == '13237':
-        #     preprocessing(moscow_files, name='moscow_blackout_'+peer, start=1116996909, end=1117017309, label=3)
+        if peer == '13237':
+            preprocessing(moscow_files, name='moscow_blackout_'+peer, start=1116996909, end=1117017309, label=3)
         if peer == '1853':
             preprocessing(moscow_files, name='moscow_blackout_'+peer+'_'+ts, start=1116996009, end=1117006209, label=3)
         if peer == '12793':
             preprocessing(moscow_files, name='moscow_blackout_'+peer+'_'+ts, start=1116996009, end=1117006209, label=3)
 
-        # if peer == '513':
-        #     preprocessing(malaysian_telecom_files, name='malaysian-telecom_'+peer+'_'+ts, start=1434098520, end=1434104640, label=2)
+        if peer == '513':
+            preprocessing(malaysian_telecom_files, name='malaysian-telecom_'+peer+'_'+ts, start=1434098520, end=1434104640, label=2)
         if peer == '25091':
             preprocessing(malaysian_telecom_files, name='malaysian-telecom_'+peer+'_'+ts, start=1434098520, end=1434109560, label=2)
-        # if peer == '34781':
-        #     preprocessing(malaysian_telecom_files, name='malaysian-telecom_'+peer+'_'+ts, start=1434098520, end=1434104880, label=2)
-        # if peer == '20932':
-        #     preprocessing(malaysian_telecom_files, name='malaysian-telecom_'+peer+'_'+ts, start=1434098520, end=1434107700, label=2)
+        if peer == '34781':
+            preprocessing(malaysian_telecom_files, name='malaysian-telecom_'+peer+'_'+ts, start=1434098520, end=1434104880, label=2)
+        if peer == '20932':
+            preprocessing(malaysian_telecom_files, name='malaysian-telecom_'+peer+'_'+ts, start=1434098520, end=1434107700, label=2)
 
         df_analysis_episode = pd.DataFrame(analysis_files)
         df_summary_episode = pd.DataFrame(summary_files)
-        # print df_analysis_episode
 
         if os.path.isfile('analysis.csv'):
             df_analysis = pd.read_csv('analysis.csv', index_col=0)

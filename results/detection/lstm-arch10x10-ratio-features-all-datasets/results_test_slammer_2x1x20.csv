@@ -1,7 +1,0 @@
-,accuracy,epoch,lag,precision_0,recall_0,f1_0
-dataset_slammer_513_1_rrc04.csv,0.8430555555555556,1.0,20.0,0.0,0.0,0.0
-dataset_slammer_513_5_rrc04.csv,0.8430555555555556,1.0,20.0,0.0,0.0,0.0
-dataset_slammer_559_1_rrc04.csv,0.8430555555555556,1.0,20.0,0.0,0.0,0.0
-dataset_slammer_559_5_rrc04.csv,0.8430555555555556,1.0,20.0,0.0,0.0,0.0
-dataset_slammer_6893_1_rrc04.csv,0.8430555555555556,1.0,20.0,0.0,0.0,0.0
-dataset_slammer_6893_5_rrc04.csv,0.8430555555555556,1.0,20.0,0.0,0.0,0.0

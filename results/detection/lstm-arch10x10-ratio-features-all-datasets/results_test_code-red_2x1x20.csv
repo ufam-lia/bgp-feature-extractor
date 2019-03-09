@@ -1,5 +1,0 @@
-,accuracy,epoch,lag,precision_0,recall_0,f1_0
-dataset_code-red_513_1_rrc04.csv,0.9262892376681614,1.0,20.0,0.0,0.0,0.0
-dataset_code-red_513_5_rrc04.csv,0.9263888888888889,1.0,20.0,0.0,0.0,0.0
-dataset_code-red_6893_1_rrc04.csv,0.9262892376681614,1.0,20.0,0.0,0.0,0.0
-dataset_code-red_6893_5_rrc04.csv,0.9263888888888889,1.0,20.0,0.0,0.0,0.0

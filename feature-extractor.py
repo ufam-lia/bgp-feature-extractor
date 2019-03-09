@@ -43,7 +43,7 @@ def main():
     anomaly = BGPAnomaly(anomaly, rrc, '*')
     days = anomaly.get_files()
     if anomaly.get_rib() is not None:
-        # metrics.init_rib(anomaly.get_rib(), peer)
+        metrics.init_rib(anomaly.get_rib(), peer)
         pass
 
     for update_files in days:
@@ -56,13 +56,6 @@ def main():
 
             peer_upds = OrderedDict(sorted((metrics.peer_upds).items(), key = operator.itemgetter(1), reverse = True))
 
-            # for k, upds in peer_upds.iteritems():
-            #     # delta = round(((upds - upds_prev[k])/metrics.count_updates), 2) if upds_prev.has_key(k) else 0
-            #     # print str(k) + ' -> ' + str(upds) + ' (+'+ str(delta*100) +'%)'
-            #     print str(k) + ' -> ' + str(upds)
-            #     # upds_prev[k] = upds
-            # print '*************'
-
         file = f.split('.')
         # pickle.dump(metrics.prefix_lookup, open(file[0] + file[1] + file[2] + '-lookup.pkl', "wb"))
 
@@ -71,7 +64,6 @@ def main():
     features = metrics.get_features()
     features_dict = features.to_dict()
     df = features.to_dataframe()
-    # output_filename = 'features-'+ anomaly.event +'-'+ rrc +'-'+ peer +'-'+ day +'-'+ metrics.minutes_window +'.csv'
     output_filename = 'features-'+ anomaly.event +'-'+ rrc +'-'+ peer +'-'+ metrics.minutes_window +'.csv'
     df = df.fillna(0)
     df.to_csv(output_filename, sep=',', encoding='utf-8')

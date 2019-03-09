@@ -1,5 +1,0 @@
-,accuracy,epoch,lag,precision_0,recall_0,f1_0
-dataset_aws-leak_15547_1_rrc04.csv,0.9901388888888889,1.0,20.0,0.0,0.0,0.0
-dataset_aws-leak_15547_5_rrc04.csv,0.9895833333333334,1.0,20.0,0.0,0.0,0.0
-dataset_aws-leak_34781_1_rrc04.csv,0.9901388888888889,1.0,20.0,0.0,0.0,0.0
-dataset_aws-leak_34781_5_rrc04.csv,0.9895833333333334,1.0,20.0,0.0,0.0,0.0

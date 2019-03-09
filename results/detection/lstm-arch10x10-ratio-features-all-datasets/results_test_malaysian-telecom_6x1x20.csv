@@ -1,3 +1,0 @@
-,accuracy,epoch,lag,precision_0,recall_0,f1_0
-dataset_malaysian-telecom_25091_1_rrc04.csv,0.9743055555555555,5.0,20.0,0.0,0.0,0.0
-dataset_malaysian-telecom_25091_5_rrc04.csv,0.9743055555555555,5.0,20.0,0.0,0.0,0.0

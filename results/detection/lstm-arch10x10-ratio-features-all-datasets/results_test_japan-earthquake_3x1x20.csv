@@ -1,4 +1,0 @@
-,accuracy,epoch,lag,precision_0,recall_0,f1_0
-dataset_japan-earthquake_2497_1_rrc06.csv,0.94625,2.0,20.0,0.0,0.0,0.0
-dataset_japan-earthquake_2497_5_rrc06.csv,0.9465277777777777,2.0,20.0,0.0,0.0,0.0
-dataset_japan-earthquake_10026_1_rv-sydney.csv,0.9470833333333334,2.0,20.0,0.0,0.0,0.0

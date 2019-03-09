@@ -16,8 +16,8 @@ import cPickle as pickle
 import argparse
 import operator
 import pdir
-#from getsizeoflib import total_size
-# from guppy import hpy
+from getsizeoflib import total_size
+from guppy import hpy
 import gc
 import pandas as pd
 from operator import add
@@ -778,67 +778,16 @@ class Metrics(object):
 
     def plot(self):
         for feat_name, feat in features_dict.iteritems():
-        #     # print feat_name + ' -> ' + str(len(feat))
-        # print len(feat)
-        #     # print feat
             self.plot_ts(feat, feat_name)
 
-        # for bin, prefix_count in self.upds_prefixes.iteritems():
-        #     self.max_prefix[bin] = np.array(self.upds_prefixes[bin].values()).max()
-        #     self.mean_prefix[bin] = np.array(self.upds_prefixes[bin].values()).mean()
-        #
-        # self.sort_timeseries()
-        # self.fill_blanks_timeseries()
-        # self.plot_timeseries()
-        # print self.as_paths_distribution
-        # print self.as_path_max_length
-        # print self.unique_as_path_max
-        # print self.as_path_avg_length
-        # print self.unique_as_path_avg
-        # self.print_dicts()
+        for bin, prefix_count in self.upds_prefixes.iteritems():
+            self.max_prefix[bin] = np.array(self.upds_prefixes[bin].values()).max()
+            self.mean_prefix[bin] = np.array(self.upds_prefixes[bin].values()).mean()
+
+        self.sort_timeseries()
+        self.fill_blanks_timeseries()
+        self.plot_timeseries()
 
         for prefix in self.prefix_nada:
              for peer in self.prefix_history.keys():
                  qtd_bgp_msgs = len(self.prefix_history[peer][prefix])
-                 # if qtd_bgp_msgs > 20:
-                     # print peer + ' @ ' +  prefix + '->' + str(qtd_bgp_msgs)
-                     # self.print_prefix_history(peer, prefix)
-                     # return
-
-        # print self.diff_counter
-        # print self.error_counter
-        # prefix_lookup_size = 0
-        # c = 0
-        # for peers, prefixes in self.prefix_lookup.iteritems():
-        #     prefix_lookup_size += sys.getsizeof(peers)
-        #     prefix_lookup_size += sys.getsizeof(prefixes)
-        #
-        #     for prefix, attrs in prefixes.iteritems():
-        #         prefix_lookup_size += sys.getsizeof(prefix)
-        #         prefix_lookup_size += sys.getsizeof(attrs)
-        #
-        #         for attr_name_, attr_ in attrs.iteritems():
-        #             # print pdir(attr_)
-        #             prefix_lookup_size += sys.getsizeof(attr_)
-        #             prefix_lookup_size += sys.getsizeof(attr_name_)
-        #             c += 1
-        #
-        # print 'self.upds_prefixes ->' + str(total_size(self.upds_prefixes)/1024) + 'KB'
-        # print 'self.prefix_withdrawals ->' + str(total_size(self.prefix_withdrawals)/1024) + 'KB'
-        # print 'self.prefix_lookup ->' + str(total_size(self.prefix_lookup)/1024) + 'KB'
-        # print 'self.prefix_lookup2 ->' + str(prefix_lookup_size/1024) + 'KB'
-        #
-        # print 'self.upds_prefixes ->' + str(len(self.upds_prefixes.keys())) + ' keys'
-        # print 'self.prefix_withdrawals ->' + str(len(self.prefix_withdrawals.keys())) + ' keys'
-        #
-        # prefix_lookup_counter = 0
-        # for peers, prefixes in self.prefix_lookup.iteritems():
-        #     prefix_lookup_counter += len(prefixes.keys())
-        #
-        # print 'self.prefix_lookup ->' + str(prefix_lookup_counter) + ' keys'
-        # print 'TEST ->' + str(total_size(self.prefix_lookup['3549']['65.202.5.0/24']))
-        #
-        # # prefix_heavy_hitters = dict(sorted(self.msg_counter.items(), key = operator.itemgetter(1)))
-        # prefix_heavy_hitters = sorted(self.msg_counter.items(), key = operator.itemgetter(1), reverse = True)
-        # print prefix_heavy_hitters[0:5]
-        # print total_size(self.prefix_lookup[])
