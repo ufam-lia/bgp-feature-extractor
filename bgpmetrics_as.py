@@ -24,7 +24,6 @@ import random
 import cPickle as pickle
 import argparse
 import operator
-import pdir
 import gc
 import pandas as pd
 from operator import add
