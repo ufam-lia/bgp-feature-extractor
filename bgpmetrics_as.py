@@ -1,3 +1,11 @@
+"""
+BGP Feature Extractor and Dataset Generator
+
+Core module responsible of classifying the updates containend in a UPDATE message dump, provided in the MRT format
+@author Paulo Fonseca
+
+"""
+
 import sys
 import os, time
 import os.path
@@ -16,29 +24,33 @@ import cPickle as pickle
 import argparse
 import operator
 import pdir
-from getsizeoflib import total_size
-from guppy import hpy
 import gc
 import pandas as pd
 from operator import add
+#Constants
+BGPMessageST = [BGP4MP_ST['BGP4MP_MESSAGE'],BGP4MP_ST['BGP4MP_MESSAGE_AS4'],BGP4MP_ST['BGP4MP_MESSAGE_LOCAL'],BGP4MP_ST['BGP4MP_MESSAGE_AS4_LOCAL'],BGP4MP_ST['BGP4MP_MESSAGE_ADDPATH'],BGP4MP_ST['BGP4MP_MESSAGE_AS4_ADDPATH'],BGP4MP_ST['BGP4MP_MESSAGE_LOCAL_ADDPATH'],BGP4MP_ST['BGP4MP_MESSAGE_AS4_LOCAL_ADDPATH']]
+BGPStateChangeST = [ BGP4MP_ST['BGP4MP_STATE_CHANGE'], BGP4MP_ST['BGP4MP_STATE_CHANGE_AS4']]
 
 os.environ['TZ'] = 'US'
 time.tzset()
 
+#Auxiliary types
 def dd():
     return defaultdict(int)
+
 def ddarr():
     return defaultdict(np.zeros(1))
+
 def ddlist():
     return defaultdict(list)
+
 def ddd():
     return defaultdict(dd)
+
 def dddlist():
     return defaultdict(ddlist)
 
-BGPMessageST = [BGP4MP_ST['BGP4MP_MESSAGE'],BGP4MP_ST['BGP4MP_MESSAGE_AS4'],BGP4MP_ST['BGP4MP_MESSAGE_LOCAL'],BGP4MP_ST['BGP4MP_MESSAGE_AS4_LOCAL'],BGP4MP_ST['BGP4MP_MESSAGE_ADDPATH'],BGP4MP_ST['BGP4MP_MESSAGE_AS4_ADDPATH'],BGP4MP_ST['BGP4MP_MESSAGE_LOCAL_ADDPATH'],BGP4MP_ST['BGP4MP_MESSAGE_AS4_LOCAL_ADDPATH']]
-BGPStateChangeST = [ BGP4MP_ST['BGP4MP_STATE_CHANGE'], BGP4MP_ST['BGP4MP_STATE_CHANGE_AS4']]
-
+#Auxiliary functions
 def is_bgp_update(m):
     return (m.type == MRT_T['BGP4MP'] \
             or m.type == MRT_T['BGP4MP_ET']) \
@@ -84,6 +96,8 @@ def edit_distance(l1, l2):
 
 class Features(object):
     def __init__(self):
+
+
         self.withdrawals = 0
         self.imp_wd = 0
         self.imp_wd_spath = 0
@@ -158,14 +172,10 @@ class Features(object):
 
         return features
 
-    def to_csv(self):
-        pass
-
     def to_dataframe(self):
         return pd.DataFrame(self.to_dict())
 
 class Metrics(object):
-
     def volume_attr_init(self):
         #Volume features init
         self.updates = defaultdict(int)
@@ -265,7 +275,7 @@ class Metrics(object):
 
     def init_rib(self, file, peer_arg):
         if isfile(file + '-' + peer_arg + '-lookup.pkl'):
-	    print 'Loading ' + file + '-lookup.pkl'
+    	    print 'Loading ' + file + '-lookup.pkl'
             self.prefix_lookup = pickle.load(open(file + '-' + peer_arg +'-lookup.pkl', "rb"))
         else:
             d = Reader(file)
@@ -282,12 +292,13 @@ class Metrics(object):
                     peer = m.td.peer_as
                     prefix = str(m.td.prefix) + '/' + str(m.td.plen)
 
-                    self.print_classification(m, 'RIB', prefix)
+                    self.print_msg_classification(m, 'RIB', prefix)
                     self.prfx_set[peer][prefix] += 1
 
                     if peer == peer_arg:
                         for attr in m.td.attr:
                             self.prefix_lookup[peer][prefix][BGP_ATTR_T[attr.type]] = attr
+
                 elif is_table_dump_v2(m):
                     if m.peer is not None:
                         peer_index = dict()
@@ -367,7 +378,7 @@ class Metrics(object):
                     if wd_state != 0 and wd_state == True:
                         self.wd_dups[self.bin] += 1
                     self.prefix_withdrawals[m.bgp.peer_as][prefix] = True
-                    self.print_classification(m, 'WITHDRAW', prefix)
+                    self.print_msg_classification(m, 'WITHDRAW', prefix)
                     # self.prefix_history[m.bgp.peer_as][prefix].append(m)
                     self.msg_counter[m.bgp.peer_as + '@' + prefix] += 1
 
@@ -413,13 +424,13 @@ class Metrics(object):
 
             if is_implicit_dpath:
                 self.implicit_withdrawals_dpath[self.bin] += 1
-                self.print_classification(m, 'IMPLICIT_DIFF_PATH', prefix)
+                self.print_msg_classification(m, 'IMPLICIT_DIFF_PATH', prefix)
             else:
                 self.implicit_withdrawals_spath[self.bin] += 1
-                self.print_classification(m, 'IMPLICIT_SAME_PATH', prefix)
+                self.print_msg_classification(m, 'IMPLICIT_SAME_PATH', prefix)
         else:
             self.dup_announcements[self.bin] += 1
-            self.print_classification(m, 'DUPLICATE', prefix)
+            self.print_msg_classification(m, 'DUPLICATE', prefix)
 
     def classify_new_ann_simple(self, m, prefix):
         self.new_announcements[self.bin] += 1
@@ -431,7 +442,7 @@ class Metrics(object):
             #Classify AS PATH
             if BGP_ATTR_T[attr.type] == 'AS_PATH':
                 self.classify_as_path(m, attr, prefix)
-        self.print_classification(m, 'NEW ANNOUNCEMENT', prefix)
+        self.print_msg_classification(m, 'NEW ANNOUNCEMENT', prefix)
 
     def classify_new_ann_after_wd(self, m, prefix):
         #Init vars
@@ -466,11 +477,11 @@ class Metrics(object):
         if is_diff_announcement:
             self.new_ann_after_wd[self.bin] += 1
             # self.prefix_nada.add(prefix)
-            self.print_classification(m, 'NEW ANN. AFTER WITHDRAW', prefix)
+            self.print_msg_classification(m, 'NEW ANN. AFTER WITHDRAW', prefix)
         else:
             self.flap_announcements[self.bin] += 1
             # self.prefix_flap.add(prefix)
-            self.print_classification(m, 'FLAP', prefix)
+            self.print_msg_classification(m, 'FLAP', prefix)
 
     def classify_new_ann_after_wd_unknown(self, m, prefix):
         self.ann_after_wd_unknown[self.bin] += 1
@@ -480,7 +491,7 @@ class Metrics(object):
 
             if attr_name == 'AS_PATH':
                 self.classify_as_path(m, attr, prefix)
-        self.print_classification(m, 'ANN. AFTER WITHDRAW - UNKNOWN', prefix)
+        self.print_msg_classification(m, 'ANN. AFTER WITHDRAW - UNKNOWN', prefix)
 
     def classify_new_announcement(self, m, prefix):
         #If the announcement was not preceded by a withdraw
@@ -700,8 +711,7 @@ class Metrics(object):
             self.prefix_found = prefix
             self.peer_found = m.bgp.peer_as
 
-    def print_classification(self, m, type, prefix):
-        # if prefix == self.prefix_found and m.bgp.peer_as == self.peer_found:
+    def print_msg_classification(self, m, type, prefix):
         if prefix == '2.31.96.0/24':
             if MRT_T[m.type] == 'BGP4MP' or  MRT_T[m.type] == 'BGP4MP_ET':
                 peer = m.bgp.peer_as
@@ -730,16 +740,6 @@ class Metrics(object):
     def print_peers(self):
         print self.prefix_lookup.keys()
 
-    def print_dicts(self):
-        self.print_dict('updates', self.updates)
-        # self.print_dict('upds_prefixes', self.upds_prefixes)
-        self.print_dict('implicit_withdrawals_dpath', self.implicit_withdrawals_dpath)
-        self.print_dict('implicit_withdrawals_spath', self.implicit_withdrawals_spath)
-        self.print_dict('dup_announcements', self.dup_announcements)
-        self.print_dict('new_announcements', self.new_announcements)
-        self.print_dict('new_ann_after_wd', self.new_ann_after_wd)
-        self.print_dict('flap_announcements', self.flap_announcements)
-
     def plot_timeseries(self):
         fig = plt.figure(1)
         plt.subplot(1,2,1)
@@ -753,8 +753,6 @@ class Metrics(object):
 
         output = str(random.randint(1, 1000)) + '.png'
         fig.savefig(output, bboxes_inches = '30', dpi = 400)
-        # print output
-        # os.system('xviewer ' + output + ' &')
 
     def sort_dict(self, unsort_dict):
         return defaultdict(int, dict(sorted(unsort_dict.items(), key = operator.itemgetter(1))))
@@ -773,8 +771,6 @@ class Metrics(object):
         output = name_dict + str(random.randint(1, 1000)) + '.png'
         fig.savefig(output, bboxes_inches = '30', dpi = 400)
         plt.gcf().clear()
-        # print output
-        # os.system('xviewer ' + output + ' &')
 
     def plot(self):
         for feat_name, feat in features_dict.iteritems():
