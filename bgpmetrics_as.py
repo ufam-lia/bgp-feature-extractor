@@ -1,7 +1,8 @@
 """
 BGP Feature Extractor and Dataset Generator
 
-Core module responsible of classifying the updates containend in a UPDATE message dump, provided in the MRT format
+Core module responsible of classifying the updates contained in a UPDATE message dump, provided in the MRT format
+
 @author Paulo Fonseca
 
 """
@@ -27,6 +28,7 @@ import pdir
 import gc
 import pandas as pd
 from operator import add
+
 #Constants
 BGPMessageST = [BGP4MP_ST['BGP4MP_MESSAGE'],BGP4MP_ST['BGP4MP_MESSAGE_AS4'],BGP4MP_ST['BGP4MP_MESSAGE_LOCAL'],BGP4MP_ST['BGP4MP_MESSAGE_AS4_LOCAL'],BGP4MP_ST['BGP4MP_MESSAGE_ADDPATH'],BGP4MP_ST['BGP4MP_MESSAGE_AS4_ADDPATH'],BGP4MP_ST['BGP4MP_MESSAGE_LOCAL_ADDPATH'],BGP4MP_ST['BGP4MP_MESSAGE_AS4_LOCAL_ADDPATH']]
 BGPStateChangeST = [ BGP4MP_ST['BGP4MP_STATE_CHANGE'], BGP4MP_ST['BGP4MP_STATE_CHANGE_AS4']]
@@ -34,7 +36,7 @@ BGPStateChangeST = [ BGP4MP_ST['BGP4MP_STATE_CHANGE'], BGP4MP_ST['BGP4MP_STATE_C
 os.environ['TZ'] = 'US'
 time.tzset()
 
-#Auxiliary types
+#Auxiliary functions used to define dicts of dicts of different types
 def dd():
     return defaultdict(int)
 
@@ -50,7 +52,7 @@ def ddd():
 def dddlist():
     return defaultdict(ddlist)
 
-#Auxiliary functions
+#Auxiliary functions to determine whether the MRT messages are valid/interesting
 def is_bgp_update(m):
     return (m.type == MRT_T['BGP4MP'] \
             or m.type == MRT_T['BGP4MP_ET']) \
@@ -74,6 +76,12 @@ def is_bgp_open(m):
             and m.bgp.msg.type == BGP_MSG_T['OPEN']
 
 def edit_distance(l1, l2):
+    """
+
+    :param l1: list 1
+    :param l2: list 2
+    :return: edit distance between l1 and l2
+    """
     rows = len(l1)+1
     cols = len(l2)+1
     dist = [[0 for x in range(cols)] for x in range(rows)]
@@ -95,6 +103,9 @@ def edit_distance(l1, l2):
     return dist[row][col]
 
 class Features(object):
+    """
+        Features class used to initialize and store all features
+    """
     def __init__(self):
 
 
@@ -129,6 +140,10 @@ class Features(object):
         self.class_traffic = 0
 
     def to_dict(self):
+        """
+        Converts the object to a dictionary (feature_name->feature_timeseries)
+        :return: Dict with features
+        """
         features = dict()
 
         features['timestamp'] = self.timestamp
@@ -173,6 +188,10 @@ class Features(object):
         return features
 
     def to_dataframe(self):
+        """
+          Converts the object to a Pandas dataframe
+          :return: Dataframe with features
+        """
         return pd.DataFrame(self.to_dict())
 
 class Metrics(object):
@@ -274,6 +293,11 @@ class Metrics(object):
         self.class_traffic = defaultdict(int)
 
     def init_rib(self, file, peer_arg):
+        """
+        Initialize a RIB given dump RIB file
+        :param RIB dump file
+        :param Target peer RIB
+        """
         if isfile(file + '-' + peer_arg + '-lookup.pkl'):
     	    print 'Loading ' + file + '-lookup.pkl'
             self.prefix_lookup = pickle.load(open(file + '-' + peer_arg +'-lookup.pkl', "rb"))
@@ -317,14 +341,29 @@ class Metrics(object):
             pickle.dump(self.prefix_lookup, open(file + '-' + peer_arg + '-lookup.pkl', "wb"))
 
     def increment_update_counters(self, m):
+        """
+        Increment counter features
+        :param  UPDATE message
+        """
         self.count_updates += 1
         self.updates[self.bin] += 1
         self.peer_upds[m.bgp.peer_as] += 1
 
     def update_time_bin(self, m):
+        """
+        Update current time bin
+        :param m: UPDATE message
+        """
         self.bin = (m.ts - self.first_ts)/self.bin_size
 
     def add_updates(self, file, peer):
+        """
+        Processes all messages in a update dump file, computes features and
+        add the paths to the RIB of a desired peer
+
+        :param file: UPDATE message
+        :param peer: Target peer RIB
+        """
         d = Reader(file)
         m = d.next()
         self.count_updates = 0
@@ -351,6 +390,12 @@ class Metrics(object):
                 break
 
     def classify_announcement(self, m):
+        """
+        Traverses all prefixes and classifies the associated announcements
+        according to the previously defined message classification
+
+        :param m: UPDATE message
+        """
         for nlri in m.bgp.msg.nlri:
             self.announcements[self.bin] += 1
             prefix = nlri.prefix + '/' + str(nlri.plen)
@@ -369,6 +414,11 @@ class Metrics(object):
                 self.classify_new_announcement(m, prefix)
 
     def classify_withdrawal(self, m):
+        """
+        Classify withdrawal messages
+
+        :param m: UPDATE message
+        """
         if (m.bgp.msg.wd_len > 0):
             if m.bgp.msg.withdrawn is not None:
                 for nlri in m.bgp.msg.withdrawn:
@@ -383,6 +433,12 @@ class Metrics(object):
                     self.msg_counter[m.bgp.peer_as + '@' + prefix] += 1
 
     def classify_reannouncement(self, m, prefix):
+        """
+        Classify reannouncement messages
+
+        :param m: UPDATE message
+        :param prefix: Target prefix
+        """
         is_implicit_wd = False
         is_implicit_dpath = False
         current_attr = self.prefix_lookup[m.bgp.peer_as][prefix]
@@ -433,6 +489,13 @@ class Metrics(object):
             self.print_msg_classification(m, 'DUPLICATE', prefix)
 
     def classify_new_ann_simple(self, m, prefix):
+        """
+        Classify new reannouncement messages
+
+        :param m: UPDATE message
+        :param prefix: Target prefix
+        """
+
         self.new_announcements[self.bin] += 1
         if prefix == self.prefix_found and m.bgp.peer_as == self.peer_found:
             print self.prefix_lookup
@@ -445,6 +508,13 @@ class Metrics(object):
         self.print_msg_classification(m, 'NEW ANNOUNCEMENT', prefix)
 
     def classify_new_ann_after_wd(self, m, prefix):
+        """
+        Classify NADA (new announcements after withdrawal) messages
+
+        :param m: UPDATE message
+        :param prefix: Target prefix
+        """
+
         #Init vars
         self.prefix_withdrawals[m.bgp.peer_as][prefix] = False
         current_attr = self.prefix_lookup[m.bgp.peer_as][prefix]
@@ -484,6 +554,13 @@ class Metrics(object):
             self.print_msg_classification(m, 'FLAP', prefix)
 
     def classify_new_ann_after_wd_unknown(self, m, prefix):
+        """
+        Classify new announcements after a withdrawal, but it is not known the state of the path before the withdrawal
+
+        :param m: UPDATE message
+        :param prefix: Target prefix
+        """
+
         self.ann_after_wd_unknown[self.bin] += 1
         for attr in m.bgp.msg.attr:
             self.prefix_lookup[m.bgp.peer_as][prefix][BGP_ATTR_T[attr.type]] = attr
@@ -494,6 +571,13 @@ class Metrics(object):
         self.print_msg_classification(m, 'ANN. AFTER WITHDRAW - UNKNOWN', prefix)
 
     def classify_new_announcement(self, m, prefix):
+        """
+        Classify new announcements
+
+        :param m: UPDATE message
+        :param prefix: Target prefix
+        """
+
         #If the announcement was not preceded by a withdraw
         if not self.prefix_withdrawals[m.bgp.peer_as][prefix]:
             self.classify_new_ann_simple(m, prefix)
@@ -504,6 +588,13 @@ class Metrics(object):
             self.classify_new_ann_after_wd_unknown(m, prefix)
 
     def classify_as_path(self, m, attr, prefix):
+        """
+        Computes AS path features
+
+        :param m: UPDATE message
+        :param prefix: Target prefix
+        """
+
         for as_path in attr.as_path:
             if as_path['type'] == 2:
                 unique_as_path = set(as_path['val'])
@@ -551,6 +642,14 @@ class Metrics(object):
                 self.unique_as_path_avg[self.bin] = (len(unique_as_path) * self.num_of_paths_rcvd[self.bin] + self.unique_as_path_max[self.bin])/self.num_of_paths_rcvd[self.bin]
 
     def calc_edit_distance(self, m, new_path, old_path, prefix):
+        """
+        Calc the edit distance between two paths
+
+        :param m: UPDATE message
+        :param prefix: Target prefix
+        :param new_path
+        :param old_path
+        """
         dist = edit_distance(new_path, old_path)
         dist_unique = edit_distance(list(set(new_path)),list(set(new_path)))
 
@@ -571,12 +670,23 @@ class Metrics(object):
 
 
     def count_origin_attr(self, m):
+        """
+        Increment counter of ORIGIN attributes
+        :param m:
+        """
         if m.bgp.msg.attr is not None:
             for attr in m.bgp.msg.attr:
                 if BGP_ATTR_T[attr.type] == 'ORIGIN':
                     self.count_origin[attr.origin][self.bin] += 1
 
     def is_equal(self, new_attr, old_attr):
+        """
+        If a prefix is already present in the RIB, it checks the difference between the attributes
+        of the path in the RIB and the new path
+
+        :param new_attr: Attributes of the new path
+        :param old_attr: Attributes of the path already present in the RIB
+        """
         if BGP_ATTR_T[new_attr.type] == 'ORIGIN':
             if new_attr.origin <> old_attr['ORIGIN'].origin:
                 self.diff_counter['ORIGIN'] += 1
@@ -617,7 +727,9 @@ class Metrics(object):
             return (old_attr['COMMUNITY'] != []) and (new_attr.comm == old_attr['COMMUNITY'].comm)
 
     def sort_timeseries(self):
-        #Ordering timeseries
+        """
+        Guarantees the ordering of the timeseries attributes
+        """
         self.updates = self.sort_dict(self.updates)
         self.announcements = self.sort_dict(self.announcements)
         self.withdrawals = self.sort_dict(self.withdrawals)
@@ -629,6 +741,10 @@ class Metrics(object):
         self.new_announcements = self.sort_dict(self.new_announcements)
 
     def get_features(self):
+        """
+        Instantiates a feature object with all the generated timeseries
+        :return: feat: Feature object
+        """
         feat = Features()
         self.fill_blanks_timeseries()
         feat.withdrawals = self.withdrawals
@@ -663,7 +779,10 @@ class Metrics(object):
         return feat
 
     def fill_blanks_timeseries(self):
-        #Filling blanks in the timeseries
+        """
+        Fill possible holes in a timeseries of a feature with zero, where no changes where observed
+        """
+
         for i in range(self.updates.keys()[-1] + 1):
             self.updates[i]
             self.announcements[i]
@@ -755,9 +874,17 @@ class Metrics(object):
         fig.savefig(output, bboxes_inches = '30', dpi = 400)
 
     def sort_dict(self, unsort_dict):
+        """
+        Guarantees ordering of a dict
+        :param unsort_dict: Unsorted dict
+        :return: Sorted dict
+        """
         return defaultdict(int, dict(sorted(unsort_dict.items(), key = operator.itemgetter(1))))
 
     def print_dict(self, name, dict):
+        """
+        Print dict values
+        """
         for k, v in dict.iteritems():
             print name + '  ' + str(dt.datetime.fromtimestamp(self.first_ts + self.bin_size * k)) + ' -> ' + str(v)
 
@@ -765,6 +892,12 @@ class Metrics(object):
         pass
 
     def plot_ts(self, dict_ts, name_dict):
+        """
+        Plot the timeseries of a dict
+        :param dict_ts: Dict with the timeseries values
+        :param name_dict: Feature name
+        """
+
         fig = plt.figure(1)
         plt.subplot(1,1,1)
         plt.plot(range(len(dict_ts.keys())), dict_ts.values(), lw=1.15, color = 'black')
@@ -773,6 +906,7 @@ class Metrics(object):
         plt.gcf().clear()
 
     def plot(self):
+
         for feat_name, feat in features_dict.iteritems():
             self.plot_ts(feat, feat_name)
 
