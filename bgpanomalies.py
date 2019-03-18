@@ -28,43 +28,30 @@ anomalies['panix-hijack'] = ['20060120', '20060121', '20060122', '20060123', '20
 anomalies['japan-earthquake'] = ['20110309', '20110310', '20110311', '20110312', '20110313']
 
 class BGPAnomaly(object):
-    def __init__(self, event_name, rrc, peer):
-        self.base_path = '/home/pc/ripe-ris/'
+    """
+    Responsible for retrieve the dump files (RIB and updates) from a specified event
+    """
+    def __init__(self, event_name, rrc, peer, base_path='/home/pc/ripe-ris/'):
+        """
+        Initialize base path, event, collector names, which will be used to retrieve
+        the files considering a file directory in the form <base_path>/<event_name>/<collector>/*
+
+        :param event_name: Name of the directory event
+        :param rrc:  Name of the collector
+        :param peer: Target peer
+        """
+        self.base_path = base_path
         self.event = event_name
         self.rrc = rrc
         self.peer = peer
         self.start = 0
         self.end = 0
-        self.set_period()
         # self.set_files()
 
-    def set_period(self):
-        if self.event == 'code_red':
-            self.start = 995553071
-            self.end = 995591487
-        elif self.event == 'nimda':
-            self.start = 1000818222
-            self.end = 1001030344
-        elif self.event == 'slammer':
-            self.start = 1043472590
-            self.end = 1043540404
-        elif self.event == 'moscow':
-            self.start = 1116996009
-            self.end = 1117006209
-            if self.peer == '13237':
-                self.start = 1116996009
-                self.end = 1117006209
-        elif self.event == 'as9121':
-            self.start = 1103916000
-            self.end = 1103918580
-        elif self.event == 'malaysian-telecom':
-            self.start = 1434098580
-            self.end = 1434109500
-        elif self.event == 'as-depeering':
-            self.start = 1128715200
-            self.end = 1128729660
-
     def get_files(self):
+        """
+        :return a list with the update dump files
+        """
         days = []
         for day in anomalies[self.event]:
             files_retrieved = sorted(glob.glob(self.base_path + self.event + '/' + self.rrc + '/updates.'+ day + '.*.gz'))
@@ -77,6 +64,9 @@ class BGPAnomaly(object):
         return days
 
     def get_rib(self):
+        """
+        :return the earliest RIB dump file from the anomaly period
+        """
         rib = sorted(glob.glob(self.base_path + self.event + '/' + self.rrc + '/bview.*.gz'))
         rib = rib + sorted(glob.glob(self.base_path + self.event + '/' + self.rrc + '/rib.*.bz2'))
         if len(rib) > 0:
