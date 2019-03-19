@@ -564,7 +564,7 @@ class Metrics(object):
         self.ann_after_wd_unknown[self.bin] += 1
         for attr in m.bgp.msg.attr:
             self.prefix_lookup[m.bgp.peer_as][prefix][BGP_ATTR_T[attr.type]] = attr
-            attr_name = BGP_ATTR_T[attr.type]
+s            attr_name = BGP_ATTR_T[attr.type]
 
             if attr_name == 'AS_PATH':
                 self.classify_as_path(m, attr, prefix)
