@@ -28,6 +28,12 @@ def split_ticks(x, bins):
  return l1, l2
 
 def main():
+    """
+    Computes timeseries features for a given anomaly event
+    :param rrc: Collector name
+    :param peer: AS number of target peer
+    :param anomaly: Anomaly name
+    """
     parser = argparse.ArgumentParser(description='Process BGP timeseries')
     parser.add_argument('--days', type=int)
     parser.add_argument('--start', type=str)
