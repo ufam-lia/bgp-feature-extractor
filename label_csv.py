@@ -6,19 +6,27 @@ import random
 features_path = '/home/pc/bgp-feature-extractor/datasets/'
 analysis_files = dict()
 summary_files = dict()
+LABELS_DROP = []
 
 def drop_columns(csv):
+    """
+    Drop columns defined in global variable LABELS_DROP
+    :param csv: dataset file
+    """
     for i in xrange(0, 200):
-        col = 'edit_distance_dict_' + str(i) #+ '_'
-        if col in csv.keys():
-            csv.drop(col, 1, inplace = True)
+        if 'edit_distance_dict':
+            col = 'edit_distance_dict_' + str(i) #+ '_'
+            if col in csv.keys():
+                csv.drop(col, 1, inplace = True)
 
-        col = 'edit_distance_unique_dict_' + str(i) #+ '_'
-        if col in csv.keys():
-            csv.drop(col, 1, inplace = True)
+        if 'edit_distance_unique_dict':
+            col = 'edit_distance_unique_dict_' + str(i) #+ '_'
+            if col in csv.keys():
+                csv.drop(col, 1, inplace = True)
 
     for label in LABELS_DROP:
         csv.drop(label, 1, inplace=True)
+
     return csv
 
 def add_column(csv, col):
@@ -199,6 +207,13 @@ def evaluate_delta(delta_before, delta_after, column):
     return analysis_dict
 
 def randomize_dataset(dataset, start, end):
+    """
+    Randomly set the start and end of the dataset, in order to avoid the bias of always have 2 days at before and after the anomalies
+    :param dataset: Anomaly dataframe
+    :param start: timestamp
+    :param end: timestamp
+    :return: Randomized dataset
+    """
     margin = 10
     before_length = dataset[dataset['timestamp2'] < start].shape[0]
     after_length = dataset[dataset['timestamp2'] > end].shape[0]
