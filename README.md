@@ -1,2 +1,2 @@
-# HOWTO to be available by Apr 10
+# HOWTO to be available
 - pydoc support added
