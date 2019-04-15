@@ -275,13 +275,9 @@ class Metrics(object):
         self.rib_count = 0
         self.table_exchange_period = dict()
 
-    def __init__(self):
+    def __init__(self, timesteps):
         super(Metrics, self).__init__()
-        if len(sys.argv) > 3:
-            self.minutes_window = sys.argv[4]
-        else:
-            print './feature_extractor -rrc -peer -time_bin'
-            sys.exit()
+        self.minutes_window = timesteps
         self.bin_size = 60*int(self.minutes_window)
         self.window_size = 60
         self.count_ts = defaultdict(int)

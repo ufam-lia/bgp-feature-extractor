@@ -16,41 +16,38 @@ import operator
 os.environ['TZ'] = 'US'
 tzset()
 
-def split_ticks(x, bins):
- c = 0
- l1 = []
- l2 = []
- for x1 in x:
-  if c % bins == 0:
-   l1.append(x1)
-   l2.append(c)
-  c += 1
- return l1, l2
-
 def main():
     """
     Computes timeseries features for a given anomaly event
-    :param rrc: Collector name
+    :param collector: Collector name
     :param peer: AS number of target peer
     :param anomaly: Anomaly name
     """
     parser = argparse.ArgumentParser(description='Process BGP timeseries')
-    parser.add_argument('--days', type=int)
-    parser.add_argument('--start', type=str)
-    parser.add_argument('--end', type=str)
-    parser.add_argument('--rrc', type=str)
+    parser.add_argument('-c','--collector', help='Name of the collector', required=True)
+    parser.add_argument('-p','--peer', help='Peer considered (0, if all peer must be considered)', required=True)
+    parser.add_argument('-a','--anomaly', help='Anomaly event name', required=True)
+    parser.add_argument('-t','--timesteps', help='Timestep window that must be considered', required=True)
+    parser.add_argument('-r','--rib', dest='rib',help='Disable RIB initialization', action='store_true')
+    parser.set_defaults(multi=False)
+    args = vars(parser.parse_args())
 
-    rrc = sys.argv[1]
-    peer = sys.argv[2]
-    anomaly = sys.argv[3]
+    collector = args['collector']
+    peer = args['peer']
+    anomaly = args['anomaly']
+    anomaly = args['anomaly']
+    timesteps = int(args['timesteps'])
+    rib = args['rib']
     c = 0
 
-    metrics = Metrics()
-    anomaly = BGPAnomaly(anomaly, rrc, '*')
+    metrics = Metrics(timesteps)
+    anomaly = BGPAnomaly(anomaly, collector, '*')
     days = anomaly.get_files()
     if anomaly.get_rib() is not None:
-        metrics.init_rib(anomaly.get_rib(), peer)
-        pass
+        if rib:
+            print "#Initializing RIB"
+            metrics.init_rib(anomaly.get_rib(), peer)
+            pass
 
     for update_files in days:
         update_files = sorted(update_files)
@@ -70,7 +67,7 @@ def main():
     features = metrics.get_features()
     features_dict = features.to_dict()
     df = features.to_dataframe()
-    output_filename = 'features-'+ anomaly.event +'-'+ rrc +'-'+ peer +'-'+ metrics.minutes_window +'.csv'
+    output_filename = 'features-'+ anomaly.event +'-'+ collector +'-'+ peer +'-'+ metrics.minutes_window +'.csv'
     df = df.fillna(0)
     df.to_csv(output_filename, sep=',', encoding='utf-8')
     print output_filename + ': OK'
