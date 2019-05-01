@@ -3,7 +3,7 @@ import numpy as np
 import os, glob, sys
 import random
 
-features_path = '/home/pc/bgp-feature-extractor/datasets/'
+features_path = './datasets/'
 analysis_files = dict()
 summary_files = dict()
 LABELS_DROP = []

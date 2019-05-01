@@ -31,7 +31,7 @@ class BGPAnomaly(object):
     """
     Responsible for retrieve the dump files (RIB and updates) from a specified event
     """
-    def __init__(self, event_name, rrc, peer, base_path='/home/pc/ripe-ris/'):
+    def __init__(self, event_name, rrc, peer, base_path='~/ripe-ris/'):
         """
         Initialize base path, event, collector names, which will be used to retrieve
         the files considering a file directory in the form <base_path>/<event_name>/<collector>/*
@@ -76,7 +76,7 @@ class BGPAnomaly(object):
             return None
 
 class BGPDataset(object):
-    def __init__(self, event_name, anomaly = False, base_path='/home/pc/bgp-feature-extractor/datasets/'):
+    def __init__(self, event_name, anomaly = False, base_path='./datasets/'):
         self.event = event_name
         self.anomaly = anomaly
         self.dataset_path = base_path
