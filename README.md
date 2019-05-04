@@ -8,13 +8,30 @@ The requirements for this tool might be downloaded using:
 $ pip install -r requirements.txt
 ```
 
-<in progress>
-## Using
-### Generate datasets
-### Customize labelling
-### Plot timeseries
-### Peak detection
+##Using
 
+```
+usage: feature-extractor.py [-h] -c COLLECTOR -p PEER -a ANOMALY -t TIMESTEPS
+                            [-r]
+```
+
+Process BGP timeseries
+
+optional arguments:
+  - c COLLECTOR, --collector COLLECTOR                        Name of the collector
+  - p PEER, --peer PEER  Peer considered (0, if all peer must be considered)
+  - a ANOMALY, --anomaly ANOMALY
+                        Anomaly event name
+  - t TIMESTEPS, --timesteps TIMESTEPS
+                        Timestep window that must be considered
+  - r, --rib             Disable RIB initialization
+
+### Folder structure
+Currently, our feature extractor requires that the MRT are downloaded before extraction. By default  
+
+## Generate datasets
+
+## Customize labelling
 
 ## Adding new events
 
