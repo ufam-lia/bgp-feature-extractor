@@ -27,12 +27,21 @@ optional arguments:
   - r, --rib             Disable RIB initialization
 
 ### Folder structure
-Currently, our feature extractor requires that the MRT are downloaded before extraction. By default  
+Currently, our feature extractor requires that the MRT are downloaded before extraction. These files must be placed in a folder structured following the pattern <base_path>/<event_name>/\<collector>/\<dump files>. The dump files might be .bz2 or .gz file extension.
 
 ## Generate datasets
+After the timeseries are generated labelling is performed using the ```label_csv.py``` by through the command: 
+```
+usage: label_csv.py [collector] [peer] 
+```
+Peer and timestamps of anomaly start and end must be added to the script.
+
 
 ## Customize labelling
+(in progress)
 
 ## Adding new events
+(in progress)
 
 ## Adding new features
+(in progress)
