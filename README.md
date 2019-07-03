@@ -8,7 +8,7 @@ The requirements for this tool might be downloaded using:
 $ pip install -r requirements.txt
 ```
 
-##Using
+## Using
 
 ```
 usage: feature-extractor.py [-h] -c COLLECTOR -p PEER -a ANOMALY -t TIMESTEPS
