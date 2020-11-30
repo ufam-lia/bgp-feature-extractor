@@ -37,11 +37,6 @@ usage: label_csv.py [collector] [peer]
 Peer and timestamps of anomaly start and end must be added to the script.
 
 
-## Customize labelling
-(in progress)
+## Features
 
-## Adding new events
-(in progress)
-
-## Adding new features
-(in progress)
+Detailed information about features can be found on the [wiki](https://github.com/ufam-lia/bgp-feature-extractor/wiki/Dataset-Features).
