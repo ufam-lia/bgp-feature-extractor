@@ -1,9 +1,9 @@
 # BGP Feature Extractor
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**BGP Feature Extractor** extracts relevant features from BGP control plane messages along with tools that assist the labelling of the anomaly period. Our tool extracts volume and AS path features most commonly used by anomaly detection techniques, as well as novel distribution features that allow the observation of BGP traffic changes in a straightforward manner.
+**BGP Feature Extractor** extracts relevant features from BGP control plane messages along with tools that assist the labelling of the anomaly period. Our tool extracts volume and AS path features most commonly used by anomaly detection techniques, as well as novel distribution features that allow the observation of BGP traffic changes in a straightforward manner. 
 
-Further details are provided in the [wiki](https://github.com/ufam-lia/bgp-feature-extractor/wiki/).
+BGP Feature Extractor is based on the work presented in this [paper](https://ieeexplore.ieee.org/abstract/document/8969619). Further details are provided in the [wiki](https://github.com/ufam-lia/bgp-feature-extractor/wiki/).
 
 ## Installing
 The requirements for this tool might be downloaded using:
