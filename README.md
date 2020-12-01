@@ -2,6 +2,8 @@
 
 **BGP Feature Extractor** extracts relevant features from BGP control plane messages along with tools that assist the labelling of the anomaly period. Our tool extracts volume and AS path features most commonly used by anomaly detection techniques, as well as novel distribution features that allow the observation of BGP traffic changes in a straightforward manner.
 
+Further details are provided in the [wiki](https://github.com/ufam-lia/bgp-feature-extractor/wiki/).
+
 ## Installing
 The requirements for this tool might be downloaded using:
 ```
@@ -39,4 +41,4 @@ Peer and timestamps of anomaly start and end must be added to the script.
 
 ## Features
 
-Detailed information about features can be found on the [wiki](https://github.com/ufam-lia/bgp-feature-extractor/wiki/Dataset-Features).
+Detailed information about features can be found in the [wiki](https://github.com/ufam-lia/bgp-feature-extractor/wiki/Dataset-Features).
